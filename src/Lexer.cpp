@@ -5,7 +5,7 @@
 #include <set>
 using std::string;
 
-Lexer::Lexer(string path) : cLoc(-1) {
+Lexer::Lexer(string path, ErrorReporter &err) : cLoc{-1}, cCol{-1}, error{err} {
   using std::ifstream;
   ifstream disk{path};
 
@@ -24,7 +24,7 @@ void Lexer::advance() {
   cLoc++;
   if (file[cLoc] == '\n') {
     cRow++;
-    cCol = 0;
+    cCol = -1;
   } else {
     cCol++;
   }
@@ -216,7 +216,9 @@ Token Lexer::next() {
 
     switch (at()) {
 
-    default: return Token(string(1,at()), Token::unknown, sLoc, sRow, sCol);
+    default:
+      error.report(sRow, sCol, "error: unknown token");
+      return Token(string(1,at()), Token::unknown, sLoc, sRow, sCol);
 
     case '\n':
     case '\r':

@@ -10,7 +10,7 @@ ParseTree::ParseTree() {}
 
 std::ostream& operator<<(std::ostream& os, const ParseTree& pt) {
   if (pt.children.size() == 0) {
-    return os << pt.data.getLexeme();
+    return os << pt.data.lexeme;
   }
 
   if (pt.type == ParseTree::BlockStmt) {

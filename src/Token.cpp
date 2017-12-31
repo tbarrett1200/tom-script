@@ -11,7 +11,13 @@ Token::Token(std::string lexeme, int type, int loc, int row, int col) {
   this->col = col;
 }
 
-Token::Token() {}
+Token::Token() {
+  lexeme = "";
+  type = unknown;
+  loc = 0;
+  row = 0;
+  col = 0;
+}
 
 bool Token::is(int type) {
   return this->type == type;
@@ -28,10 +34,6 @@ bool Token::isAny(std::vector<int> types) {
     }
   }
   return false;
-}
-
-std::string Token::getLexeme() const {
-  return lexeme;
 }
 
 std::ostream& operator<<(std::ostream& os, const Token& t) {

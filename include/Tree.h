@@ -11,8 +11,9 @@ class ParseTree {
   Token data;
   std::vector<ParseTree> children;
 public:
-  enum {
-    Terminal, IntegerLiteral, Identifier, Operator,
+  static ParseTree error;
+  enum Type {
+    Terminal, BasicValue, IntegerLiteral, Identifier, Operator,
     Expr, BinaryExpr,
     Decl, VarDecl, ConstDecl, FuncDecl, ParamDecl, ParamDeclList,
     Stmt, ExprStmt, IfStmt, WhileStmt, ReturnStmt, BlockStmt, DeclStmt, StmtList,
@@ -20,6 +21,7 @@ public:
   ParseTree(int, std::vector<ParseTree>);
   ParseTree(int, Token);
   ParseTree();
+
   friend std::ostream& operator<<(std::ostream& os, const ParseTree& dt);
 };
 

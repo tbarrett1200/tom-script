@@ -4,15 +4,12 @@
 
 #include <assert.h>
 
-Parser::Parser(std::string path) : lexer{path} {
+Parser::Parser(std::string path, ErrorReporter &err) : lexer{path, err}, error{err} {
   while(true) {
     Token t = lexer.next();
     if (t.is(Token::eof)) break;
     tokens.push_back(t);
   }
-
-  for (auto tok: tokens)
-    std::cout << tok << std::endl;
 }
 
 Token Parser::token(int index) {
@@ -28,8 +25,19 @@ auto Parser::consume() -> void {
   }
 }
 
+void Parser::consumeUntil(std::vector<int> types) {
+  while (!token().isAny(types)) {
+    consume();
+  }
+}
+
 ParseTree Parser::parseExpr() {
-  return {ParseTree::Expr, {parseBinaryExpr()}};
+  try {
+    return {ParseTree::Expr, {parseBinaryExpr()}};
+  } catch (ParseTree::Type err) {
+    consumeUntil({Token::semi, Token::eof});
+    return {ParseTree::Expr, Token{}};
+  }
 }
 
 ParseTree Parser::parseIntegerLiteral() {
@@ -37,9 +45,10 @@ ParseTree Parser::parseIntegerLiteral() {
   if (tok.is(Token::number)) {
     consume();
     return {ParseTree::IntegerLiteral, tok};
+  } else {
+    error.report(token(), "error: expected integer literal");
+    throw ParseTree::IntegerLiteral;
   }
-
-  assert(false && "error: parse integer literal");
 }
 
 ParseTree Parser::parseOperator() {
@@ -47,9 +56,10 @@ ParseTree Parser::parseOperator() {
   if (tok.is(Token::operator_identifier)) {
     consume();
     return {ParseTree::Operator, tok};
+  } else {
+    error.report(token(), "error: expected operator");
+    throw ParseTree::Operator;
   }
-
-  assert(false && "error: parse operator");
 }
 
 ParseTree Parser::parseIdentifier() {
@@ -57,77 +67,104 @@ ParseTree Parser::parseIdentifier() {
   if (tok.is(Token::identifier)) {
     consume();
     return {ParseTree::Identifier, tok};
+  } else {
+    error.report(token(), "error: expected identifier");
+    throw ParseTree::Identifier;
   }
+}
 
-  assert(false && "error: parse identifier");
+ParseTree Parser::parseTerminal(int type, std::string str) {
+  Token tok = token();
+  if (tok.is(type) && tok.lexeme == str) {
+    consume();
+    return {ParseTree::Terminal, tok};
+  } else {
+    error.report(tok, std::string("error: expected ") + str);
+    throw ParseTree::Terminal;
+  }
+}
+
+ParseTree Parser::parseBasicValue() {
+  if (token().is(Token::identifier)) {
+    return parseIdentifier();
+  } else if (token().is(Token::number)) {
+    return parseIntegerLiteral();
+  } else {
+    error.report(token(), "error: expected value");
+    throw ParseTree::BasicValue;
+  }
 }
 
 ParseTree Parser::parseBinaryExpr() {
-  ParseTree lhs;
 
-  if (token().is(Token::identifier)) {
-    lhs = parseIdentifier();
-  } else if (token().is(Token::number)) {
-    lhs = parseIntegerLiteral();
-  } else {
-    assert(false && "error: parse binary operator");
-  }
+  try {
 
-  if (token().is(Token::operator_identifier)) {
-    ParseTree op = parseOperator();
-    ParseTree rhs = parseBinaryExpr();
-    return {ParseTree::BinaryExpr, {lhs, op, rhs}};
-  } else {
-    return lhs;
+    ParseTree lhs = parseBasicValue();
+    if (token().is(Token::operator_identifier)) {
+      ParseTree op = parseOperator();
+      ParseTree rhs = parseBinaryExpr();
+      return {ParseTree::BinaryExpr, {lhs, op, rhs}};
+    } else return lhs;
+
+  } catch (ParseTree::Type err) {
+    throw ParseTree::BinaryExpr;
   }
 }
 
 ParseTree Parser::parseDecl() {
-  if (token().is(Token::key_var)) {
-    return {ParseTree::Decl,{parseVarDecl()}};
-  } else if (token().is(Token::key_let)) {
-    return {ParseTree::Decl,{parseConstDecl()}};
-  } else if (token().is(Token::key_func)) {
-    return {ParseTree::Decl,{parseFuncDecl()}};
-  } else {
-    assert(false && "error: parse decl");
+  try {
+    if (token().is(Token::key_var)) {
+      return parseVarDecl();
+    } else if (token().is(Token::key_let)) {
+      return parseConstDecl();
+    } else if (token().is(Token::key_func)) {
+      return parseFuncDecl();
+    } else {
+      error.report(token(), "error: expected declaration");
+      throw ParseTree::Decl;
+    }
+  } catch (ParseTree::Type err) {
+    throw ParseTree::Decl;
   }
 }
 
 ParseTree Parser::parseVarDecl() {
-  ParseTree key = {ParseTree::Terminal, {token()}};
-  consume();
-  ParseTree id = {ParseTree::Terminal, {token()}};
-  consume();
-  ParseTree col = {ParseTree::Terminal, {token()}};
-  consume();
-  ParseTree type = {ParseTree::Terminal, {token()}};
-  consume();
-  return {ParseTree::VarDecl, {key, id, col, type}};
+  try {
+    ParseTree key = parseTerminal(Token::key_var, "var");
+    ParseTree id = parseIdentifier();
+    ParseTree col = parseTerminal(Token::colon, ":");
+    ParseTree type = parseIdentifier();
+    return {ParseTree::VarDecl, {key, id, col, type}};
+  } catch (ParseTree::Type) {
+    error.report(token(), "error: expected variable declation");
+    throw ParseTree::VarDecl;
+  }
 }
 
 ParseTree Parser::parseConstDecl() {
-  ParseTree key = {ParseTree::Terminal, {token()}};
-  consume();
-  ParseTree id = {ParseTree::Identifier, {token()}};
-  consume();
-  ParseTree col = {ParseTree::Terminal, {token()}};
-  consume();
-  ParseTree type = {ParseTree::Identifier, {token()}};
-  consume();
-  return {ParseTree::ConstDecl, {key, id, col, type}};
+  try {
+    ParseTree key = parseTerminal(Token::key_let, "let");
+    ParseTree id = parseIdentifier();
+    ParseTree col = parseTerminal(Token::colon, ":");
+    ParseTree type = parseIdentifier();
+    return {ParseTree::ConstDecl, {key, id, col, type}};
+  } catch (ParseTree::Type) {
+    error.report(token(), "error: expected constant variable declation");
+    throw ParseTree::ConstDecl;
+  }
 }
 
 ParseTree Parser::parseParamDecl() {
-  ParseTree id = {ParseTree::Terminal, {token()}};
-  consume();
-  ParseTree col = {ParseTree::Terminal, {token()}};
-  consume();
-  ParseTree type = {ParseTree::Terminal, {token()}};
-  consume();
-  return {ParseTree::ParamDecl, {id, col, type}};
+  try {
+    ParseTree id = parseIdentifier();
+    ParseTree col = parseTerminal(Token::colon, ":");
+    ParseTree type = parseIdentifier();
+    return {ParseTree::ParamDecl, {id, col, type}};
+  } catch (ParseTree::Type) {
+    error.report(token(), "error: expected parameter declaration");
+    throw ParseTree::ParamDecl;
+  }
 }
-
 
 ParseTree Parser::parseParamDeclList() {
   std::vector<ParseTree> decls;
@@ -144,59 +181,52 @@ ParseTree Parser::parseParamDeclList() {
 }
 
 ParseTree Parser::parseFuncDecl() {
-  ParseTree func = {ParseTree::Terminal, token()};
-  consume();
+  try {
+    ParseTree func = parseTerminal(Token::key_func, "func");
 
-  ParseTree id = {ParseTree::Identifier, token()};
-  consume();
+    ParseTree id;
 
-  ParseTree lp = {ParseTree::Terminal, token()};
-  consume();
+    try {
+      id = parseIdentifier();
+    } catch(ParseTree::Type err) {
+      if (token().isNot(Token::l_paren)) throw err;
+      id = ParseTree{ParseTree::Identifier, Token()};
+    }
 
-  ParseTree param = parseParamDeclList();
-
-  ParseTree rp = {ParseTree::Terminal, token()};
-  consume();
-
-  ParseTree arrow = {ParseTree::Terminal, token()};
-  consume();
-
-  ParseTree retType = {ParseTree::Identifier, token()};
-  consume();
-
-  ParseTree block = parseBlockStmt();
-
-  return {ParseTree::FuncDecl, {func, id, lp, param, rp, arrow, retType, block}};
-}
-
-ParseTree Parser::parseStmt() {
-  if (token().isAny({Token::key_var, Token::key_let})) {
-    return {ParseTree::Stmt,{parseDeclStmt()}};
-  } else if (token().is(Token::key_func)) {
-    return {ParseTree::Stmt,{parseFuncDecl()}};
-  } else if (token().is(Token::key_if)) {
-    return {ParseTree::Stmt,{parseIfStmt()}};
-  } else if (token().is(Token::key_while)) {
-    return {ParseTree::Stmt,{parseWhileStmt()}};
-  } else if (token().is(Token::key_return)) {
-    return {ParseTree::Stmt,{parseReturnStmt()}};
-  } else {
-    return {ParseTree::Stmt,{parseExprStmt()}};
+    ParseTree lp = parseTerminal(Token::l_paren, "(");
+    ParseTree param = parseParamDeclList();
+    ParseTree rp = parseTerminal(Token::r_paren, ")");
+    ParseTree arrow = parseTerminal(Token::operator_identifier, "->");
+    ParseTree retType = parseIdentifier();
+    ParseTree block = parseBlockStmt();
+    return {ParseTree::FuncDecl, {func, id, lp, param, rp, arrow, retType, block}};
+  } catch (ParseTree::Type) {
+    throw ParseTree::FuncDecl;
   }
 }
 
-ParseTree Parser::parseReturnStmt() {
-  ParseTree key = {ParseTree::Terminal, token()};
-  consume();
-
-  ParseTree expr = parseExpr();
-
-  ParseTree semi = {ParseTree::Terminal, token()};
-  consume();
-
-  return {ParseTree::ReturnStmt, {key, expr, semi}};
+ParseTree Parser::parseStmt() {
+  try {
+    if (token().isAny({Token::key_var, Token::key_let})) {
+      return parseDeclStmt();
+    } else if (token().is(Token::key_func)) {
+      return parseFuncDecl();
+    } else if (token().is(Token::key_if)) {
+      return parseIfStmt();
+    } else if (token().is(Token::key_while)) {
+      return parseWhileStmt();
+    } else if (token().is(Token::key_return)) {
+      return parseReturnStmt();
+    } else if (token().isAny({Token::number, Token::identifier})){
+      return parseExprStmt();
+    } else {
+      error.report(token(), "error: expected statement");
+      throw ParseTree::Stmt;
+    }
+  } catch (ParseTree::Type) {
+    throw ParseTree::Stmt;
+  }
 }
-
 
 ParseTree Parser::parseStmtList() {
   std::vector<ParseTree> stmts;
@@ -206,74 +236,76 @@ ParseTree Parser::parseStmtList() {
   return {ParseTree::StmtList, stmts};
 }
 
-ParseTree Parser::parseBlockStmt() {
-  ParseTree lb = {ParseTree::Terminal, token()};
-  consume();
-
-  ParseTree decl = parseStmtList();
-
-  if (token().isNot(Token::r_brace)) {
-    assert(false && "error: missing r_brace");
+ParseTree Parser::parseReturnStmt() {
+  try {
+    ParseTree key = parseTerminal(Token::key_return, "return");
+    ParseTree expr = parseExprStmt();
+    return {ParseTree::ReturnStmt, {key, expr}};
+  } catch (ParseTree::Type) {
+    error.report(token(), "error: expected return statement");
+    throw ParseTree::ReturnStmt;
   }
-
-  ParseTree rb = {ParseTree::Terminal, token()};
-  consume();
-
-  return {ParseTree::BlockStmt, {lb, decl, rb}};
 }
 
+ParseTree Parser::parseBlockStmt() {
+  try {
+    ParseTree lb = parseTerminal(Token::l_brace, "{");
+    ParseTree decl = parseStmtList();
+    ParseTree rb = parseTerminal(Token::r_brace, "}");
+    return {ParseTree::BlockStmt, {lb, decl, rb}};
+  } catch (ParseTree::Type) {
+    error.report(token(), "error: expected block statement");
+    throw ParseTree::BlockStmt;
+  }
+}
 
 ParseTree Parser::parseDeclStmt() {
-  ParseTree decl = parseDecl();
-  Token tok = token();
-  if (tok.is(Token::semi)) {
-    consume();
-    return {ParseTree::DeclStmt, {decl, {ParseTree::Terminal,tok}}};
+  try {
+    ParseTree decl = parseDecl();
+    ParseTree semi = parseTerminal(Token::semi, ";");
+    return {ParseTree::DeclStmt, {decl, semi}};
+  } catch (ParseTree::Type err) {
+    consumeUntil({Token::eof});
+    return {ParseTree::DeclStmt, Token()};
   }
-
-  assert(false && "error: parse decl-stmt");
 }
 
 ParseTree Parser::parseIfStmt() {
-  ParseTree key = {ParseTree::Terminal, token()};
-  consume();
-
-  ParseTree lp = {ParseTree::Terminal, token()};
-  consume();
-
-  ParseTree expr = parseExpr();
-
-  ParseTree rp = {ParseTree::Terminal, token()};
-  consume();
-
-  ParseTree block = parseBlockStmt();
-
-  return {ParseTree::IfStmt, {key, lp, expr, rp, block}};
+  try {
+    ParseTree key = parseTerminal(Token::key_if, "if");
+    ParseTree lp = parseTerminal(Token::l_paren, "(");
+    ParseTree expr = parseExpr();
+    ParseTree rp = parseTerminal(Token::r_paren, ")");
+    ParseTree block = parseBlockStmt();
+    return {ParseTree::IfStmt, {key, lp, expr, rp, block}};
+  } catch (ParseTree::Type) {
+    error.report(token(), "error: expected if statement");
+    throw ParseTree::IfStmt;
+  }
 }
 
 ParseTree Parser::parseWhileStmt() {
-  ParseTree key = {ParseTree::Terminal, token()};
-  consume();
-
-  ParseTree lp = {ParseTree::Terminal, token()};
-  consume();
-
-  ParseTree expr = parseExpr();
-
-  ParseTree rp = {ParseTree::Terminal, token()};
-  consume();
-
-  ParseTree block = parseBlockStmt();
-
-  return {ParseTree::WhileStmt, {key, lp, expr, rp, block}};
-}
-ParseTree Parser::parseExprStmt() {
-  ParseTree expr = parseExpr();
-  Token tok = token();
-  if (tok.is(Token::semi)) {
-    consume();
-    return {ParseTree::ExprStmt, {expr, {ParseTree::Terminal,tok}}};
+  try {
+    ParseTree key = parseTerminal(Token::key_while, "while");
+    ParseTree lp = parseTerminal(Token::l_paren, "(");
+    ParseTree expr = parseExpr();
+    ParseTree rp = parseTerminal(Token::r_paren, ")");
+    ParseTree block = parseBlockStmt();
+    return {ParseTree::WhileStmt, {key, lp, expr, rp, block}};
+  } catch (ParseTree::Type) {
+    error.report(token(), "error: expected while statement");
+    throw ParseTree::WhileStmt;
   }
+}
 
-  assert(false && "error: parse expr-stmt");
+ParseTree Parser::parseExprStmt() {
+  try {
+    ParseTree expr = parseExpr();
+    ParseTree semi = parseTerminal(Token::semi, ";");
+    return {ParseTree::ExprStmt, {expr, semi}};
+  } catch (ParseTree::Type err) {
+    if (err == ParseTree::Terminal) consumeUntil({Token::semi, Token::eof});
+    consume();
+    return {ParseTree::ExprStmt, Token()};
+  }
 }
