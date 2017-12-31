@@ -3,7 +3,10 @@ var beta: Int;
 
 a + a
 
+<<<<<<< HEAD
 func (a: Int, b: Int) -> void {
+=======
+>>>>>>> f153cfb3b75c972e451b07ce9ab041287603242a
   a+b;
   if (a>>=b) {
     return a+c b;
