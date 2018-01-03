@@ -1,11 +1,11 @@
-var alpha: Int;
-var beta: Int;
+func  add () -> int {
+  return a+b+5;
+}
 
-a + a
+func  add () -> int {
+  return 5+b+5;
+}
 
-func add(a: Int, b: Int) -> Int {
-  a+b;
-  if (a>>=b) {
-    return a+c b;
-  }
+func  add () -> int {
+  return a+b+5;
 }

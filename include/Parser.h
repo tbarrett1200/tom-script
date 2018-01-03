@@ -18,31 +18,27 @@ public:
   void consume();
   void consumeUntil(std::vector<int> types);
 
-  ParseTree parseOperator();
-  ParseTree parseTerminal(int type, std::string str);
+  Operator* parseOperator();
+  bool parseTerminal(int type, std::string str, bool expect);
 
-  ParseTree parseBasicValue();
-  ParseTree parseIntegerLiteral();
-  ParseTree parseIdentifier();
+  Expr* parseExpr();
+  Expr* parseBinaryExpr();
+  Expr* parseBasicValue();
+  IntegerLiteral* parseIntegerLiteral();
+  Identifier* parseIdentifier();
 
-  ParseTree parseExpr();
-  ParseTree parseBinaryExpr();
+  VarDecl* parseVarDecl();
+  VarDecl* parseParamDecl();
+  StmtList* parseParamList();
+  FuncDecl* parseFuncDecl();
 
-  ParseTree parseDecl();
-  ParseTree parseVarDecl();
-  ParseTree parseConstDecl();
-  ParseTree parseParamDecl();
-  ParseTree parseParamDeclList();
-  ParseTree parseFuncDecl();
-
-  ParseTree parseStmt();
-  ParseTree parseIfStmt();
-  ParseTree parseWhileStmt();
-  ParseTree parseReturnStmt();
-  ParseTree parseExprStmt();
-  ParseTree parseDeclStmt();
-  ParseTree parseStmtList();
-  ParseTree parseBlockStmt();
+  Stmt* parseStmt();
+  IfStmt* parseIfStmt();
+  WhileStmt* parseWhileStmt();
+  ReturnStmt* parseReturnStmt();
+  ExprStmt* parseExprStmt();
+  StmtList* parseStmtList();
+  BlockStmt* parseBlockStmt();
 };
 
 #endif
