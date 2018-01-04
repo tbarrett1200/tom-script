@@ -23,7 +23,7 @@ public:
 
   Expr* parseExpr();
   Expr* parseBinaryExpr();
-  Expr* parseBasicValue();
+  Expr* parseValueExpr();
   IntegerLiteral* parseIntegerLiteral();
   Identifier* parseIdentifier();
 

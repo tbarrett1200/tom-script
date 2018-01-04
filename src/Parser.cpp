@@ -77,16 +77,22 @@ Identifier* Parser::parseIdentifier() {
   }
 }
 
-Expr* Parser::parseBasicValue() {
+Expr* Parser::parseValueExpr() {
   if (token().is(Token::identifier)) {
     return parseIdentifier();
   } else if (token().is(Token::number)) {
     return parseIntegerLiteral();
+  } else if (token().is(Token::l_paren)) {
+    if (!parseTerminal(Token::l_paren, "(")) return nullptr;
+    Expr* expr = parseExpr();
+    if (!expr) return nullptr;
+    if (!parseTerminal(Token::r_paren, ")")) return nullptr;
+    return expr;
   } else return nullptr;
 }
 
 Expr* Parser::parseBinaryExpr() {
-    Expr* lhs = parseBasicValue();
+    Expr* lhs = parseValueExpr();
     if (!lhs) {
       error.report(token(), "error: expected value");
       return nullptr;
