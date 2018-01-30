@@ -19,6 +19,19 @@ test:8:15: error: expected ;
 ```
 
 # Unit Test Coverage
+## Completed
+* SourceCode
+* Token
+## In Progress
+* Lexer
+## Future
+* ErrorReporter
+* Parser
+* SymbolAnnotator
+* SymbolChecker
+* Symbols
+* Tree
+* Visitor
 ```
 make: `test' is up to date.
 Running main() from gtest_main.cc
@@ -77,9 +90,9 @@ Running main() from gtest_main.cc
 
 # Formal Language Specification (BNF)
 This language is LL(1)... however, the current language specification is not
-properly LL(1), but can be rewritten. The handwritten recursive descent parser
+properly LL(1), but can be rewritten as such. The handwritten recursive descent parser
 uses some procedural logic to simplify the parsing process. This can be noticed
-in the <param-list> definition.
+in the param-list definition.
 
 Note: Make sure to update this specification as the Parser is modified.
 ```
