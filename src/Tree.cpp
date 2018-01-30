@@ -1,22 +1,43 @@
 #include "Visitor.h"
 #include "Tree.h"
 
-IntegerLiteral::IntegerLiteral(string l)
-  : lexeme{l} {}
+IntLiteral::IntLiteral(Token l)
+  : token{l} {}
 
-void IntegerLiteral::accept(class Visitor &v) {
+void IntLiteral::accept(class Visitor &v) {
   return v.visit(this);
 };
 
-Identifier::Identifier(string l)
-  : lexeme{l} {}
+DoubleLiteral::DoubleLiteral(Token l)
+  : token{l} {}
+
+void DoubleLiteral::accept(class Visitor &v) {
+  return v.visit(this);
+};
+
+StringLiteral::StringLiteral(Token l)
+  : token{l} {}
+
+void StringLiteral::accept(class Visitor &v) {
+  return v.visit(this);
+};
+
+Identifier::Identifier(Token l)
+  : token{l} {}
 
 void Identifier::accept(class Visitor &v) {
   return v.visit(this);
 };
 
-Operator::Operator(string l)
-  : lexeme{l} {}
+Type::Type(Token l)
+  : token{l} {}
+
+void Type::accept(class Visitor &v) {
+  return v.visit(this);
+};
+
+Operator::Operator(Token l)
+  : token{l} {}
 
 void Operator::accept(class Visitor &v) {
   return v.visit(this);
@@ -43,14 +64,14 @@ void BlockStmt::accept(class Visitor &v) {
   return v.visit(this);
 };
 
-VarDecl::VarDecl(Identifier* n, Identifier* t)
+VarDecl::VarDecl(Identifier* n, Type* t)
   : name{n}, type{t} {}
 
 void VarDecl::accept(class Visitor &v) {
   return v.visit(this);
 };
 
-FuncDecl::FuncDecl(Identifier* n, StmtList* p, Identifier* r, BlockStmt* s)
+FuncDecl::FuncDecl(Identifier* n, StmtList* p, Type* r, BlockStmt* s)
   : name{n}, params{p}, retType{r}, stmt{s} {}
 
 void FuncDecl::accept(class Visitor &v) {
@@ -82,5 +103,11 @@ ReturnStmt::ReturnStmt(Expr* e)
   : expr{e} {}
 
 void ReturnStmt::accept(class Visitor &v) {
+  return v.visit(this);
+};
+
+Program::Program(StmtList* s) : block{new BlockStmt(s)}{}
+
+void Program::accept(class Visitor &v) {
   return v.visit(this);
 };

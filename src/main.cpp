@@ -3,14 +3,25 @@
 
 #include <iostream>
 #include "Visitor.h"
+#include "Visitor.h"
+#include "SymbolAnnotator.h"
+#include "SymbolChecker.h"
 
 int main(int argc, char const *argv[]) {
-  FileBuffer file{"test"};
-  ErrorReporter err{file};
-  Parser parse {"test", err};
-  StmtList* node = parse.parseStmtList();
-  if (node==nullptr) return 0;
-  PrintVisitor p{};
-  node->accept(p);
+  std::string path = argv[1];
+  SourceCode source{path};
+
+  Program* node = Parser(&source).parseProgram();
+
+  if (node!=nullptr) {
+    PrintVisitor print{};
+    node->accept(print);
+
+    //SymbolAnnotator annotate{};
+    //node->accept(annotate);
+    //SymbolChecker check{&source};
+    //node->accept(check);
+  }
+
   return 0;
 }

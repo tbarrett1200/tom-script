@@ -1,18 +1,9 @@
 #include "Lexer.h"
-#include "Token.h"
+#include "ErrorReporter.h"
 
-#include <fstream>
-#include <set>
 using std::string;
 
-Lexer::Lexer(string path, ErrorReporter &err) : cLoc{-1}, cCol{-1}, error{err} {
-  using std::ifstream;
-  ifstream disk{path};
-
-  while (!disk.eof()) {
-    file.push_back(disk.get());
-  }
-}
+Lexer::Lexer(SourceCode *src) : source{src}, cLoc{-1}, cCol{-1}, cRow{0} {}
 
 bool Lexer::advanceIf(bool i) {
   if (i) {
@@ -22,7 +13,7 @@ bool Lexer::advanceIf(bool i) {
 
 void Lexer::advance() {
   cLoc++;
-  if (file[cLoc] == '\n') {
+  if (source->getChar(cLoc) == '\n') {
     cRow++;
     cCol = -1;
   } else {
@@ -31,12 +22,12 @@ void Lexer::advance() {
 }
 
 char Lexer::at(int index) {
-  return file[cLoc+index];
+  return source->getChar(cLoc+index);
 }
 
 Token Lexer::lexIdentifier()  {
   string lexeme = string(1, at());
-  while (std::isalpha(at(1))) {
+  while (std::isalnum(at(1)) || at(1)=='_') {
     advance();
     lexeme += at();
   }
@@ -87,31 +78,28 @@ Token Lexer::lexNumber() {
     }
   }
 
-  return Token(lexeme, Token::number, sLoc, sRow, sCol);
-}
-
-auto  Lexer::lexCharLiteral() -> Token {
-  string lexeme = string(1, at());
-  advance();
-
-  if (at() == '\\') {
-    lexeme += '\\';
-    advance();
+  if (std::isalpha(at(1))) {
+    while(std::isalpha(at(1))) {
+      advance();
+      lexeme += at();
+    }
+    ErrorReporter{source}.report(sRow, sCol, "error: identifier cannot start with digit");
+    return Token(lexeme, Token::unknown, sLoc, sRow, sCol);
   }
 
-  lexeme += at();
-  lexeme += at();
-
-  return Token(lexeme, Token::char_literal, sLoc, sRow, sCol);
+  return Token(lexeme, Token::number, sLoc, sRow, sCol);
 }
 
 auto  Lexer::lexStringLiteral() -> Token {
   string lexeme = string(1, at());
 
   while (at(1) != '"' || at() == '\\') {
-    lexeme += at();
     advance();
+    lexeme += at();
   }
+
+  advance();
+  lexeme += at();
 
   return Token(lexeme, Token::string_literal, sLoc, sRow, sCol);
 }
@@ -217,7 +205,7 @@ Token Lexer::next() {
     switch (at()) {
 
     default:
-      error.report(sRow, sCol, "error: unknown token");
+      ErrorReporter{source}.report(sRow, sCol, "error: unknown token");
       return Token(string(1,at()), Token::unknown, sLoc, sRow, sCol);
 
     case '\n':
@@ -277,8 +265,5 @@ Token Lexer::next() {
 
     case '"':
       return lexStringLiteral();
-
-    case '\'':
-      return lexCharLiteral();
     }
 }

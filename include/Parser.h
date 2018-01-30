@@ -8,11 +8,11 @@
 #include "Tree.h"
 
 class Parser {
-  ErrorReporter &error;
+  SourceCode *source;
   Lexer lexer;
   std::deque<Token> tokens;
 public:
-  Parser(std::string path, ErrorReporter &err);
+  Parser(SourceCode *source);
 
   Token token(int index=0);
   void consume();
@@ -24,8 +24,12 @@ public:
   Expr* parseExpr();
   Expr* parseBinaryExpr();
   Expr* parseValueExpr();
-  IntegerLiteral* parseIntegerLiteral();
+  IntLiteral* parseIntLiteral();
+  DoubleLiteral* parseDoubleLiteral();
+  StringLiteral* parseStringLiteral();
+
   Identifier* parseIdentifier();
+  Type* parseType();
 
   VarDecl* parseVarDecl();
   VarDecl* parseParamDecl();
@@ -39,6 +43,8 @@ public:
   ExprStmt* parseExprStmt();
   StmtList* parseStmtList();
   BlockStmt* parseBlockStmt();
+  Program* parseProgram();
+
 };
 
 #endif

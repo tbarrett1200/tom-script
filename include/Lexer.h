@@ -4,21 +4,21 @@
 #include <string>
 
 #include "Token.h"
-#include "ErrorReporter.h"
+#include "SourceCode.h"
 
+// Splits a source file into
 class Lexer {
-  ErrorReporter &error;
-  std::string file;
-  int cRow;
-  int cCol;
-  int cLoc;
-  int sRow;
-  int sCol;
-  int sLoc;
-public:
-  Lexer(std::string path, ErrorReporter &err);
-  Token next();
 private:
+  SourceCode *source;
+  // lcation data for the current character in the file
+  int cRow; //row
+  int cCol; //col
+  int cLoc; //index
+  // location data for the start character in the file
+  int sRow; //row
+  int sCol; //col
+  int sLoc; //index
+
   void advance();
   bool advanceIf(bool);
   char at(int index = 0);
@@ -29,6 +29,10 @@ private:
   Token lexOperatorIdentifier();
   void skipSlashStarComment();
   void skipSlashSlashComment();
+
+public:
+  Lexer(SourceCode*);
+  Token next();
 };
 
 #endif

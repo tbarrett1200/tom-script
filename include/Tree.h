@@ -2,6 +2,10 @@
 #define TREE_H
 
 #include "Token.h"
+#include "Symbols.h"
+
+#include <utility>
+#include <vector>
 
 using namespace std;
 
@@ -9,37 +13,77 @@ class Visitor;
 
 class Tree {
 public:
+  shared_ptr<SymbolTable> context;
   virtual void accept(Visitor &v) = 0;
 };
 
 class Expr: public Tree {
 public:
+  enum Type {
+    Int, Double, String, Function
+  };
+  Expr::Type type;
   virtual void accept(Visitor &v) = 0;
 };
 
-class Stmt: public Tree {
+class ExprList: public Tree {
 public:
-  virtual void accept(Visitor &v) = 0;
+  unique_ptr<Expr> stmt;
+  unique_ptr<ExprList> next;
+  ExprList(Expr*,ExprList*);
+  void accept(Visitor &v);
 };
 
-class IntegerLiteral: public Expr {
+class StringLiteral: public Expr {
 public:
-  string lexeme;
-  IntegerLiteral(string);
+  Expr::Type type = Expr::Type::String;
+  Token token;
+  StringLiteral(Token);
+  void accept(Visitor &v);
+};
+
+class IntLiteral: public Expr {
+public:
+  Expr::Type type = Expr::Type::Int;
+  Token token;
+  IntLiteral(Token);
+  void accept(Visitor &v);
+};
+
+class DoubleLiteral: public Expr {
+public:
+  Expr::Type type = Expr::Type::Double;
+  Token token;
+  DoubleLiteral(Token);
   void accept(Visitor &v);
 };
 
 class Identifier: public Expr {
 public:
-  string lexeme;
-  Identifier(string);
+  Token token;
+  Identifier(Token);
+  void accept(Visitor &v);
+};
+
+class FunctionCall: public Expr {
+public:
+  unique_ptr<Identifier> name;
+  unique_ptr<ExprList> arguments;
+  FunctionCall(Token);
+  void accept(Visitor &v);
+};
+
+class Type: public Expr {
+public:
+  Token token;
+  Type(Token);
   void accept(Visitor &v);
 };
 
 class Operator: public Tree {
 public:
-  string lexeme;
-  Operator(string);
+  Token token;
+  Operator(Token);
   void accept(Visitor &v);
 };
 
@@ -50,6 +94,12 @@ public:
   unique_ptr<Expr> right;
   BinaryExpr(Expr*, Operator*, Expr*);
   void accept(Visitor &v);
+};
+
+
+class Stmt: public Tree {
+public:
+  virtual void accept(Visitor &v) = 0;
 };
 
 class StmtList: public Tree {
@@ -70,8 +120,8 @@ public:
 class VarDecl: public Stmt {
 public:
   unique_ptr<Identifier> name;
-  unique_ptr<Identifier> type;
-  VarDecl(Identifier*, Identifier*);
+  unique_ptr<Type> type;
+  VarDecl(Identifier*, Type*);
   void accept(Visitor &v);
 };
 
@@ -79,9 +129,9 @@ class FuncDecl: public Stmt {
 public:
   unique_ptr<Identifier> name;
   unique_ptr<StmtList> params;
-  unique_ptr<Identifier> retType;
+  unique_ptr<Type> retType;
   unique_ptr<BlockStmt> stmt;
-  FuncDecl(Identifier*, StmtList*, Identifier*, BlockStmt*);
+  FuncDecl(Identifier*, StmtList*, Type*, BlockStmt*);
   void accept(Visitor &v);
 };
 
@@ -112,6 +162,13 @@ class ReturnStmt: public Stmt {
 public:
   unique_ptr<Expr> expr;
   ReturnStmt(Expr*);
+  void accept(Visitor &v);
+};
+
+class Program: public Stmt {
+public:
+  unique_ptr<BlockStmt> block;
+  Program(StmtList*);
   void accept(Visitor &v);
 };
 

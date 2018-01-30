@@ -1,14 +1,26 @@
 #include "Visitor.h"
 #include <iostream>
+#include "ErrorReporter.h"
 
-void PrintVisitor::visit(IntegerLiteral* t) {
-  std::cout << t->lexeme;
+ErrorReporter *error;
+
+void PrintVisitor::visit(IntLiteral* t) {
+  std::cout << t->token.lexeme;
+}
+void PrintVisitor::visit(DoubleLiteral* t) {
+  std::cout << t->token.lexeme;
+}
+void PrintVisitor::visit(StringLiteral* t) {
+  std::cout << t->token.lexeme;
 }
 void PrintVisitor::visit(Identifier* t) {
-  std::cout << t->lexeme;
+  std::cout << t->token.lexeme;
+}
+void PrintVisitor::visit(Type* t) {
+  std::cout << t->token.lexeme;
 }
 void PrintVisitor::visit(Operator* t) {
-  std::cout << t->lexeme;
+  std::cout << t->token.lexeme;
 }
 void PrintVisitor::visit(BinaryExpr* t) {
   t->left->accept(*this);
@@ -55,6 +67,14 @@ void PrintVisitor::visit(WhileStmt* t) {
   std::cout << ")";
   t->stmt->accept(*this);
 }
+void PrintVisitor::visit(FunctionCall* t) {
+  std::cout << "function call" << std::endl;
+}
+
+void PrintVisitor::visit(ExprList* t) {
+  std::cout << "expr-list" << std::endl;
+}
+
 void PrintVisitor::visit(ExprStmt* t) {
   t->expr->accept(*this);
   std::cout << ";" << std::endl;
@@ -63,4 +83,7 @@ void PrintVisitor::visit(ReturnStmt* t) {
   std::cout << "return ";
   t->expr->accept(*this);
   std::cout << ";" << std::endl;
+}
+void PrintVisitor::visit(Program* t) {
+  t->block->accept(*this);
 }

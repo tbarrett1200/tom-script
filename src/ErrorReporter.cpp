@@ -2,14 +2,20 @@
 
 #include <iostream>
 
-ErrorReporter::ErrorReporter(FileBuffer &f) : file{f} {}
+ErrorReporter::ErrorReporter(SourceCode *src) : source{src} {}
 
 void ErrorReporter::report(int r, int c, std::string err) {
-  std::cout << file.path << ":" << r << ":"<< c << ": " << err << std::endl;
-  std::cout << file.getLine(r) << std::endl;
-  std::cout << std::string(c, ' ') << '^' << std::endl;
+  if (!ErrorReporter::mute) {
+    globalStream << source->getPath() << ":" << r << ":"<< c << ": " << err << std::endl;
+    globalStream << source->getLine(r) << std::endl;
+    globalStream << std::string(c, ' ') << '^' << std::endl;
+  }
 }
 
 void ErrorReporter::report(Token t, std::string err) {
   report(t.row, t.col, err);
 }
+
+
+bool ErrorReporter::mute = false;
+std::ostream &ErrorReporter::globalStream = std::cerr;

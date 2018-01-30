@@ -19,21 +19,33 @@ Token::Token() {
   col = 0;
 }
 
-bool Token::is(int type) {
-  return this->type == type;
+bool Token::is(int t) {
+  return type == t;
 }
 
-bool Token::isNot(int type) {
-  return this->type != type;
+bool Token::isNot(int t) {
+  return type != t;
 }
 
 bool Token::isAny(std::vector<int> types) {
-  for(auto type: types) {
-    if (this->type == type) {
+  for(auto t: types) {
+    if (type == t) {
       return true;
     }
   }
   return false;
+}
+
+bool Token::isIntLiteral() {
+  if (is(number)) {
+    return lexeme.find(".") == std::string::npos;
+  } return false;
+}
+
+bool Token::isDoubleLiteral() {
+  if (is(number)) {
+    return lexeme.find(".") != std::string::npos;
+  } return false;
 }
 
 std::ostream& operator<<(std::ostream& os, const Token& t) {

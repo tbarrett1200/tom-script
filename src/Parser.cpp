@@ -1,10 +1,11 @@
 #include "Parser.h"
 #include "Token.h"
 #include "Tree.h"
+#include "ErrorReporter.h"
 
 #include <assert.h>
 
-Parser::Parser(std::string path, ErrorReporter &err) : lexer{path, err}, error{err} {
+Parser::Parser(SourceCode *src) : source{src}, lexer{src} {
   while(true) {
     Token t = lexer.next();
     if (t.is(Token::eof)) break;
@@ -42,26 +43,47 @@ bool Parser::parseTerminal(int type, std::string str, bool expect = true) {
     consume();
     return true;
   } else {
-    if (expect) error.report(tok, std::string("error: expected ") + str);
+    if (expect) ErrorReporter{source}.report(tok, std::string("Error: expected ") + str);
     return false;
   }
 }
 
-IntegerLiteral* Parser::parseIntegerLiteral() {
+IntLiteral* Parser::parseIntLiteral() {
   Token tok = token();
-  if (tok.is(Token::number)) {
+  if (tok.is(Token::number) && tok.isIntLiteral()) {
     consume();
-    return new IntegerLiteral(tok.lexeme);
+    return new IntLiteral(tok);
   } else {
     return nullptr;
   }
 }
 
+DoubleLiteral* Parser::parseDoubleLiteral() {
+  Token tok = token();
+  if (tok.is(Token::number) && tok.isDoubleLiteral()) {
+    consume();
+    return new DoubleLiteral(tok);
+  } else {
+    return nullptr;
+  }
+}
+
+StringLiteral* Parser::parseStringLiteral() {
+  Token tok = token();
+  if (tok.is(Token::string_literal)) {
+    consume();
+    return new StringLiteral(tok);
+  } else {
+    return nullptr;
+  }
+}
+
+
 Operator* Parser::parseOperator() {
   Token tok = token();
   if (tok.is(Token::operator_identifier)) {
     consume();
-    return new Operator(tok.lexeme);
+    return new Operator(tok);
   } else {
     return nullptr;
   }
@@ -71,7 +93,17 @@ Identifier* Parser::parseIdentifier() {
   Token tok = token();
   if (tok.is(Token::identifier)) {
     consume();
-    return new Identifier(tok.lexeme);
+    return new Identifier(tok);
+  } else {
+    return nullptr;
+  }
+}
+
+Type* Parser::parseType() {
+  Token tok = token();
+  if (tok.is(Token::identifier)) {
+    consume();
+    return new Type(tok);
   } else {
     return nullptr;
   }
@@ -80,8 +112,12 @@ Identifier* Parser::parseIdentifier() {
 Expr* Parser::parseValueExpr() {
   if (token().is(Token::identifier)) {
     return parseIdentifier();
-  } else if (token().is(Token::number)) {
-    return parseIntegerLiteral();
+  } else if (token().isIntLiteral()) {
+    return parseIntLiteral();
+  } else if (token().isDoubleLiteral()) {
+    return parseDoubleLiteral();
+  } else if (token().is(Token::string_literal)) {
+    return parseStringLiteral();
   } else if (token().is(Token::l_paren)) {
     if (!parseTerminal(Token::l_paren, "(")) return nullptr;
     Expr* expr = parseExpr();
@@ -94,7 +130,7 @@ Expr* Parser::parseValueExpr() {
 Expr* Parser::parseBinaryExpr() {
     Expr* lhs = parseValueExpr();
     if (!lhs) {
-      error.report(token(), "error: expected value");
+      ErrorReporter{source}.report(token(), "Error: expected value");
       return nullptr;
     }
     if (token().is(Token::operator_identifier)) {
@@ -109,7 +145,7 @@ VarDecl* Parser::parseVarDecl() {
   Identifier* id = parseIdentifier();
   if (!id) return nullptr;
   if (!parseTerminal(Token::colon, ":")) return nullptr;
-  Identifier* type = parseIdentifier();
+  Type* type = parseType();
   if (!type) return nullptr;
   if (!parseTerminal(Token::semi, ";")) return nullptr;
   return new VarDecl(id, type);
@@ -119,7 +155,7 @@ VarDecl*  Parser::parseParamDecl() {
   Identifier* id = parseIdentifier();
   if (!id) return nullptr;
   if (!parseTerminal(Token::colon, ":")) return nullptr;
-  Identifier* type = parseIdentifier();
+  Type* type = parseType();
   if (!type) return nullptr;
   return new VarDecl(id, type);
 }
@@ -129,7 +165,7 @@ StmtList* Parser::parseParamList() {
   if (!stmt) return nullptr;
   if (!parseTerminal(Token::comma, ",", false)) return new StmtList(stmt, nullptr);
   StmtList* next = parseParamList();
-  if (next == nullptr) error.report(token(), "error: extreneous comma");
+  if (next == nullptr) ErrorReporter{source}.report(token(), "Error: extreneous comma");
   return new StmtList(stmt, next);
 }
 
@@ -141,7 +177,7 @@ FuncDecl* Parser::parseFuncDecl() {
   StmtList* params = parseParamList();
   if (!parseTerminal(Token::r_paren, ")")) return nullptr;
   if (!parseTerminal(Token::operator_identifier, "->")) return nullptr;
-  Identifier* ret = parseIdentifier();
+  Type* ret = parseType();
   if (!ret) return nullptr;
   BlockStmt* block = parseBlockStmt();
   if (!block) return nullptr;
@@ -150,6 +186,7 @@ FuncDecl* Parser::parseFuncDecl() {
 
 Stmt* Parser::parseStmt() {
     if (token().is(Token::key_var)) return parseVarDecl();
+    else if (token().is(Token::l_brace)) return parseBlockStmt();
     else if (token().is(Token::key_func)) return parseFuncDecl();
     else if (token().is(Token::key_if)) return parseIfStmt();
     else if (token().is(Token::key_while)) return parseWhileStmt();
@@ -208,4 +245,12 @@ WhileStmt* Parser::parseWhileStmt() {
   BlockStmt* block = parseBlockStmt();
   if (!block) return nullptr;
   return new WhileStmt(cond, block);
+}
+
+Program* Parser::parseProgram() {
+  StmtList* stmts = parseStmtList();
+  if (!token().is(Token::eof)) {
+    ErrorReporter{source}.report(0, 0, "Error: expected end of file");
+  }
+  return new Program(stmts);
 }

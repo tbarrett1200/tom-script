@@ -1,2 +1,2 @@
-make
-./project
+make project
+./project testFile
