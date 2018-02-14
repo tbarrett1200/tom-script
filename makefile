@@ -18,7 +18,7 @@ clean:
 tst_src = $(wildcard test/src/*.cpp)
 tst_obj = $(patsubst test/src/%.cpp, test/obj/%.o, $(tst_src))
 
-test: $(tst_obj) obj/SourceCode.o obj/Lexer.o obj/ErrorReporter.o obj/Token.o
+test: $(tst_obj) $(obj)
 	$(CC) $^ -o -lpthread -lgtest -lgtest_main -o test/$@
 
 test/obj/%.o: test/src/%.cpp $(inc)

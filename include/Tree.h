@@ -6,7 +6,7 @@
 
 #include <utility>
 #include <vector>
-
+#include <functional>
 using namespace std;
 
 class Visitor;
@@ -15,6 +15,12 @@ class Tree {
 public:
   shared_ptr<SymbolTable> context;
   virtual void accept(Visitor &v) = 0;
+};
+
+template <class T> class List {
+public:
+  shared_ptr<T> next;
+  List<T> filter(std::function<bool(T,int,List<T>)>);
 };
 
 class Expr: public Tree {
@@ -69,7 +75,7 @@ class FunctionCall: public Expr {
 public:
   unique_ptr<Identifier> name;
   unique_ptr<ExprList> arguments;
-  FunctionCall(Token);
+  FunctionCall(Identifier*, ExprList*);
   void accept(Visitor &v);
 };
 
@@ -121,7 +127,8 @@ class VarDecl: public Stmt {
 public:
   unique_ptr<Identifier> name;
   unique_ptr<Type> type;
-  VarDecl(Identifier*, Type*);
+  unique_ptr<Expr> value;
+  VarDecl(Identifier*, Type*, Expr*);
   void accept(Visitor &v);
 };
 

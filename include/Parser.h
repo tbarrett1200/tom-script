@@ -24,6 +24,8 @@ public:
   Expr* parseExpr();
   Expr* parseBinaryExpr();
   Expr* parseValueExpr();
+  ExprList* parseExprList();
+  FunctionCall* parseFunctionCall();
   IntLiteral* parseIntLiteral();
   DoubleLiteral* parseDoubleLiteral();
   StringLiteral* parseStringLiteral();

@@ -1,6 +1,7 @@
 #include "Visitor.h"
 #include "Tree.h"
 
+
 IntLiteral::IntLiteral(Token l)
   : token{l} {}
 
@@ -57,15 +58,21 @@ void StmtList::accept(class Visitor &v) {
   return v.visit(this);
 }
 
-BlockStmt::BlockStmt(StmtList* s)
-  : stmts{s} {}
+ExprList::ExprList(Expr* s, ExprList* n)
+  : stmt{s}, next{n} {}
+
+void ExprList::accept(class Visitor &v) {
+  return v.visit(this);
+}
+
+BlockStmt::BlockStmt(StmtList* s): stmts{s} {}
 
 void BlockStmt::accept(class Visitor &v) {
   return v.visit(this);
 };
 
-VarDecl::VarDecl(Identifier* n, Type* t)
-  : name{n}, type{t} {}
+VarDecl::VarDecl(Identifier* n, Type* t, Expr *e)
+  : name{n}, type{t}, value{e} {}
 
 void VarDecl::accept(class Visitor &v) {
   return v.visit(this);
@@ -75,6 +82,12 @@ FuncDecl::FuncDecl(Identifier* n, StmtList* p, Type* r, BlockStmt* s)
   : name{n}, params{p}, retType{r}, stmt{s} {}
 
 void FuncDecl::accept(class Visitor &v) {
+  return v.visit(this);
+};
+
+FunctionCall::FunctionCall(Identifier* id, ExprList* list) : name{id}, arguments{list} {}
+
+void FunctionCall::accept(class Visitor &v) {
   return v.visit(this);
 };
 

@@ -6,24 +6,24 @@
 
 class Visitor {
 public:
-   virtual void visit(IntLiteral*) = 0;
-   virtual void visit(DoubleLiteral*) = 0;
-   virtual void visit(StringLiteral*) = 0;
-   virtual void visit(Identifier*) = 0;
-   virtual void visit(Type*) = 0;
-   virtual void visit(Operator*) = 0;
-   virtual void visit(BinaryExpr*) = 0;
-   virtual void visit(StmtList*) = 0;
-   virtual void visit(BlockStmt*) = 0;
-   virtual void visit(VarDecl*) = 0;
-   virtual void visit(ExprList*) = 0;
-   virtual void visit(FunctionCall*) = 0;
-   virtual void visit(FuncDecl*) = 0;
-   virtual void visit(IfStmt*) = 0;
-   virtual void visit(WhileStmt*) = 0;
-   virtual void visit(ExprStmt*) = 0;
-   virtual void visit(ReturnStmt*) = 0;
-   virtual void visit(Program*) = 0;
+   virtual void visit(IntLiteral*);
+   virtual void visit(DoubleLiteral*);
+   virtual void visit(StringLiteral*);
+   virtual void visit(Identifier*);
+   virtual void visit(Type*);
+   virtual void visit(Operator*);
+   virtual void visit(BinaryExpr*);
+   virtual void visit(StmtList*);
+   virtual void visit(ExprList*);
+   virtual void visit(BlockStmt*);
+   virtual void visit(VarDecl*);
+   virtual void visit(FunctionCall*);
+   virtual void visit(FuncDecl*);
+   virtual void visit(IfStmt*);
+   virtual void visit(WhileStmt*);
+   virtual void visit(ExprStmt*);
+   virtual void visit(ReturnStmt*);
+   virtual void visit(Program*);
 };
 
 class PrintVisitor: public Visitor {
@@ -34,13 +34,11 @@ public:
   void visit(Identifier*);
   void visit(Type*);
   void visit(Operator*);
-  void visit(BinaryExpr*);
-  void visit(StmtList*);
   void visit(BlockStmt*);
   void visit(VarDecl*);
-  void visit(ExprList*);
-  void visit(FunctionCall*);
   void visit(FuncDecl*);
+  void visit(FunctionCall*);
+  void visit(ExprList*);
   void visit(IfStmt*);
   void visit(WhileStmt*);
   void visit(ExprStmt*);

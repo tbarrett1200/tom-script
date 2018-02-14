@@ -19,7 +19,7 @@ int main(int argc, char const *argv[]) {
 
     //SymbolAnnotator annotate{};
     //node->accept(annotate);
-    //SymbolChecker check{&source};
+  //  SymbolChecker check{&source};
     //node->accept(check);
   }
 

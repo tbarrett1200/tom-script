@@ -1,2 +1,4 @@
 make project
-./project testFile
+./project testFile > testFile.c
+cc testFile.c -o testExec
+./testExec
