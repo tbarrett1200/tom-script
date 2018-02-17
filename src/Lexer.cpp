@@ -7,7 +7,7 @@ Lexer::Lexer(SourceCode *src) : source{src}, cLoc{-1}, cCol{-1}, cRow{0} {}
 
 bool Lexer::advanceIf(bool i) {
   if (i) {
-    advance();
+    advance(); 
   } return i;
 }
 

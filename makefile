@@ -1,25 +1,35 @@
-src = $(wildcard src/*.cpp)
-obj = $(patsubst src/%.cpp, obj/%.o, $(src))
-inc = $(wildcard include/*.h)
+SRC = $(wildcard src/*.cpp)
+OBJ = $(patsubst src/%.cpp, obj/%.o, $(SRC))
 
-CC = clang++
-CFLAGS = -c -std=c++11
-HDIR = include
+TEST_SRC = $(wildcard src/*.cpp)
+TEST_OBJ = $(patsubst src/%.cpp, obj/%.o, $(SRC))
 
-project: $(obj)
-	$(CC) $^ -o $@
+CXX = clang++
+CXXFLAGS = -c -std=c++11 -I include
 
-obj/%.o: src/%.cpp $(inc)
-	$(CC) $< $(CFLAGS) -o $@ -I$(HDIR)
+all: test
 
-clean:
-	rm obj/*.o
+project: $(OBJ)
+	$(CXX) -o $@ $^
 
-tst_src = $(wildcard test/src/*.cpp)
-tst_obj = $(patsubst test/src/%.cpp, test/obj/%.o, $(tst_src))
+DEPDIR := .d
+OBJDIR := obj
 
-test: $(tst_obj) $(obj)
-	$(CC) $^ -o -lpthread -lgtest -lgtest_main -o test/$@
+$(shell mkdir -p $(DEPDIR) >/dev/null)
+$(shell mkdir -p $(OBJDIR) >/dev/null)
 
-test/obj/%.o: test/src/%.cpp $(inc)
-		$(CC) $< $(CFLAGS) -o $@ -I$(HDIR)
+DEPFLAGS = -MT $@ -MMD -MP -MF $(DEPDIR)/$*.Td
+
+COMPILE.cpp = $(CXX) $(DEPFLAGS) $(CXXFLAGS) $(CPPFLAGS) $(TARGET_ARCH) -c
+POSTCOMPILE = @mv -f $(DEPDIR)/$*.Td $(DEPDIR)/$*.d && touch $@
+
+obj/%.o : src/%.cpp
+obj/%.o : src/%.cpp $(DEPDIR)/%.d
+	$(COMPILE.cpp) $(OUTPUT_OPTION) $<
+	$(POSTCOMPILE)
+
+$(DEPDIR)/%.d: ;
+.PRECIOUS: $(DEPDIR)/%.d
+
+test:
+	include test/makefile
