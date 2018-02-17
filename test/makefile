@@ -1,13 +1,13 @@
 TEST_SRC = $(wildcard test/src/*.cpp)
 TEST_OBJ = $(patsubst test/src/%.cpp, test/obj/%.o, $(TEST_SRC))
 
+OBJ = $(filter-out obj/main.o, $(wildcard obj/*.o))
+
 CXX = clang++
-CXXFLAGS = -c -std=c++11  -I include
+CXXFLAGS = -c -g -std=c++11  -I include
 
-all: test/test
-
-test/test: $(TEST_OBJ)
-	$(CXX) -o $@ $^ -lpthread -lgtest -lgtest_main -std=c++14
+test/test: $(TEST_OBJ) $(OBJ)
+	$(CXX) -o $@ $^ -g -lpthread -lgtest -lgtest_main -std=c++14
 
 DEPDIR := test/.d
 TEST_OBJDIR := test/obj

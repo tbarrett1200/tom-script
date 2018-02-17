@@ -5,17 +5,21 @@ TEST_SRC = $(wildcard src/*.cpp)
 TEST_OBJ = $(patsubst src/%.cpp, obj/%.o, $(SRC))
 
 CXX = clang++
-CXXFLAGS = -c -std=c++11 -I include
+CXXFLAGS = -c -g -std=c++11 -I include
 
-all: test
+all: project test
+
+test: FORCE
+	$(shell make -f test/makefile > /dev/null)
+
+FORCE:
 
 project: $(OBJ)
-	$(CXX) -o $@ $^
+	$(CXX) -o $@ -g $^
 
 DEPDIR := .d
 OBJDIR := obj
 
-$(shell mkdir -p $(DEPDIR) >/dev/null)
 $(shell mkdir -p $(OBJDIR) >/dev/null)
 
 DEPFLAGS = -MT $@ -MMD -MP -MF $(DEPDIR)/$*.Td
@@ -30,6 +34,3 @@ obj/%.o : src/%.cpp $(DEPDIR)/%.d
 
 $(DEPDIR)/%.d: ;
 .PRECIOUS: $(DEPDIR)/%.d
-
-test:
-	include test/makefile

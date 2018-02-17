@@ -18,7 +18,7 @@ TEST(SourceCode, getLineCount) {
   const std::stringstream stream3 {"123\n456\n"};
   EXPECT_EQ(SourceCode(stream3, "test").getLineCount(),3);
 }
-
+ 
 TEST(SourceCode, getLine) {
   std::string text = "123\n456\n";
   EXPECT_EQ(SourceCode(std::stringstream(text), "test").getLine(0),"123");

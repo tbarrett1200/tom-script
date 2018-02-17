@@ -8,6 +8,10 @@
 #include "SymbolChecker.h"
 
 int main(int argc, char const *argv[]) {
+  if (argc != 2) {
+    std::cout << "error: no file found" << std::endl;
+    exit(1);
+  }
   std::string path = argv[1];
   SourceCode source{path};
 
