@@ -1,2 +1,3 @@
 make test
-./test/test
+lldb test/test
+lldb run
