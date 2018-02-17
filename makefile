@@ -7,10 +7,10 @@ TEST_OBJ = $(patsubst src/%.cpp, obj/%.o, $(SRC))
 CXX = clang++
 CXXFLAGS = -c -g -std=c++11 -I include
 
-all: project test
+all: project
 
-test: FORCE
-	$(shell make -f test/makefile > /dev/null)
+test: project FORCE
+	make -f test/makefile
 
 FORCE:
 
