@@ -7,7 +7,7 @@ void Visitor::visit(DoubleLiteral* t) {}
 void Visitor::visit(StringLiteral* t) {}
 void Visitor::visit(Identifier* t) {}
 void Visitor::visit(Type* t) {}
-void Visitor::visit(Operator* t) {}
+void Visitor::visit(OperatorNode* t) {}
 void Visitor::visit(BinaryExpr* t) {
   t->left->accept(*this);
   if (t->op) {
@@ -15,6 +15,11 @@ void Visitor::visit(BinaryExpr* t) {
     t->right->accept(*this);
   }
 }
+void Visitor::visit(UnaryExpr* t) {
+  t->op->accept(*this);
+  t->expr->accept(*this);
+}
+
 void Visitor::visit(StmtList* t) {
   t->stmt->accept(*this);
   if (t->next != nullptr) {
@@ -74,6 +79,12 @@ void Visitor::visit(Program* t) {
 }
 
 
+int PrintVisitor::indent = 0;
+
+void printIndent() {
+  std::cout << std::string(2 * PrintVisitor::indent, ' ');
+}
+
 class PrintParamList: public Visitor {
   void visit(StmtList* t) {
     t->stmt->accept(*this);
@@ -89,6 +100,7 @@ class PrintParamList: public Visitor {
     t->name->accept(p);
   }
 };
+
 
 class PrintFuncDecl: public Visitor {
   void visit(FuncDecl* t) {
@@ -144,15 +156,39 @@ void PrintVisitor::visit(Type* t) {
     std::cout << t->token.lexeme;
   }
 }
-void PrintVisitor::visit(Operator* t) {
+void PrintVisitor::visit(OperatorNode* t) {
   std::cout << t->token.lexeme;
 }
+void PrintVisitor::visit(BinaryExpr* t) {
+  std::cout << "(";
+  t->left->accept(*this);
+  t->op->accept(*this);
+  t->right->accept(*this);
+  std::cout << ")";
+}
+void PrintVisitor::visit(UnaryExpr* t) {
+  std::cout << "(";
+  t->op->accept(*this);
+  t->expr->accept(*this);
+  std::cout << ")";
+}
 void PrintVisitor::visit(BlockStmt* t) {
+  printIndent();
   std::cout << "{\n";
+  indent++;
   if (t->stmts) {
     t->stmts->accept(*this);
   }
+  indent--;
+  printIndent();
   std::cout << "}\n";
+}
+void PrintVisitor::visit(StmtList* t) {
+  printIndent();
+  t->stmt->accept(*this);
+  if (t->next != nullptr) {
+    t->next->accept(*this);
+  }
 }
 void PrintVisitor::visit(VarDecl* t) {
   t->type->accept(*this);
@@ -209,10 +245,15 @@ void PrintVisitor::visit(Program* t) {
   if (t->block->stmts != nullptr) {
     PrintFuncDecl funcDecl;
     PrintFuncDefn funcDefn;
+    std::cout << "\n// function declarations" << std::endl;
     t->block->stmts->accept(funcDecl);
+    std::cout << "\n// function definitions" << std::endl;
     t->block->stmts->accept(funcDefn);
+    std::cout << "\n// entry point" << std::endl;
     std::cout << "int main() {" << std::endl;
+    indent++;
     t->block->stmts->accept(*this);
+    indent--;
     std::cout << "return 0;\n}" << std::endl;
 
   }

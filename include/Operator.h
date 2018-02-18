@@ -4,6 +4,8 @@
 #include <string>
 #include <vector>
 
+#include "Token.h"
+
 enum class Associativity {
   left, right, none
 };
@@ -14,6 +16,7 @@ enum class Fixity {
 
 struct Operator {
   std::string lexeme;
+  bool operator==(const Operator& b);
 };
 
 struct PrecedenceGroup {
@@ -22,6 +25,7 @@ struct PrecedenceGroup {
   Fixity fixity;
   bool assignment;
   std::vector<Operator> operators;
+  bool contains(Operator);
 };
 
 class OperatorTable {
@@ -31,6 +35,11 @@ private:
 public:
   static OperatorTable* globalInstance;
   static OperatorTable* getInstance();
+  static int size();
+  static PrecedenceGroup level(int);
+  static Associativity associativity(int precedence);
+
+  std::vector<PrecedenceGroup> getGroups();
 };
 
 #endif

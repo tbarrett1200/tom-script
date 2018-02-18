@@ -13,7 +13,7 @@ public:
   void visit(StringLiteral*);
   void visit(Identifier*);
   void visit(Type*);
-  void visit(Operator*);
+  void visit(OperatorNode*);
   void visit(BinaryExpr*);
   void visit(StmtList*);
   void visit(BlockStmt*);

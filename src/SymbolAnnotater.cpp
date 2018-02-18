@@ -1,12 +1,13 @@
 #include "SymbolAnnotator.h"
 #include <cassert>
 
+/*
 void SymbolAnnotator::visit(IntLiteral* t){}
 void SymbolAnnotator::visit(DoubleLiteral* t){}
 void SymbolAnnotator::visit(StringLiteral* t){}
 void SymbolAnnotator::visit(Identifier* t){}
 void SymbolAnnotator::visit(Type* t){}
-void SymbolAnnotator::visit(Operator* t){}
+void SymbolAnnotator::visit(OperatorNode* t){}
 void SymbolAnnotator::visit(BinaryExpr* t){
   t->left->context = t->context;
   t->left->accept(*this);
@@ -76,3 +77,4 @@ void SymbolAnnotator::visit(ReturnStmt* t){
 void SymbolAnnotator::visit(Program* t){
   t->block->accept(*this);
 }
+*/

@@ -2,6 +2,7 @@
 #include "Token.h"
 #include "Tree.h"
 #include "ErrorReporter.h"
+#include "Operator.h"
 
 #include <assert.h>
 #include <iostream>
@@ -59,8 +60,8 @@ bool Parser::parseTerminal(int type, std::string str, bool expect = true) {
 /* <stmt-list>? <eof>! */
 Program* Parser::parseProgram() {
   StmtList* stmts = parseStmtList();
-  if (!token().is(Token::eof)) {
-    ErrorReporter{source}.report(0, 0, "Error: expected end of file");
+  if (token().isNot(Token::eof)) {
+    ErrorReporter{source}.report(token(), "Error: expected end of file");
   }
   return new Program(stmts);
 }
@@ -121,13 +122,22 @@ Stmt* Parser::parseStmt() {
 VarDecl* Parser::parseVarDecl() {
   if (!parseTerminal(Token::key_var, "var")) return nullptr;
   Identifier* id = parseIdentifier();
-  if (!id) return nullptr;
+  if (!id) {
+    ErrorReporter{source}.report(token(), "Error: expected identifier");
+    return nullptr;
+  }
   if (!parseTerminal(Token::colon, ":")) return nullptr;
   Type* type = parseType();
-  if (!type) return nullptr;
+  if (!type) {
+    ErrorReporter{source}.report(token(), "Error: expected type");
+    return nullptr;
+  }
   if (parseTerminal(Token::operator_identifier, "=", false)) {
     Expr *expr = parseExpr();
-    if (!expr) return nullptr;
+    if (!expr) {
+      ErrorReporter{source}.report(token(), "Error: expected expression");
+      return nullptr;
+    }
     if (!parseTerminal(Token::semi, ";")) return nullptr;
     return new VarDecl(id, type, expr);
   }
@@ -147,15 +157,24 @@ BlockStmt* Parser::parseBlockStmt() {
 FuncDecl* Parser::parseFuncDecl() {
   if (!parseTerminal(Token::key_func, "func")) return nullptr;
   Identifier* id = parseIdentifier();
-  if (!id) return nullptr;
+  if (!id) {
+    ErrorReporter{source}.report(token(), "Error: expected identifier");
+    return nullptr;
+  }
   if (!parseTerminal(Token::l_paren, "(")) return nullptr;
   StmtList* params = parseParamList();
   if (!parseTerminal(Token::r_paren, ")")) return nullptr;
   if (!parseTerminal(Token::operator_identifier, "->")) return nullptr;
   Type* ret = parseType();
-  if (!ret) return nullptr;
+  if (!ret) {
+    ErrorReporter{source}.report(token(), "Error: expected type");
+    return nullptr;
+  }
   BlockStmt* block = parseBlockStmt();
-  if (!block) return nullptr;
+  if (!block) {
+    ErrorReporter{source}.report(token(), "Error: expected block");
+    return nullptr;
+  }
   return new FuncDecl(id, params, ret, block);
 }
 
@@ -164,10 +183,16 @@ IfStmt* Parser::parseIfStmt() {
   if (!parseTerminal(Token::key_if, "if")) return nullptr;
   if (!parseTerminal(Token::l_paren, "(")) return nullptr;
   Expr* cond = parseExpr();
-  if (!cond) return nullptr;
+  if (!cond) {
+    ErrorReporter{source}.report(token(), "Error: expected conditional");
+    return nullptr;
+  }
   if (!parseTerminal(Token::r_paren, ")")) return nullptr;
   BlockStmt* block = parseBlockStmt();
-  if (!block) return nullptr;
+  if (!block) {
+    ErrorReporter{source}.report(token(), "Error: expected block");
+    return nullptr;
+  }
   return new IfStmt(cond, block);
 }
 
@@ -176,10 +201,16 @@ WhileStmt* Parser::parseWhileStmt() {
   if (!parseTerminal(Token::key_while, "while")) return nullptr;
   if (!parseTerminal(Token::l_paren, "(")) return nullptr;
   Expr* cond = parseExpr();
-  if (!cond) return nullptr;
+  if (!cond) {
+    ErrorReporter{source}.report(token(), "Error: expected conditional");
+    return nullptr;
+  }
   if (!parseTerminal(Token::r_paren, ")")) return nullptr;
   BlockStmt* block = parseBlockStmt();
-  if (!block) return nullptr;
+  if (!block) {
+    ErrorReporter{source}.report(token(), "Error: expected block");
+    return nullptr;
+  }
   return new WhileStmt(cond, block);
 }
 
@@ -194,7 +225,9 @@ ReturnStmt* Parser::parseReturnStmt() {
 /* <expr> ';' */
 ExprStmt* Parser::parseExprStmt() {
   Expr* expr = parseExpr();
-  if (!expr) return nullptr;
+  if (!expr) {
+    return nullptr;
+  }
   if (!parseTerminal(Token::semi, ";")) return nullptr;
   return new ExprStmt(expr);
 }
@@ -244,10 +277,13 @@ StmtList* Parser::parseParamList() {
 
 
 /* <binary-expr> */
-Expr* Parser::parseExpr() {
-  return parseBinaryExpr();
+Expr* Parser::parseExpr(int precedence) {
+  switch(precedence) {
+    case 0: return parseValueExpr();
+    case 1: return parseUnaryExpr();
+    default: return parseBinaryExpr(precedence);
+  }
 }
-
 
 /*******************************************************************************
   # Level 5
@@ -265,25 +301,27 @@ VarDecl*  Parser::parseParamDecl() {
   return new VarDecl(id, type, nullptr);
 }
 
-/* <value-expr> { <operator> <binary-expr>! } */
-Expr* Parser::parseBinaryExpr() {
-    Expr* lhs = parseValueExpr();
-    if (!lhs) return nullptr;
-    if (token().is(Token::operator_identifier)) {
-      Operator* op = parseOperator();
-      Expr* rhs = parseBinaryExpr();
-      if (rhs == nullptr) {
-        ErrorReporter{source}.report(token(), "Error: expected expression");
-        return nullptr;
-      } else return new BinaryExpr(lhs, op, rhs);
-    } else return lhs;
+Expr* Parser::parseUnaryExpr() {
+  OperatorNode* op = parseOperator(1);
+  Expr* expr = parseValueExpr();
+  if (!expr) {
+    ErrorReporter{source}.report(token(), "Error: expected expression");
+    return nullptr;
+  }
+  if (!op) return expr;
+  return new UnaryExpr(expr, op);
 }
-
-
-/*******************************************************************************
-  # Level 6
-  * value-expr
-*******************************************************************************/
+/* <value-expr> { <operator> <binary-expr>! } */
+Expr* Parser::parseBinaryExpr(int precedence) {
+  switch (OperatorTable::associativity(precedence)) {
+    case Associativity::left:
+      return parseInfixLeft(precedence);
+    case Associativity::right:
+      return parseInfixRight(precedence);
+    case Associativity::none:
+      return parseInfixNone(precedence);
+  }
+}
 
 /*
  * <function-call>     IDENTIFIER       LOOKAHEAD('(')
@@ -314,25 +352,14 @@ Expr* Parser::parseValueExpr() {
   } else return nullptr;
 }
 
-/* OPERATOR_IDENTIFIER */
-Operator* Parser::parseOperator() {
-  Token tok = token();
-  if (tok.is(Token::operator_identifier)) {
-    consume();
-    return new Operator(tok);
-  } else {
-    return nullptr;
-  }
-}
-
 /*******************************************************************************
-  # Level 7
+  # Level 6
+  * value-expr
   * function-call
   * int-literal
   * double-literal
   * string-literal
-********************************************************************************/
-
+*******************************************************************************/
 
 /* <identifier> '(' <expr-list>? ')'*/
 FunctionCall* Parser::parseFunctionCall() {
@@ -374,10 +401,64 @@ StringLiteral* Parser::parseStringLiteral() {
   }
 }
 
+Expr* Parser::parseInfixNone(int p) {
+  Expr* left = parseExpr(p-1);
+  if (!left) return nullptr;
+  OperatorNode* op = parseOperator(p);
+  if (!op) return left;
+  Expr* right = parseExpr(p-1);
+  if (!right) {
+    ErrorReporter{source}.report(token(), "error: expected expression");
+    return nullptr;
+  }
+  return new BinaryExpr(left, op, right);
+}
+
+Expr* Parser::parseInfixRight(int p) {
+  Expr* left = parseExpr(p-1);
+  if (!left) return nullptr;
+  OperatorNode* op = parseOperator(p);
+  if (!op) return left;
+  Expr* right = parseExpr(p);
+  if (!right) {
+    ErrorReporter{source}.report(token(), "error: expected expression");
+    return nullptr;
+  }
+  return new BinaryExpr(left, op, right);
+}
+
+Expr* Parser::parseInfixLeft(int precedence) {
+  Expr* left = parseExpr(precedence-1);
+  if (!left) return nullptr;
+  std::function<Expr*(int,Expr*)> continueParse;
+  continueParse = [this, &continueParse](int precedence, Expr* left) -> Expr* {
+    OperatorNode* op = parseOperator(precedence);
+    if (!op) return left;
+    Expr* right = parseExpr(precedence-1);
+    if (!right) {
+      ErrorReporter{source}.report(token(), "error: expected expression");
+      return nullptr;
+    }
+    return continueParse(precedence, new BinaryExpr(left,op,right));
+  };
+  return continueParse(precedence, left);
+}
+
+
 /******************************************************************************
-  # Level 8
+  # Level 7
   * expr-list
+  * operator
 *******************************************************************************/
+
+/* OPERATOR_IDENTIFIER */
+OperatorNode* Parser::parseOperator(int precedence) {
+  Token tok = token();
+  if (OperatorTable::level(precedence).contains({tok.lexeme})) {
+    consume();
+    return new OperatorNode(tok);
+  } else return nullptr;
+}
 
 
 /* <expr> { ',' <expr_list>?! } */

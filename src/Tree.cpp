@@ -37,17 +37,24 @@ void Type::accept(class Visitor &v) {
   return v.visit(this);
 };
 
-Operator::Operator(Token l)
-  : token{l} {}
+OperatorNode::OperatorNode(Token l)
+  : token{l}, op{l.lexeme} {}
 
-void Operator::accept(class Visitor &v) {
+void OperatorNode::accept(class Visitor &v) {
   return v.visit(this);
 };
 
-BinaryExpr::BinaryExpr(Expr* l, Operator* o, Expr* r)
+BinaryExpr::BinaryExpr(Expr* l, OperatorNode* o, Expr* r)
   : left{l}, op{o}, right{r} {}
 
 void BinaryExpr::accept(class Visitor &v) {
+  return v.visit(this);
+};
+
+UnaryExpr::UnaryExpr(Expr* e, OperatorNode* o)
+  : op{o}, expr{e} {}
+
+void UnaryExpr::accept(class Visitor &v) {
   return v.visit(this);
 };
 

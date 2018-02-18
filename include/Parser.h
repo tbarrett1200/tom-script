@@ -18,12 +18,17 @@ public:
   void consume();
   void consumeUntil(std::vector<int> types);
 
-  Operator* parseOperator();
+  OperatorNode* parseOperator(int);
   bool parseTerminal(int type, std::string str, bool expect);
 
-  Expr* parseExpr();
-  Expr* parseBinaryExpr();
+  Expr* parseExpr(int precedence = OperatorTable::size());
+  Expr* parseBinaryExpr(int);
+  Expr* parseUnaryExpr();
   Expr* parseValueExpr();
+  Expr* parseInfixNone(int);
+  Expr* parseInfixLeft(int);
+  Expr* parseInfixRight(int);
+
   ExprList* parseExprList();
   FunctionCall* parseFunctionCall();
   IntLiteral* parseIntLiteral();

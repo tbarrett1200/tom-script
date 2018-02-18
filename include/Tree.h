@@ -1,12 +1,13 @@
 #ifndef TREE_H
 #define TREE_H
 
-#include "Token.h"
-#include "Symbols.h"
-
 #include <utility>
 #include <vector>
-#include <functional>
+
+#include "Token.h"
+#include "Symbols.h"
+#include "Operator.h"
+
 using namespace std;
 
 class Visitor;
@@ -17,18 +18,8 @@ public:
   virtual void accept(Visitor &v) = 0;
 };
 
-template <class T> class List {
-public:
-  shared_ptr<T> next;
-  List<T> filter(std::function<bool(T,int,List<T>)>);
-};
-
 class Expr: public Tree {
 public:
-  enum Type {
-    Int, Double, String, Function
-  };
-  Expr::Type type;
   virtual void accept(Visitor &v) = 0;
 };
 
@@ -42,7 +33,6 @@ public:
 
 class StringLiteral: public Expr {
 public:
-  Expr::Type type = Expr::Type::String;
   Token token;
   StringLiteral(Token);
   void accept(Visitor &v);
@@ -50,7 +40,6 @@ public:
 
 class IntLiteral: public Expr {
 public:
-  Expr::Type type = Expr::Type::Int;
   Token token;
   IntLiteral(Token);
   void accept(Visitor &v);
@@ -58,7 +47,6 @@ public:
 
 class DoubleLiteral: public Expr {
 public:
-  Expr::Type type = Expr::Type::Double;
   Token token;
   DoubleLiteral(Token);
   void accept(Visitor &v);
@@ -86,22 +74,30 @@ public:
   void accept(Visitor &v);
 };
 
-class Operator: public Tree {
+class OperatorNode: public Tree {
 public:
   Token token;
-  Operator(Token);
+  Operator op;
+  OperatorNode(Token);
   void accept(Visitor &v);
 };
 
 class BinaryExpr: public Expr {
 public:
   unique_ptr<Expr> left;
-  unique_ptr<Operator> op;
+  unique_ptr<OperatorNode> op;
   unique_ptr<Expr> right;
-  BinaryExpr(Expr*, Operator*, Expr*);
+  BinaryExpr(Expr*, OperatorNode*, Expr*);
   void accept(Visitor &v);
 };
 
+struct UnaryExpr: Expr {
+public:
+  unique_ptr<OperatorNode> op;
+  unique_ptr<Expr> expr;
+  UnaryExpr(Expr*, OperatorNode*);
+  void accept(Visitor &v);
+};
 
 class Stmt: public Tree {
 public:

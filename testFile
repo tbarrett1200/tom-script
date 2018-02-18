@@ -1,9 +1,14 @@
-var abc: Double = 5.0;
+var a: Double = 5.0;
+var b: Double = 1.0;
 
-if (abc < 4) {
-  printf("little");
+if (add(a, b) < 4) {
+  printf("little: %.2f\n", a + b);
 }
 
-if (abc > 4) {
-  printf("big");
+if (add(a, b) > 4) {
+  printf("big: %.2f\n", a + b);
+}
+
+func add(a: Int, b: Int) -> Int {
+  return a + b;
 }

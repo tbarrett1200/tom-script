@@ -1,7 +1,10 @@
 #include "SymbolChecker.h"
 #include <cassert>
 
+
+/*
 SymbolChecker::SymbolChecker(SourceCode *src) : source{src} {};
+
 
 void SymbolChecker::visit(IntLiteral* t){}
 void SymbolChecker::visit(DoubleLiteral* t){}
@@ -31,7 +34,7 @@ void SymbolChecker::visit(Type* t){
     ErrorReporter{source}.report(t->token, "Error: Unrecognized Type");
   }
 }
-void SymbolChecker::visit(Operator* t){}
+void SymbolChecker::visit(OperatorNode* t){}
 void SymbolChecker::visit(BinaryExpr* t){
   t->left->accept(*this);
   t->right->accept(*this);
@@ -90,3 +93,4 @@ void SymbolChecker::visit(ReturnStmt* t){
 void SymbolChecker::visit(Program* t){
   t->block->accept(*this);
 }
+*/
