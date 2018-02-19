@@ -2,13 +2,18 @@
 Tom Script is a type-safe, compiled programming language of my own invention.
 This compiler has the goal of providing a toy language that can compile on multiple
 platforms and integrate with the c standard library. An example of the Syntax is shown below.
-```Swift
-var alpha: Int;
-var beta: Int;
 
-func add(a: Int, b: Int) -> void {
-  return a+b
-}
+## Variable Declarations
+```Swift
+var a: Int;       // type is declared
+var b = 10;       // type is inferred
+var c: Int = 10;  // type is declared and inferred
+```
+## Builtin Types
+```Swift
+var a: Int = 10;
+var b: Double = 10.0;
+var c: String = "ten";
 ```
 
 # Formal Language Specification (BNF)

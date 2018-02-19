@@ -2,6 +2,7 @@
 #include <iostream>
 #include "ErrorReporter.h"
 
+
 void Visitor::visit(IntLiteral* i) {}
 void Visitor::visit(DoubleLiteral* t) {}
 void Visitor::visit(StringLiteral* t) {}
@@ -32,8 +33,10 @@ void Visitor::visit(BlockStmt* t) {
   }
 }
 void Visitor::visit(VarDecl* t) {
-  t->type->accept(*this);
   t->name->accept(*this);
+  if (t->type) {
+    t->type->accept(*this);
+  }
   if (t->value) {
     t->value->accept(*this);
   }

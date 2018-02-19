@@ -15,11 +15,15 @@ class Visitor;
 class Tree {
 public:
   Tree* parent;
+  std::vector<std::shared_ptr<Tree>> children;
+  shared_ptr<SymbolTable> symbols;
+  virtual void defineSymbolTable();
   virtual void accept(Visitor &v) = 0;
 };
 
 class Expr: public Tree {
 public:
+  std::string qualifiedType;
   virtual void accept(Visitor &v) = 0;
 };
 
@@ -91,7 +95,7 @@ public:
   void accept(Visitor &v);
 };
 
-struct UnaryExpr: Expr {
+struct UnaryExpr: public Expr {
 public:
   shared_ptr<OperatorNode> op;
   shared_ptr<Expr> expr;
@@ -114,9 +118,9 @@ public:
 
 class BlockStmt: public Stmt {
 public:
-  shared_ptr<SymbolTable> symbols;
   shared_ptr<StmtList> stmts;
   BlockStmt(StmtList*);
+  void defineSymbolTable();
   void accept(Visitor &v);
 };
 
@@ -131,12 +135,12 @@ public:
 
 class FuncDecl: public Stmt {
 public:
-  shared_ptr<SymbolTable> symbols;
   shared_ptr<Identifier> name;
   shared_ptr<StmtList> params;
   shared_ptr<Type> retType;
   shared_ptr<BlockStmt> stmt;
   FuncDecl(Identifier*, StmtList*, Type*, BlockStmt*);
+  void defineSymbolTable();
   void accept(Visitor &v);
 };
 
@@ -172,10 +176,10 @@ public:
 
 class Program: public Stmt {
 public:
-  shared_ptr<SymbolTable> symbols;
   shared_ptr<BlockStmt> block;
   Program(StmtList*);
   void accept(Visitor &v);
+  void defineSymbolTable();
 };
 
 #endif

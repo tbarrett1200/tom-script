@@ -120,29 +120,33 @@ Stmt* Parser::parseStmt() {
 
 /* 'var' <identifier> ':' <type>  ';' */
 VarDecl* Parser::parseVarDecl() {
+  Identifier* id;
+  Type* type = nullptr;
+  Expr* value = nullptr;
+
   if (!parseTerminal(Token::key_var, "var")) return nullptr;
-  Identifier* id = parseIdentifier();
-  if (!id) {
+
+  if (!(id = parseIdentifier())) {
     ErrorReporter{source}.report(token(), "Error: expected identifier");
     return nullptr;
   }
-  if (!parseTerminal(Token::colon, ":")) return nullptr;
-  Type* type = parseType();
-  if (!type) {
-    ErrorReporter{source}.report(token(), "Error: expected type");
-    return nullptr;
+
+  if (parseTerminal(Token::colon, ":", false)) {
+    if (!(type=parseType())) {
+      ErrorReporter{source}.report(token(), "Error: expected type");
+      return nullptr;
+    }
   }
+
   if (parseTerminal(Token::operator_identifier, "=", false)) {
-    Expr *expr = parseExpr();
-    if (!expr) {
+    if (!(value=parseExpr())) {
       ErrorReporter{source}.report(token(), "Error: expected expression");
       return nullptr;
     }
-    if (!parseTerminal(Token::semi, ";")) return nullptr;
-    return new VarDecl(id, type, expr);
   }
   if (!parseTerminal(Token::semi, ";")) return nullptr;
-  return new VarDecl(id, type, nullptr);
+
+  return new VarDecl(id, type, value);
 }
 
 /* '{' <statement-list>? '}' */

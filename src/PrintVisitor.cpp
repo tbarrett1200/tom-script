@@ -179,6 +179,5 @@ void PrintVisitor::visit(Program* t) {
     t->block->stmts->accept(*this);
     indent--;
     std::cout << "return 0;\n}" << std::endl;
-
-  }
+  };
 }

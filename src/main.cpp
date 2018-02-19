@@ -4,8 +4,8 @@
 #include <iostream>
 #include "Visitor.h"
 #include "PrintVisitor.h"
-#include "SymbolAnnotator.h"
 #include "SymbolChecker.h"
+#include "TypeChecker.h"
 
 int main(int argc, char const *argv[]) {
   if (argc != 2) {
@@ -18,13 +18,11 @@ int main(int argc, char const *argv[]) {
   Program* node = Parser(&source).parseProgram();
 
   if (node!=nullptr) {
-    PrintVisitor print{};
-    node->accept(print);
-
-    //SymbolAnnotator annotate{};
-    //node->accept(annotate);
-  //  SymbolChecker check{&source};
-    //node->accept(check);
+    node->defineSymbolTable();
+    SymbolChecker check1{&source};
+    node->accept(check1);
+    TypeChecker check2{&source};
+    node->accept(check2);
   }
 
   return 0;
