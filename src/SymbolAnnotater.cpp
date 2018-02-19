@@ -2,51 +2,40 @@
 #include <cassert>
 
 /*
-void SymbolAnnotator::visit(IntLiteral* t){}
-void SymbolAnnotator::visit(DoubleLiteral* t){}
-void SymbolAnnotator::visit(StringLiteral* t){}
-void SymbolAnnotator::visit(Identifier* t){}
-void SymbolAnnotator::visit(Type* t){}
-void SymbolAnnotator::visit(OperatorNode* t){}
 void SymbolAnnotator::visit(BinaryExpr* t){
   t->left->context = t->context;
-  t->left->accept(*this);
   t->right->context = t->context;
-  t->right->accept(*this);
-  t->op->context = t->context;
+  Visitor::visit(t);
 }
+
 void SymbolAnnotator::visit(StmtList* t){
   t->stmt->context = t->context;
-  t->stmt->accept(*this);
-  if (t->next != nullptr) {
+  if (t->next) {
     t->next->context = t->context;
-    t->next->accept(*this);
   }
-
+  Visitor::visit(t);
 }
+
 void SymbolAnnotator::visit(BlockStmt* t){
   shared_ptr<SymbolTable> scope = make_shared<SymbolTable>(t->context);
   t->stmts->context = scope;
-  t->stmts->accept(*this);
+  Visitor::visit(t);
 }
 void SymbolAnnotator::visit(VarDecl* t){
   t->name->context = t->context;
-  t->name->accept(*this);
   t->type->context = t->context;
-  t->type->accept(*this);
+  Visitor::visit(t);
+
 }
 void SymbolAnnotator::visit(FuncDecl* t){
   t->context->addSymbol(t->name->token.lexeme, "Function");
   t->name->context = t->context;
-  t->name->accept(*this);
-  if (t->params != nullptr) {
+  if (t->params) {
     t->params->context = t->context;
-    t->params->accept(*this);
   }
   t->retType->context = t->context;
-  t->retType->accept(*this);
   t->stmt->context = t->context;
-  t->stmt->accept(*this);
+  Visitor::visit(t);
 }
 void SymbolAnnotator::visit(IfStmt* t){
   t->cond->context = t->context;

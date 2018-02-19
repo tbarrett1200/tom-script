@@ -7,7 +7,7 @@ Builtin::Builtin(string s) {
     type = Type::int64;
   } else if (s == "Double") {
     type = Type::float64;
-  } 
+  }
 }
 
 int Builtin::size() {

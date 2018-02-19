@@ -3,7 +3,7 @@
 
 #include <iostream>
 #include "Visitor.h"
-#include "Visitor.h"
+#include "PrintVisitor.h"
 #include "SymbolAnnotator.h"
 #include "SymbolChecker.h"
 

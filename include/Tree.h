@@ -14,7 +14,7 @@ class Visitor;
 
 class Tree {
 public:
-  shared_ptr<SymbolTable> context;
+  Tree* parent;
   virtual void accept(Visitor &v) = 0;
 };
 
@@ -25,8 +25,8 @@ public:
 
 class ExprList: public Tree {
 public:
-  unique_ptr<Expr> stmt;
-  unique_ptr<ExprList> next;
+  shared_ptr<Expr> stmt;
+  shared_ptr<ExprList> next;
   ExprList(Expr*,ExprList*);
   void accept(Visitor &v);
 };
@@ -61,8 +61,8 @@ public:
 
 class FunctionCall: public Expr {
 public:
-  unique_ptr<Identifier> name;
-  unique_ptr<ExprList> arguments;
+  shared_ptr<Identifier> name;
+  shared_ptr<ExprList> arguments;
   FunctionCall(Identifier*, ExprList*);
   void accept(Visitor &v);
 };
@@ -84,17 +84,17 @@ public:
 
 class BinaryExpr: public Expr {
 public:
-  unique_ptr<Expr> left;
-  unique_ptr<OperatorNode> op;
-  unique_ptr<Expr> right;
+  shared_ptr<Expr> left;
+  shared_ptr<OperatorNode> op;
+  shared_ptr<Expr> right;
   BinaryExpr(Expr*, OperatorNode*, Expr*);
   void accept(Visitor &v);
 };
 
 struct UnaryExpr: Expr {
 public:
-  unique_ptr<OperatorNode> op;
-  unique_ptr<Expr> expr;
+  shared_ptr<OperatorNode> op;
+  shared_ptr<Expr> expr;
   UnaryExpr(Expr*, OperatorNode*);
   void accept(Visitor &v);
 };
@@ -106,71 +106,74 @@ public:
 
 class StmtList: public Tree {
 public:
-  unique_ptr<Stmt> stmt;
-  unique_ptr<StmtList> next;
+  shared_ptr<Stmt> stmt;
+  shared_ptr<StmtList> next;
   StmtList(Stmt*,StmtList*);
   void accept(Visitor &v);
 };
 
 class BlockStmt: public Stmt {
 public:
-  unique_ptr<StmtList> stmts;
+  shared_ptr<SymbolTable> symbols;
+  shared_ptr<StmtList> stmts;
   BlockStmt(StmtList*);
   void accept(Visitor &v);
 };
 
 class VarDecl: public Stmt {
 public:
-  unique_ptr<Identifier> name;
-  unique_ptr<Type> type;
-  unique_ptr<Expr> value;
+  shared_ptr<Identifier> name;
+  shared_ptr<Type> type;
+  shared_ptr<Expr> value;
   VarDecl(Identifier*, Type*, Expr*);
   void accept(Visitor &v);
 };
 
 class FuncDecl: public Stmt {
 public:
-  unique_ptr<Identifier> name;
-  unique_ptr<StmtList> params;
-  unique_ptr<Type> retType;
-  unique_ptr<BlockStmt> stmt;
+  shared_ptr<SymbolTable> symbols;
+  shared_ptr<Identifier> name;
+  shared_ptr<StmtList> params;
+  shared_ptr<Type> retType;
+  shared_ptr<BlockStmt> stmt;
   FuncDecl(Identifier*, StmtList*, Type*, BlockStmt*);
   void accept(Visitor &v);
 };
 
 class IfStmt: public Stmt {
 public:
-  unique_ptr<Expr> cond;
-  unique_ptr<BlockStmt> stmt;
+  shared_ptr<Expr> cond;
+  shared_ptr<BlockStmt> stmt;
   IfStmt(Expr*,BlockStmt*);
   void accept(Visitor &v);
 };
 
 class WhileStmt: public Stmt {
 public:
-  unique_ptr<Expr> cond;
-  unique_ptr<BlockStmt> stmt;
+  shared_ptr<Expr> cond;
+  shared_ptr<BlockStmt> stmt;
   WhileStmt(Expr*,BlockStmt*);
   void accept(Visitor &v);
 };
 
 class ExprStmt: public Stmt {
 public:
-  unique_ptr<Expr> expr;
+  shared_ptr<Expr> expr;
   ExprStmt(Expr*);
   void accept(Visitor &v);
 };
 
 class ReturnStmt: public Stmt {
 public:
-  unique_ptr<Expr> expr;
+  shared_ptr<Expr> expr;
   ReturnStmt(Expr*);
   void accept(Visitor &v);
 };
 
 class Program: public Stmt {
 public:
-  unique_ptr<BlockStmt> block;
+  shared_ptr<SymbolTable> symbols;
+  shared_ptr<BlockStmt> block;
   Program(StmtList*);
   void accept(Visitor &v);
 };
