@@ -1,36 +1,19 @@
-SRC = $(wildcard src/*.cpp)
+DIR = $(patsubst src/%, obj/%, $(wildcard src/**))
+SRC = $(wildcard src/**/*.cpp)
 OBJ = $(patsubst src/%.cpp, obj/%.o, $(SRC))
 
-TEST_SRC = $(wildcard src/*.cpp)
-TEST_OBJ = $(patsubst src/%.cpp, obj/%.o, $(SRC))
+$(shell mkdir -p $(DIR))
+$(shell mkdir bin > /dev/null)
 
 CXX = clang++
-CXXFLAGS = -c -g -std=c++11 -I include
+CXXFLAGS = -std=c++14 -c -g -Wall -I include
 
-all: project
+all: $(OBJ)
+	clang++ -std=c++14 -g $^ -o bin/tomscript
 
-test: project FORCE
-	make -f test/makefile
+obj/%.o: src/%.cpp
+	$(CXX) $< $(CXXFLAGS) -o $@
 
-FORCE:
-
-project: $(OBJ)
-	$(CXX) -o $@ -g $^
-
-DEPDIR := .d
-OBJDIR := obj
-
-$(shell mkdir -p $(OBJDIR) >/dev/null)
-
-DEPFLAGS = -MT $@ -MMD -MP -MF $(DEPDIR)/$*.Td
-
-COMPILE.cpp = $(CXX) $(DEPFLAGS) $(CXXFLAGS) $(CPPFLAGS) $(TARGET_ARCH) -c
-POSTCOMPILE = @mv -f $(DEPDIR)/$*.Td $(DEPDIR)/$*.d && touch $@
-
-obj/%.o : src/%.cpp
-obj/%.o : src/%.cpp $(DEPDIR)/%.d
-	$(COMPILE.cpp) $(OUTPUT_OPTION) $<
-	$(POSTCOMPILE)
-
-$(DEPDIR)/%.d: ;
-.PRECIOUS: $(DEPDIR)/%.d
+clean:
+	rm -r obj
+	rm -r bin

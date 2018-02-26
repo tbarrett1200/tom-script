@@ -1,1 +1,5 @@
-#include <stdio.h>
+# a Double
+# b Int
+# c String
+# foo Function
+start:
