@@ -48,13 +48,24 @@ unique_ptr<VarDecl> Parser::parseVarDecl() {
     report(name, "expected identifier");
     return nullptr;
   }
-  if (!parseTerminal(Token::colon, ":", false)) report(token(), "expected ':'");
-  auto type = parseType();
-  if (!type) {
-    report(token(), "expected type");
+  if (parseTerminal(Token::colon, ":", false)) {
+    auto type = parseType();
+    if (!type) {
+      report(token(), "expected type");
+      return nullptr;
+    }
+    return make_unique<VarDecl>(name, move(type));
+  } else if (parseTerminal(Token::operator_id, "=", false)){
+    auto expr = parseExpr();
+    if (!expr) {
+      report(token(), "expected expr");
+      return nullptr;
+    }
+    return make_unique<VarDecl>(name, move(expr));
+  } else {
+    report(token(), "unable to parse var decl");
     return nullptr;
   }
-  return make_unique<VarDecl>(name, move(type));
 }
 
 unique_ptr<LetDecl> Parser::parseLetDecl() {
@@ -69,13 +80,30 @@ unique_ptr<LetDecl> Parser::parseLetDecl() {
     report(name, "expected identifier");
     return nullptr;
   }
-  if (!parseTerminal(Token::colon, ":", false)) report(token(), "expected ':'");
-  auto type = parseType();
-  if (!type) {
-    report(token(), "expected type");
+  if (parseTerminal(Token::colon, ":", false)) {
+    auto type = parseType();
+    if (!type) {
+      return nullptr;
+    }
+    if (!parseTerminal(Token::operator_id, "=", false)) {
+      report(token(), "error: let decl must be initialized");
+      return nullptr;
+    }
+    auto expr = parseExpr();
+    if (!expr) {
+      return nullptr;
+    }
+    return make_unique<LetDecl>(name, move(type), move(expr));
+  } else if (parseTerminal(Token::operator_id, "=", false)){
+    auto expr = parseExpr();
+    if (!expr) {
+      return nullptr;
+    }
+    return make_unique<LetDecl>(name, move(expr));
+  } else {
+    report(token(), "error: let decl must be initialized");
     return nullptr;
   }
-  return make_unique<LetDecl>(name, move(type));
 }
 
 unique_ptr<FuncDecl> Parser::parseFuncDecl() {

@@ -1,7 +1,7 @@
 #include "AST/ASTWalker.h"
 
 #include <stdexcept>
-
+/*
 bool ASTWalker::traverseNode(ASTNode* node) {
   switch (node->getType()) {
   case ASTNode::STMT:
@@ -13,7 +13,7 @@ bool ASTWalker::traverseNode(ASTNode* node) {
   default: throw std::domain_error("ASTWalker: unrecognized node type");
   }
 }
-
+*/
 bool ASTWalker::traverseDecl(Decl* d) {
   return walkUpFromDecl(d);
 }

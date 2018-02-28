@@ -6,6 +6,9 @@
 
 class Decl {
 public:
+  enum class Kind {
+    TypeAlias, VarDecl, LetDecl, FuncDecl
+  };
   Token name;
   Decl(Token);
 };
@@ -19,13 +22,19 @@ public:
 class VarDecl : public Decl {
 public:
   unique_ptr<Type> type;
+  unique_ptr<Expr> expr;
   VarDecl(Token, unique_ptr<Type>);
+  VarDecl(Token, unique_ptr<Expr>);
+
 };
 
 class LetDecl : public Decl {
 public:
   unique_ptr<Type> type;
-  LetDecl(Token, unique_ptr<Type>);
+  unique_ptr<Expr> expr;
+  LetDecl(Token, unique_ptr<Expr>);
+  LetDecl(Token, unique_ptr<Type>, unique_ptr<Expr>);
+
 };
 
 class FuncDecl : public Decl {

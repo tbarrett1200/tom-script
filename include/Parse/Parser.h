@@ -5,12 +5,12 @@
 
 #include "Parse/Token.h"
 #include "Parse/Lexer.h"
+#include "Parse/Operator.h"
 #include "AST/ASTNode.h"
 #include "AST/Decl.h"
 #include "AST/Expr.h"
 #include "AST/TypeExpr.h"
 #include "AST/Stmt.h"
-
 class Parser {
   SourceCode* source;
   Lexer lexer;
@@ -47,29 +47,27 @@ public:
   unique_ptr<LetDecl> parseLetDecl();
   unique_ptr<FuncDecl> parseFuncDecl();
 
-
-  /*
   unique_ptr<Expr> parseExpr(int precedence = OperatorTable::size());
-  unique_ptr<Expr> parseBinaryExpr(int);
+  unique_ptr<OperatorExpr> parseOperatorExpr(int precedence);
+  unique_ptr<Expr> parseBinaryExpr(int precedence);
+  unique_ptr<Expr> parseInfixNone(int p);
+  unique_ptr<Expr> parseInfixLeft(int p);
+  unique_ptr<Expr> parseInfixRight(int p);
   unique_ptr<Expr> parseUnaryExpr();
   unique_ptr<Expr> parseValueExpr();
-  unique_ptr<Expr> parseInfixNone(int);
-  unique_ptr<Expr> parseInfixLeft(int);
-  unique_ptr<Expr> parseInfixRight(int);
-
+  unique_ptr<IntegerExpr> parseIntegerExpr();
+  unique_ptr<DoubleExpr> parseDoubleExpr();
+  unique_ptr<StringExpr> parseStringExpr();
+  unique_ptr<ExprLabel> parseExprLabel();
+  unique_ptr<Expr> parseLabeledExpr();
+  unique_ptr<Expr> parseIdentifierOrFunctionCall();
   unique_ptr<ExprList> parseExprList();
-  unique_ptr<FunctionCall> parseFunctionCall();
-  unique_ptr<IntLiteral> parseIntLiteral();
-  unique_ptr<DoubleLiteral> parseDoubleLiteral();
-  unique_ptr<StringLiteral> parseStringLiteral();
-
   unique_ptr<Identifier> parseIdentifier();
-  unique_ptr<TypeNode> parseTypeNode();
+  unique_ptr<TupleExpr> parseTupleExpr();
+  unique_ptr<FunctionCall> parseFunctionCall();
 
-  unique_ptr<VarDecl> parseParamDecl();
+  /*
   unique_ptr<StmtList> parseParamList();
-  unique_ptr<FuncDecl> parseFuncDecl();
-
   unique_ptr<Stmt> parseStmt();
   unique_ptr<IfStmt> parseIfStmt();
   unique_ptr<WhileStmt> parseWhileStmt();

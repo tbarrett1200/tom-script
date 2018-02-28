@@ -6,10 +6,10 @@ $(shell mkdir -p $(DIR))
 $(shell mkdir bin > /dev/null)
 
 CXX = clang++
-CXXFLAGS = -std=c++14 -c -g -Wall -I include
+CXXFLAGS = -std=c++1z -c -g -Wall -I include
 
 all: $(OBJ)
-	clang++ -std=c++14 -g $^ -o bin/tomscript
+	clang++ -std=c++1z -g $^ -o bin/tomscript
 
 obj/%.o: src/%.cpp
 	$(CXX) $< $(CXXFLAGS) -o $@

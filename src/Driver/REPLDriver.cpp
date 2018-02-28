@@ -11,11 +11,11 @@ class REPLoop {
 public:
   void displayPrompt() {
     if (count < 10) {
-      std::cout << "  " << count << "> ";
+      std::cout << "  \033[37m" << count << ">\033[0m ";
     } else if (count < 100) {
-      std::cout << " " << count << "> ";
+      std::cout << " \033[37m" << count << ">\033[0m ";
     } else {
-      std::cout << count << "> ";
+      std::cout << "\033[37m" << count << ">\033[0m ";
     }
   }
   void runCommand(std::string line) {
@@ -28,7 +28,7 @@ public:
     }
   }
   void start() {
-    std::cout << "tom-script (0.0.0.0.1) Enter ':help' for help and ':quit' to quit" << std::endl;
+    std::cout << "tom-script (0.1) Enter ':help' for help and ':quit' to quit" << std::endl;
     do {
       displayPrompt();
       std::string line;

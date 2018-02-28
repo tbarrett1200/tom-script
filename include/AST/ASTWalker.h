@@ -5,7 +5,9 @@
 
 class ASTWalker {
 
+/*
 bool traverseNode(ASTNode* node);
+*/
 
 /* specifies child nodes */
 bool traverseDecl(Decl*);
