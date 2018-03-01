@@ -5,10 +5,6 @@ OperatorTable::OperatorTable(std::vector<PrecedenceGroup> groups) {
   precedenceGroups = groups;
 }
 
-bool Operator::operator==(const Operator& b) {
-  return lexeme == b.lexeme;
-}
-
 OperatorTable* OperatorTable::globalInstance = new OperatorTable({
   {"Prefix", Associativity::none, Fixity::prefix, false, {
     {"+"},{"-"}, {"!"}
@@ -52,7 +48,7 @@ Associativity OperatorTable::associativity(int precedence) {
   return OperatorTable::level(precedence).associativity;
 }
 
-bool PrecedenceGroup::contains(Operator o) {
+bool PrecedenceGroup::contains(string o) {
   return std::find(operators.begin(), operators.end(), o) != operators.end();
 }
 

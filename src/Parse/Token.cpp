@@ -40,18 +40,6 @@ bool Token::isAny(std::vector<int> types) {
   return false;
 }
 
-bool Token::isIntLiteral() {
-  if (is(number)) {
-    return lexeme.find(".") == std::string::npos;
-  } return false;
-}
-
-bool Token::isDoubleLiteral() {
-  if (is(number)) {
-    return lexeme.find(".") != std::string::npos;
-  } return false;
-}
-
 std::ostream& operator<<(std::ostream& os, const Token& t) {
   return os << t.lexeme << " r:"  << t.row << " c:" << t.col;
 }

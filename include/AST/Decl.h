@@ -23,8 +23,7 @@ class VarDecl : public Decl {
 public:
   unique_ptr<Type> type;
   unique_ptr<Expr> expr;
-  VarDecl(Token, unique_ptr<Type>);
-  VarDecl(Token, unique_ptr<Expr>);
+  VarDecl(Token, unique_ptr<Type>, unique_ptr<Expr>);
 
 };
 
@@ -32,7 +31,6 @@ class LetDecl : public Decl {
 public:
   unique_ptr<Type> type;
   unique_ptr<Expr> expr;
-  LetDecl(Token, unique_ptr<Expr>);
   LetDecl(Token, unique_ptr<Type>, unique_ptr<Expr>);
 
 };

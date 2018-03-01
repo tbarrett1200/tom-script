@@ -1,5 +1,6 @@
 #include "Parse/Parser.h"
 #include "AST/TypeExpr.h"
+#include "AST/List.h"
 
 #include <memory>
 
@@ -39,16 +40,10 @@ unique_ptr<TypeLabel> Parser::parseTypeLabel() {
 }
 
 unique_ptr<LabeledType> Parser::parseLabeledType() {
-  if (token(2).is(Token::colon)) {
-    auto primary = parseTypeLabel();
-    if (!primary) {
-      report(token(), "error: expected label");
-      return nullptr;
-    }
-    auto secondary = parseTypeLabel();
-    if (!secondary) {
-      report(token(), "error: expected label");
-      return nullptr;
+  auto label = parseTypeLabel();
+  if (!label) {
+    report(token(), "error: expected label");
+    return nullptr;
     }
     consume();
     auto type = parseType();
@@ -56,74 +51,48 @@ unique_ptr<LabeledType> Parser::parseLabeledType() {
       report(token(), "error: expected type");
       return nullptr;
     }
-    return make_unique<LabeledType>(move(primary), move(secondary), move(type));
-  } else if (token(1).is(Token::colon)) {
-    auto second = parseTypeLabel();
-    if (!second) {
-      report(token(), "error: expected label");
-      return nullptr;
-    }
-    consume();
-    auto type = parseType();
-    if (!type) {
-      report(token(), "error: expected type");
-      return nullptr;
-    }
-    return make_unique<LabeledType>(nullptr, move(second), move(type));
-  } else {
-    auto type = parseType();
-    if (!type) {
-        report(token(), "error: expected type");
-        return nullptr;
-    }
-    return make_unique<LabeledType>(nullptr, nullptr, std::move(type));
-  }
+    return make_unique<LabeledType>(move(label), move(type));
 }
 
-unique_ptr<LabeledTypeList> Parser::parseLabeledTypeList() {
-  auto element = parseLabeledType();
+unique_ptr<TypeList> Parser::parseTupleTypeElementList() {
+  auto element = token(1).is(Token::colon) ? parseLabeledType() : parseType();
   if (!element) {
     report(token(), "error: expected type-list-element");
     return nullptr;
   }
   if (parseTerminal(Token::comma, ",", false)) {
-    auto list = parseLabeledTypeList();
+    auto list = parseTupleTypeElementList();
     if (!element) {
       report(token(), "error: expected type-list");
       return nullptr;
     }
-    return make_unique<LabeledTypeList>(move(element), move(list));
-  } else return make_unique<LabeledTypeList>(move(element), nullptr);
+    return make_unique<TypeList>(move(element), move(list));
+  } else return make_unique<TypeList>(move(element), nullptr);
 }
-
 
 unique_ptr<TupleType> Parser::parseTupleType() {
   if (!parseTerminal(Token::l_paren, "(", true)) return nullptr;
-  auto list = token().is(Token::r_paren)? nullptr: parseLabeledTypeList();
+  auto list = token().is(Token::r_paren)? nullptr: parseTupleTypeElementList();
   if (!parseTerminal(Token::r_paren, ")", true)) return nullptr;
   return make_unique<TupleType>(move(list));
 }
 
-unique_ptr<FunctionType> Parser::parseFunctionType() {
+unique_ptr<FunctionType> Parser::parseFunctionType(bool decl = false) {
   if (!parseTerminal(Token::l_paren, "(", true)) return nullptr;
-  auto list = token().is(Token::r_paren)? nullptr: parseLabeledTypeList();
+  auto list = token().is(Token::r_paren)? nullptr: parseTupleTypeElementList();
   if (!parseTerminal(Token::r_paren, ")", true)) return nullptr;
-  if (!parseTerminal(Token::operator_id, "->", true)) return nullptr;
-  auto type = parseType();
-  if (!type) {
-    report(token(), "error: expected return type");
+
+  if (!decl && list && list->has<LabeledType>()) {
+    auto expr = dynamic_cast<LabeledType*>(list->element.get());
+    auto label = expr->label->name;
+    report(label, "warning: function type parameter elements may not be labeled");
+  }
+
+  if (!consumeOperator("->")) {
+    report(token(), "error: expected ->");
     return nullptr;
   }
-  return make_unique<FunctionType>(move(list), move(type));
-}
 
-unique_ptr<FunctionType> Parser::parseFunctionDeclType() {
-  if (!parseTerminal(Token::l_paren, "(", true)) return nullptr;
-  auto list = token().is(Token::r_paren)? nullptr: parseLabeledTypeList();
-  if (!parseTerminal(Token::r_paren, ")", true)) return nullptr;
-  if (!parseTerminal(Token::operator_id, "->", false)) {
-    return make_unique<FunctionType>(move(list), nullptr);
-  }
   auto type = parseType();
   if (!type) {
     report(token(), "error: expected return type");
@@ -134,9 +103,16 @@ unique_ptr<FunctionType> Parser::parseFunctionDeclType() {
 
 unique_ptr<Type> Parser::parseTupleOrFunctionType() {
   if (!parseTerminal(Token::l_paren, "(", true)) return nullptr;
-  auto list = token().is(Token::r_paren)? nullptr: parseLabeledTypeList();
+  auto list = token().is(Token::r_paren)? nullptr: parseTupleTypeElementList();
   if (!parseTerminal(Token::r_paren, ")", true)) return nullptr;
-  if (!parseTerminal(Token::operator_id, "->", false)) return make_unique<TupleType>(move(list));
+  if (!consumeOperator("->")) return make_unique<TupleType>(move(list));
+
+  if (list && list->has<LabeledType>()) {
+    auto expr = dynamic_cast<LabeledType*>(list->element.get());
+    auto label = expr->label->name;
+    report(label, "warning: function type parameter elements may not be labeled");
+  }
+
   auto type = parseType();
   if (!type) {
     report(token(), "error: expected return type");

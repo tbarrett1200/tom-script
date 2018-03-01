@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 
-#include "Parse/Token.h"
+using namespace std;
 
 enum class Associativity {
   left, right, none
@@ -14,18 +14,13 @@ enum class Fixity {
   prefix, postfix, infix
 };
 
-struct Operator {
-  std::string lexeme;
-  bool operator==(const Operator& b);
-};
-
 struct PrecedenceGroup {
   std::string name;
   Associativity associativity;
   Fixity fixity;
   bool assignment;
-  std::vector<Operator> operators;
-  bool contains(Operator);
+  std::vector<string> operators;
+  bool contains(string);
 };
 
 class OperatorTable {

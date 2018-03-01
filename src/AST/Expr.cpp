@@ -2,7 +2,8 @@
 
 std::vector<int> Expr::startTokens = {
   Token::identifier,
-  Token::number,
+  Token::integer_literal,
+  Token::double_literal,
   Token::string_literal,
   Token::l_paren
 };
@@ -18,13 +19,13 @@ LabeledExpr::LabeledExpr(unique_ptr<ExprLabel> l, unique_ptr<Expr> e)
     throw std::domain_error("labeled expr: expr is required");
   }
 }
-ExprList::ExprList(unique_ptr<Expr> e, unique_ptr<ExprList> l)
-: element{move(e)}, list{move(l)} {
-  if (!element) {
-    throw std::domain_error("expr list: element is required");
+
+
+OperatorExpr::OperatorExpr(Token t) : token{t} {
+  if (t.isNot(Token::operator_id)) {
+    throw std::domain_error("OperatorExpr requires a token of type operator_id");
   }
 }
-OperatorExpr::OperatorExpr(Token t) : token{t}, op{t.lexeme} {}
 
 BinaryExpr::BinaryExpr(unique_ptr<Expr> l, unique_ptr<OperatorExpr> o, unique_ptr<Expr> r)
 : left{move(l)}, op{move(o)}, right{move(r)} {
@@ -47,12 +48,30 @@ UnaryExpr::UnaryExpr(unique_ptr<OperatorExpr> o, unique_ptr<Expr> e) : op{move(o
   }
 }
 
-StringExpr::StringExpr(Token t) : token{t} {}
-IntegerExpr::IntegerExpr(Token t) : token{t} {}
-DoubleExpr::DoubleExpr(Token t) : token{t} {}
-Identifier::Identifier(Token t) : token{t} {}
-TupleExpr::TupleExpr(unique_ptr<ExprList> l) : list{move(l)} {}
-FunctionCall::FunctionCall(unique_ptr<Identifier> n, unique_ptr<TupleExpr> a)
+StringExpr::StringExpr(Token t) : token{t} {
+  if (t.isNot(Token::string_literal)) {
+    throw std::domain_error("StringExpr requires a token of type string_literal");
+  }
+}
+IntegerExpr::IntegerExpr(Token t) : token{t} {
+  if (t.isNot(Token::integer_literal)) {
+    throw std::domain_error("IntegerExpr requires a token of type integer_literal");
+  }
+}
+DoubleExpr::DoubleExpr(Token t) : token{t} {
+  if (t.isNot(Token::double_literal)) {
+    throw std::domain_error("DoubleExpr requires a token of type double_literal");
+  }
+}
+IdentifierExpr::IdentifierExpr(Token t) : token{t} {
+  if (t.isNot(Token::identifier)) {
+    throw std::domain_error("Identifier requires a token of type identifier");
+  }
+}
+TupleExpr::TupleExpr(unique_ptr<ExprList> l) : list{move(l)} {
+
+}
+FunctionCall::FunctionCall(unique_ptr<IdentifierExpr> n, unique_ptr<TupleExpr> a)
 : name{move(n)}, arguments{move(a)} {
   if (!name) {
     throw std::domain_error("function call: name is required");

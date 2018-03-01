@@ -56,7 +56,7 @@ bool Parser::parseTerminal(int type, std::string str, bool expect = true) {
   }
 }
 
-bool Parser::parseToken(int type) {
+bool Parser::consumeToken(int type) {
   Token tok = token();
   if (tok.is(type)) {
     consume();
@@ -65,6 +65,25 @@ bool Parser::parseToken(int type) {
     return false;
   }
 }
+
+bool Parser::acceptToken(int type) {
+  if (token().is(type)) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
+bool Parser::consumeOperator(std::string s) {
+  Token tok = token();
+  if (tok.is(Token::operator_id) && tok.lexeme == s) {
+    consume();
+    return true;
+  } else {
+    return false;
+  }
+}
+
 
 /*
 

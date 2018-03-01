@@ -68,6 +68,8 @@ Token Lexer::lexNumber() {
       advance();
       lexeme += at();
     }
+  } else {
+    return Token(lexeme, Token::integer_literal, sLoc, sRow, sCol);
   }
 
   if (at(1) == 'e' || at(1) == 'E') {
@@ -89,7 +91,7 @@ Token Lexer::lexNumber() {
     return Token(lexeme, Token::unknown, sLoc, sRow, sCol);
   }
 
-  return Token(lexeme, Token::number, sLoc, sRow, sCol);
+  return Token(lexeme, Token::double_literal, sLoc, sRow, sCol);
 }
 
 auto  Lexer::lexStringLiteral() -> Token {

@@ -26,21 +26,21 @@ public:
 
   //unique_ptr<OperatorNode> parseOperator(int);
   bool parseTerminal(int type, std::string str, bool expect);
-  bool parseToken(int type);
+  bool consumeToken(int type);
+  bool acceptToken(int type);
+  bool consumeOperator(string);
 
   unique_ptr<Type> parseType();
   unique_ptr<TypeIdentifier> parseTypeIdentifier();
   unique_ptr<TypeLabel> parseTypeLabel();
   unique_ptr<LabeledType> parseLabeledType();
-  unique_ptr<LabeledTypeList> parseLabeledTypeList();
+  unique_ptr<TypeList> parseTupleTypeElementList();
   unique_ptr<TupleType> parseTupleType();
-  unique_ptr<FunctionType> parseFunctionType();
-  unique_ptr<FunctionType> parseFunctionDeclType();
+  unique_ptr<FunctionType> parseFunctionType(bool decl);
   unique_ptr<Type> parseTupleOrFunctionType();
   unique_ptr<ListType> parseListType();
   unique_ptr<MapType> parseMapType();
   unique_ptr<Type> parseListOrMapType();
-
   unique_ptr<Decl> parseDecl();
   unique_ptr<TypeAlias> parseTypeAlias();
   unique_ptr<VarDecl> parseVarDecl();
@@ -48,6 +48,7 @@ public:
   unique_ptr<FuncDecl> parseFuncDecl();
 
   unique_ptr<Expr> parseExpr(int precedence = OperatorTable::size());
+  unique_ptr<Expr> parseParenthesizedExpr();
   unique_ptr<OperatorExpr> parseOperatorExpr(int precedence);
   unique_ptr<Expr> parseBinaryExpr(int precedence);
   unique_ptr<Expr> parseInfixNone(int p);
@@ -59,12 +60,15 @@ public:
   unique_ptr<DoubleExpr> parseDoubleExpr();
   unique_ptr<StringExpr> parseStringExpr();
   unique_ptr<ExprLabel> parseExprLabel();
-  unique_ptr<Expr> parseLabeledExpr();
+  unique_ptr<LabeledExpr> parseLabeledExpr();
+  unique_ptr<Expr> parseLabeledExprOrExpr();
   unique_ptr<Expr> parseIdentifierOrFunctionCall();
   unique_ptr<ExprList> parseExprList();
-  unique_ptr<Identifier> parseIdentifier();
-  unique_ptr<TupleExpr> parseTupleExpr();
+  unique_ptr<IdentifierExpr> parseIdentifier();
+  unique_ptr<Expr> parseTupleExpr();
   unique_ptr<FunctionCall> parseFunctionCall();
+  unique_ptr<TupleExpr> parseFunctionParameters();
+
 
   /*
   unique_ptr<StmtList> parseParamList();

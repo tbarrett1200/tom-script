@@ -9,25 +9,19 @@ TypeIdentifier::TypeIdentifier(Token n) {
 TypeLabel::TypeLabel(Token n) {
   name = n;
 }
-LabeledType::LabeledType(unique_ptr<TypeLabel> p, unique_ptr<TypeLabel> s, unique_ptr<Type> t)
-: primary{move(p)}, secondary{move(s)}, type{move(t)} {
+LabeledType::LabeledType(unique_ptr<TypeLabel> p, unique_ptr<Type> t)
+: label{move(p)}, type{move(t)} {
   if (!type) {
     throw std::domain_error("labeled-type: type is required");
   }
 }
 
-LabeledTypeList::LabeledTypeList(unique_ptr<LabeledType> e, unique_ptr<LabeledTypeList> l)
-: element{move(e)}, list{move(l)} {
-  if (!element) {
-    throw std::domain_error("type-list: element is required");
-  }
-}
 
-TupleType::TupleType(unique_ptr<LabeledTypeList> l)
+TupleType::TupleType(unique_ptr<TypeList> l)
 : list{move(l)} {
 }
 
-FunctionType::FunctionType(unique_ptr<LabeledTypeList> p, unique_ptr<Type> r)
+FunctionType::FunctionType(unique_ptr<TypeList> p, unique_ptr<Type> r)
 : params{move(p)}, returns{move(r)} {}
 
 ListType::ListType(unique_ptr<Type> t)

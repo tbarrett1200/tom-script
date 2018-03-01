@@ -41,9 +41,9 @@ public:
         auto parser = Parser{&source};
         if (!parser.token().is(Token::eof)) {
           auto type = parser.parseDecl();
-        }
-        if (!parser.token().is(Token::eof)) {
-          parser.report(parser.token(), "error: expected eof");
+          if (type && !parser.token().is(Token::eof)) {
+            parser.report(parser.token(), "error: expected eof");
+          }
         }
       }
       count++;

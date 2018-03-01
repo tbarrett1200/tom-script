@@ -9,10 +9,5 @@ class Stmt {
 public:
 };
 
-using StmtList = List<Stmt>;
-using CompoundStmt = Meta<Stmt, StmtList>;
-using ConditionalStmt = Meta<CompoundStmt, StmtList, Expr>;
-using ConditionalStmtList = Meta<ConditionalStmt>;
-using ConditionalStmtGroup = Meta<Stmt, ConditionalStmtList>;
 
 #endif
