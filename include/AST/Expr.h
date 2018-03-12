@@ -2,61 +2,151 @@
 #define AST_EXPR_H
 
 #include "AST/ASTNode.h"
+#include "AST/Matchable.h"
 #include "Parse/Token.h"
 #include "Parse/Operator.h"
-#include "AST/List.h"
 
 using namespace std;
-class Expr {
+
+class Expr : virtual public Matchable {
 public:
-  static std::vector<int> startTokens;
-  virtual ~Expr() = default;
 };
 
-using ExprList = List<Expr>;
+
+class ExprList : public NonTerminal {
+public:
+  /* member variables */
+  unique_ptr<Expr> element;
+  unique_ptr<ExprList> list;
+
+  /* Returns a vector of children for easy traversal */
+  std::vector<Matchable*> getChildren() const {
+    if (!list) return {element.get()};
+    else {
+      auto children = list->getChildren();
+      children.insert(children.begin(), element.get());
+      return children;
+    }
+  }
+
+  template <typename T> bool has() {
+    if (list == nullptr) return true;
+    else if (!dynamic_cast<T*>(element.get())) return false;
+    else return list->has<T>();
+  };
+
+  /* Constructor */
+  ExprList(unique_ptr<Expr> e, unique_ptr<ExprList> l)
+    : element{move(e)}, list{move(l)} {}
+};
 
 
-class ExprLabel {
+class ExprLabel: public Terminal  {
 public:
   Token name;
-  ExprLabel(Token n);
+
+  /* Returns a vector of children for easy traversal */
+  std::string getLexeme() const {
+    return name.lexeme;
+  }
+
+  ExprLabel(Token n): name{n} {};
 };
 
-class LabeledExpr : public Expr {
+class LabeledExpr : public Expr, public NonTerminal  {
 public:
   unique_ptr<ExprLabel> label;
   unique_ptr<Expr> expr;
-  LabeledExpr(unique_ptr<ExprLabel> l, unique_ptr<Expr> e);
+
+  /* Returns a vector of children for easy traversal */
+  std::vector<Matchable*> getChildren() const {
+    return {label.get(), expr.get()};
+  }
+
+  LabeledExpr(unique_ptr<ExprLabel> l, unique_ptr<Expr> e): label{move(l)}, expr{move(e)} {
+    if (!label) {
+      throw std::domain_error("labeled expr: label is required");
+    }
+    if (!expr) {
+      throw std::domain_error("labeled expr: expr is required");
+    }
+  }
 };
 
-class StringExpr: public Expr {
+class StringExpr: public Expr, public Terminal  {
 public:
   Token token;
-  StringExpr(Token);
+
+  /* Returns a vector of children for easy traversal */
+  std::string getLexeme() const {
+    return token.lexeme;
+  }
+
+  StringExpr(Token t) : token{t} {
+    if (t.isNot(Token::string_literal)) {
+      throw std::domain_error("StringExpr requires a token of type string_literal");
+    }
+  }
 };
 
-class IntegerExpr: public Expr {
+class IntegerExpr: public Expr, public Terminal  {
 public:
   Token token;
-  IntegerExpr(Token);
+
+  /* Returns a vector of children for easy traversal */
+  std::string getLexeme() const {
+    return token.lexeme;
+  }
+
+  IntegerExpr(Token t) : token{t} {
+    if (t.isNot(Token::integer_literal)) {
+      throw std::domain_error("IntegerExpr requires a token of type integer_literal");
+    }
+  }
 };
 
-class DoubleExpr: public Expr {
+class DoubleExpr: public Expr, public Terminal  {
 public:
   Token token;
-  DoubleExpr(Token);
+
+  /* Returns a vector of children for easy traversal */
+  std::string getLexeme() const {
+    return token.lexeme;
+  }
+
+  DoubleExpr(Token t) : token{t} {
+    if (t.isNot(Token::double_literal)) {
+      throw std::domain_error("DoubleExpr requires a token of type double_literal");
+    }
+  }
 };
 
-class IdentifierExpr: public Expr {
+class IdentifierExpr: public Expr, public Terminal  {
 public:
   Token token;
-  IdentifierExpr(Token);
+
+  /* Returns a vector of children for easy traversal */
+  std::string getLexeme() const {
+    return token.lexeme;
+  }
+
+  IdentifierExpr(Token t) : token{t} {
+    if (t.isNot(Token::identifier)) {
+      throw std::domain_error("Identifier requires a token of type identifier");
+    }
+  }
 };
 
-class TupleExpr: public Expr {
+class TupleExpr: public Expr, public NonTerminal  {
 public:
   unique_ptr<ExprList> list;
-  TupleExpr(unique_ptr<List<Expr>>);
+
+  /* Returns a vector of children for easy traversal */
+  std::vector<Matchable*> getChildren() const {
+    return {list.get()};
+  }
+
+  TupleExpr(unique_ptr<ExprList> l) : list{move(l)} {}
 };
 
 /**
@@ -64,10 +154,19 @@ public:
  *
  * <UnaryExpr> ::= <OperatorExpr> <Expr>
  */
-class OperatorExpr: public Expr {
+class OperatorExpr: public Expr, public Terminal {
 public:
   Token token;
-  OperatorExpr(Token);
+
+  /* Returns a vector of children for easy traversal */
+  std::string getLexeme() const {
+    return token.lexeme;
+  }
+  OperatorExpr(Token t) {
+    if (t.isNot(Token::operator_id)) {
+      throw std::domain_error("OperatorExpr requires a token of type operator_id");
+    }
+  }
 };
 
 /**
@@ -76,11 +175,24 @@ public:
  *
  * <UnaryExpr> ::= <OperatorExpr> <Expr>
  */
-class UnaryExpr: public Expr {
+class UnaryExpr: public Expr, public NonTerminal  {
 public:
   unique_ptr<OperatorExpr> op;
   unique_ptr<Expr> expr;
-  UnaryExpr(unique_ptr<OperatorExpr>, unique_ptr<Expr>);
+
+  /* Returns a vector of children for easy traversal */
+  std::vector<Matchable*> getChildren() const {
+    return {op.get(), expr.get()};
+  }
+
+  UnaryExpr(unique_ptr<OperatorExpr> o, unique_ptr<Expr> e) : op{move(o)}, expr{move(e)} {
+    if (!op) {
+      throw std::domain_error("BinaryExpr: op is required");
+    }
+    if (!expr) {
+      throw std::domain_error("BinaryExpr: expr is required");
+    }
+  }
 };
 
 /**
@@ -90,13 +202,24 @@ public:
  *
  * <BinaryExpr> ::= <Expr> <OperatorExpr> <Expr>
  */
-class BinaryExpr: public Expr {
+class BinaryExpr: public Expr, public NonTerminal  {
 public:
   unique_ptr<Expr> left;
   unique_ptr<OperatorExpr> op;
   unique_ptr<Expr> right;
 
-  BinaryExpr(unique_ptr<Expr>, unique_ptr<OperatorExpr>, unique_ptr<Expr>);
+  BinaryExpr(unique_ptr<Expr> l, unique_ptr<OperatorExpr> o, unique_ptr<Expr> r)
+  : left{move(l)}, op{move(o)}, right{move(r)} {
+    if (!left) {
+      throw std::domain_error("BinaryExpr: left is required");
+    }
+    if (!op) {
+      throw std::domain_error("BinaryExpr: op is required");
+    }
+    if (!right) {
+      throw std::domain_error("BinaryExpr: right is required");
+    }
+  }
 };
 
 /**
@@ -106,12 +229,22 @@ public:
  * <FunctionCall> ::= <Identifier> <Arguments>
  *
  */
-class FunctionCall: public Expr {
+class FunctionCall: public Expr, public NonTerminal {
 public:
   unique_ptr<IdentifierExpr> name;
   unique_ptr<TupleExpr> arguments;
 
-  FunctionCall(unique_ptr<IdentifierExpr>, unique_ptr<TupleExpr>);
+  /* Returns a vector of children for easy traversal */
+  std::vector<Matchable*> getChildren() const {
+    return {name.get(), arguments.get()};
+  }
+
+  FunctionCall(unique_ptr<IdentifierExpr> n, unique_ptr<TupleExpr> a)
+  : name{move(n)}, arguments{move(a)} {
+    if (!name) {
+      throw std::domain_error("function call: name is required");
+    }
+  }
 };
 
 

@@ -21,21 +21,21 @@ private:
   SourceCode *source;
 
 public:
-
   // constructs an ErrorReporter object for the given file buffer.
-  ErrorReporter(SourceCode*);
+  ErrorReporter(SourceCode *src) : source{src} {}
 
-  // reports an error to the command line with a specified row, col, and message
-  // this should not be used in most cases, but is provided just in case a Token
-  // object is not avaiable.
-  void report(int, int, std::string);
+  std::string report(int r, int c, std::string err) {
+    std::stringstream message;
+    message << source->getPath() << ":" << r << ":"<< c << ": " << err << std::endl;
+    message << source->getLine(r) << std::endl;
+    message << std::string(c, ' ') << '^' << std::endl;
+    return message.str();
+  }
 
-  // reports an error to the command line taking location information from a
-  // given token, and displaying the given error message.
-  void report(Token, std::string);
+  std::string report(Token t, std::string err) {
+    return report(t.row, t.col, err);
+  }
 
-  static std::ostream &globalStream;
-  static bool mute;
 };
 
 #endif

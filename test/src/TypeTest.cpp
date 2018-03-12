@@ -1,18 +1,29 @@
 #include <gtest/gtest.h>
-#include "Type.h"
+#include "AST/Type.h"
+#include "Parse/Parser.h"
 
-TEST(Builtin, Constructor) {
-  Builtin type1{Builtin::Type::int64};
-  EXPECT_EQ(type1.type, Builtin::Type::int64);
+TEST(TypeIdentifier, Constructor) {
+  const std::stringstream sstream{"Int"};
+  auto source = SourceCode{sstream, "test"};
+  auto parser = Parser{&source};
+  auto type = parser.parseTypeIdentifier();
+  ASSERT_NE(type, nullptr);
 
-  Builtin type2{Builtin::Type::float64};
-  EXPECT_EQ(type2.type, Builtin::Type::float64);
+  EXPECT_TRUE(type->matches(Pattern{"Int"}));
+  EXPECT_FALSE(type->matches(Pattern{"Double"}));
 }
 
-TEST(Builtin, size) {
-  Builtin type1{Builtin::Type::int64};
-  EXPECT_EQ(type1.size(), 8);
+TEST(TupleType, Constructor) {
+  const std::stringstream sstream{"(Int, Double, String)"};
+  auto source = SourceCode{sstream, "test"};
+  auto parser = Parser{&source};
+  auto type = parser.parseTupleType();
+  ASSERT_NE(type, nullptr);
 
-  Builtin type2{Builtin::Type::float64};
-  EXPECT_EQ(type2.size(), 8);
+  EXPECT_TRUE(type->matches(Pattern{"Int", "Double", "String"}));
+  EXPECT_FALSE(type->matches(Pattern{"Int", "String", "String"}));
+  EXPECT_FALSE(type->matches(Pattern{"Int", "Double"}));
+
+  EXPECT_TRUE(type->matches(Pattern{"Int", "Double"}, false));
+  EXPECT_FALSE(type->matches(Pattern{"Int", "String"}, false));
 }

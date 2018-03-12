@@ -4,7 +4,7 @@
 
 #include "Basic/SourceCode.h"
 #include "Parse/Parser.h"
-#include "AST/TypeExpr.h"
+#include "AST/Type.h"
 
 class REPLoop {
   int count = 1;

@@ -1,29 +1,22 @@
-TEST_SRC = $(wildcard test/src/*.cpp)
-TEST_OBJ = $(patsubst test/src/%.cpp, test/obj/%.o, $(TEST_SRC))
+DIR = $(patsubst src/%, obj/%, $(wildcard src/**))
+SRC = $(wildcard src/*.cpp)
+OBJ = $(patsubst src/%.cpp, obj/%.o, $(SRC))
 
-OBJ = $(filter-out obj/main.o, $(wildcard obj/*.o))
+SRC_OBJ = $(wildcard ../obj/AST/*.o) $(wildcard ../obj/Basic/*.o) $(wildcard ../obj/Parse/*.o)
+
+
+$(shell mkdir -p $(DIR))
+$(shell mkdir bin > /dev/null)
 
 CXX = clang++
-CXXFLAGS = -c -g -std=c++11  -I include
+CXXFLAGS = -std=c++1z -c -g -Wall -I ../include
 
-test/test: $(TEST_OBJ) $(OBJ)
-	$(CXX) -o $@ $^ -g -lpthread -lgtest -lgtest_main -std=c++14
+all: $(OBJ)
+	clang++ -std=c++1z -g $^ $(SRC_OBJ) -lpthread -lgtest -lgtest_main -o bin/test
 
-DEPDIR := test/.d
-TEST_OBJDIR := test/obj
+obj/%.o: src/%.cpp
+	$(CXX) $< $(CXXFLAGS) -o $@
 
-$(shell mkdir -p $(DEPDIR) >/dev/null)
-$(shell mkdir -p $(TEST_OBJDIR) >/dev/null)
-
-DEPFLAGS = -MT $@ -MMD -MP -MF $(DEPDIR)/$*.Td
-
-COMPILE.cpp = $(CXX) $(DEPFLAGS) $(CXXFLAGS) $(CPPFLAGS) $(TARGET_ARCH) -c
-POSTCOMPILE = @mv -f $(DEPDIR)/$*.Td $(DEPDIR)/$*.d && touch $@
-
-test/obj/%.o : test/src/%.cpp
-test/obj/%.o : test/src/%.cpp $(DEPDIR)/%.d
-	$(COMPILE.cpp) $(OUTPUT_OPTION) $<
-	$(POSTCOMPILE)
-
-$(DEPDIR)/%.d: ;
-.PRECIOUS: $(DEPDIR)/%.d
+clean:
+	rm -r obj
+	rm -r bin

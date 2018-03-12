@@ -1,6 +1,6 @@
 #include "Parse/Parser.h"
 #include "AST/Decl.h"
-#include "AST/TypeExpr.h"
+#include "AST/Type.h"
 
 #include <memory>
 

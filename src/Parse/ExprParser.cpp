@@ -6,6 +6,15 @@
 
 using namespace std;
 
+std::vector<int> exprStartTokens = {
+  Token::identifier,
+  Token::integer_literal,
+  Token::double_literal,
+  Token::string_literal,
+  Token::l_paren
+};
+
+
 unique_ptr<Expr> Parser::parseExpr(int precedence) {
   if (token().is(Token::l_paren)) return parseTupleExpr();
 

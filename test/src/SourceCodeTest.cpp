@@ -1,7 +1,6 @@
 #include <gtest/gtest.h>
-#include "SourceCode.h"
 
-
+/*
 TEST(SourceCode, Constructor) {
   SourceCode example{std::stringstream{"Testing Testing Testing"}, "test"};
   EXPECT_EQ(example.getText(),"Testing Testing Testing");
@@ -18,7 +17,7 @@ TEST(SourceCode, getLineCount) {
   const std::stringstream stream3 {"123\n456\n"};
   EXPECT_EQ(SourceCode(stream3, "test").getLineCount(),3);
 }
- 
+
 TEST(SourceCode, getLine) {
   std::string text = "123\n456\n";
   EXPECT_EQ(SourceCode(std::stringstream(text), "test").getLine(0),"123");
@@ -37,3 +36,4 @@ TEST(SourceCode, getChar) {
   EXPECT_EQ(source.getChar(3), -1);
   EXPECT_EQ(source.getChar(50),-1);
 }
+*/

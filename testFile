@@ -1,9 +1,17 @@
-var a = 4.0;
-var b = 4;
-var c = "4.0";
+var a:Int;
+var b:Int;
 
-func foo() -> String {
-  return "Hello\n";
+func add(a:Int, b:Int) -> Int {
+  return a+b;
 }
 
-printf("%s", foo());
+func subtract(a:Int, b:Int) -> Int {
+  return a-b;
+}
+
+func compare(a:Int, b:Int) -> Int {
+  if (a > b) {
+    return 1;
+  }
+  return 0;
+}

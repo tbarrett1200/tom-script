@@ -1,6 +1,10 @@
 #include "AST/ASTWalker.h"
 
 #include <stdexcept>
+
+void traverseNode(Matchable*) {
+
+}
 /*
 bool ASTWalker::traverseNode(ASTNode* node) {
   switch (node->getType()) {

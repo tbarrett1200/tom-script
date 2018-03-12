@@ -9,27 +9,33 @@
 #include "AST/ASTNode.h"
 #include "AST/Decl.h"
 #include "AST/Expr.h"
-#include "AST/TypeExpr.h"
+#include "AST/Type.h"
 #include "AST/Stmt.h"
+
 class Parser {
   SourceCode* source;
   Lexer lexer;
   std::deque<Token> tokens;
+  static std::vector<int> exprStartTokens;
+
 public:
   Parser(SourceCode* source);
 
   Token token(int index=0);
   void consume();
-  void report(Token, std::string);
+  std::string report(Token, std::string);
 
   void consumeUntil(std::vector<int> types);
 
   //unique_ptr<OperatorNode> parseOperator(int);
   bool parseTerminal(int type, std::string str, bool expect);
   bool consumeToken(int type);
+  Token expectToken(int typem, std::string);
+
   bool acceptToken(int type);
   bool consumeOperator(string);
 
+  static unique_ptr<Type> makeType(std::string);
   unique_ptr<Type> parseType();
   unique_ptr<TypeIdentifier> parseTypeIdentifier();
   unique_ptr<TypeLabel> parseTypeLabel();

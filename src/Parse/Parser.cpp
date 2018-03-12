@@ -1,6 +1,6 @@
 #include "Parse/Parser.h"
 #include "Parse/Token.h"
-#include "AST/Tree.h"
+#include "AST/Matchable.h"
 #include "Basic/ErrorReporter.h"
 #include "Parse/Operator.h"
 
@@ -39,8 +39,8 @@ void Parser::consumeUntil(std::vector<int> types) {
   }
 }
 
-void Parser::report(Token tok, std::string msg) {
-  ErrorReporter{source}.report(tok, msg);
+std::string Parser::report(Token tok, std::string msg) {
+  return ErrorReporter{source}.report(tok, msg);
 }
 
 bool Parser::parseTerminal(int type, std::string str, bool expect = true) {
@@ -72,6 +72,14 @@ bool Parser::acceptToken(int type) {
   } else {
     return false;
   }
+}
+
+Token Parser::expectToken(int type, std::string name) {
+  Token tok = token();
+  if (tok.is(type)) {
+    consume();
+    return tok;
+  } else throw report(token(), "error: expected " + name);
 }
 
 bool Parser::consumeOperator(std::string s) {
