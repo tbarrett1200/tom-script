@@ -1,0 +1,5 @@
+#ifndef LABEL
+#define LABEL(SELF)
+#endif
+
+LABEL(TypeLabel)

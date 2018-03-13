@@ -3,6 +3,12 @@
 
 class Stmt {
 public:
+  enum class Kind {
+    #define STMT(SELF, PARENT) SELF,
+    #include "AST/Stmt.def"
+    #undef STMT
+  };
+  virtual Stmt::Kind getKind() const = 0;
 };
 
 

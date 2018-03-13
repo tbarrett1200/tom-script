@@ -1,0 +1,14 @@
+#ifndef EXPR
+#define EXPR(SELF, SUPER)
+#endif
+
+EXPR(LabeledExpr, Expr)
+EXPR(StringExpr, Expr)
+EXPR(IntegerExpr, Expr)
+EXPR(DoubleExpr, Expr)
+EXPR(IdentifierExpr, Expr)
+EXPR(TupleExpr, Expr)
+EXPR(OperatorExpr, Expr)
+EXPR(UnaryExpr, Expr)
+EXPR(BinaryExpr, Expr)
+EXPR(FunctionCall, Expr)

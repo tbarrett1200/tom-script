@@ -10,106 +10,39 @@ unique_ptr<Decl> Parser::parseDecl() {
   case Token::kw_let: return parseLetDecl();
   case Token::kw_func: return parseFuncDecl();
   case Token::kw_typealias: return parseTypeAlias();
-  default:
-    report(token(), "error: unable to parse decl");
-    return nullptr;
+  default: throw report(token(), "error: unable to parse decl");
   }
 }
 unique_ptr<TypeAlias> Parser::parseTypeAlias() {
-  if (!consumeToken(Token::kw_typealias)) {
-    report(token(), "expected typedecl");
-    return nullptr;
-  }
-  auto name = token();
-  if (!consumeToken(Token::identifier)) {
-    report(name, "expected identifier");
-    return nullptr;
-  }
-  if (!consumeOperator("=")) {
-    report(token(), "expected '='");
-    return nullptr;
-  }
+  expectToken(Token::kw_typealias, "typedecl");
+  auto name = expectToken(Token::identifier, "identifier");
+  if (!consumeOperator("=")) throw report(token(), "expected '='");
   auto type = parseType();
-  if (!type) {
-    report(token(), "expected type");
-    return nullptr;
-  }
   return make_unique<TypeAlias>(name, move(type));
 }
 
 unique_ptr<VarDecl> Parser::parseVarDecl() {
-  if (!consumeToken(Token::kw_var)) {
-    report(token(), "expected var");
-    return nullptr;
-  }
-  auto name = token();
-  if (!consumeToken(Token::identifier)) {
-    report(name, "expected identifier");
-    return nullptr;
-  }
-  unique_ptr<Type> type;
-  if (consumeToken(Token::colon)) {
-    type = parseType();
-    if (!type) {
-      report(token(), "expected type");
-      return nullptr;
-    }
-  }
-  unique_ptr<Expr> expr;
-  if (consumeOperator("=")){
-    expr = parseExpr();
-    if (!expr) {
-      report(token(), "expected expr");
-      return nullptr;
-    }
-  }
-  if (!type && !expr) {
-    report(token(), "expected type or expression");
-    return nullptr;
-  } else {
-    return make_unique<VarDecl>(name, move(type), move(expr));
-  }
+  expectToken(Token::kw_var, "var");
+  auto name = expectToken(Token::identifier, "identifier");
+  unique_ptr<Type> type = consumeToken(Token::colon)? parseType(): nullptr;
+  unique_ptr<Expr> expr = consumeOperator("=")? parseExpr(): nullptr;
+  if (type || expr) return make_unique<VarDecl>(name, move(type), move(expr));
+  else throw report(token(), "expected type or expression");
 }
 
 unique_ptr<LetDecl> Parser::parseLetDecl() {
-  if (!consumeToken(Token::kw_let)) {
-    report(token(), "expected let");
-    return nullptr;
-  }
-  auto name = token();
-  if (!consumeToken(Token::identifier)) {
-    report(name, "expected identifier");
-    return nullptr;
-  }
-  unique_ptr<Type> type;
-  if (consumeToken(Token::colon)) {
-    type = parseType();
-    if (!type) return nullptr;
-  }
-  if (consumeOperator("=")){
+  expectToken(Token::kw_let, "let");
+  auto name = expectToken(Token::identifier, "identifier");
+  unique_ptr<Type> type = consumeToken(Token::colon)? parseType(): nullptr;
+  if (consumeOperator("=")) {
     auto expr = parseExpr();
-    if (!expr) return nullptr;
     return make_unique<LetDecl>(name, move(type), move(expr));
-  } else {
-    report(token(), "constants must be initialized at declaration");
-    return nullptr;
-  }
+  } else throw report(token(), "constants must be initialized at declaration");
 }
 
 unique_ptr<FuncDecl> Parser::parseFuncDecl() {
-  if (!consumeToken(Token::kw_func)) {
-    report(token(), "expected func");
-    return nullptr;
-  }
-  auto name = token();
-  if (!consumeToken(Token::identifier)) {
-    report(name, "expected identifier");
-    return nullptr;
-  }
+  expectToken(Token::kw_func, "func");
+  auto name = expectToken(Token::identifier, "identifier");
   auto type = parseFunctionType(true);
-  if (!type) {
-    report(token(), "expected type");
-    return nullptr;
-  }
   return make_unique<FuncDecl>(name, move(type));
 }

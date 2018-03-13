@@ -8,8 +8,11 @@
 class Decl : virtual public Matchable {
 public:
   enum class Kind {
-    TypeAlias, VarDecl, LetDecl, FuncDecl
+    #define DECL(SELF, PARENT) SELF,
+    #include "AST/Decl.def"
+    #undef DECL
   };
+  virtual Decl::Kind getKind() const = 0;
   virtual std::string getName() const = 0;
 };
 
@@ -38,6 +41,7 @@ public:
     return {name.get(), type.get()};
   }
 
+  Decl::Kind getKind() const { return Kind::TypeAlias; }
   std::string getName() const { return name->getLexeme(); }
 
   TypeAlias(Token n, unique_ptr<Type> t)
@@ -55,6 +59,7 @@ public:
     return {name.get(), type.get(), expr.get()};
   }
 
+  Decl::Kind getKind() const { return Kind::VarDecl; }
   std::string getName() const { return name->getLexeme(); }
 
   VarDecl(Token n, unique_ptr<Type> t, unique_ptr<Expr> e)
@@ -74,6 +79,7 @@ public:
     return {name.get(), type.get(), expr.get()};
   }
 
+  Decl::Kind getKind() const { return Kind::LetDecl; }
   std::string getName() const { return name->getLexeme(); }
 
   LetDecl(Token n, unique_ptr<Type> t, unique_ptr<Expr> e)
@@ -95,6 +101,7 @@ public:
     return {name.get(), type.get()};
   }
 
+  Decl::Kind getKind() const { return Kind::FuncDecl; }
   std::string getName() const { return name->getLexeme(); }
 
   FuncDecl(Token n, unique_ptr<FunctionType> t)

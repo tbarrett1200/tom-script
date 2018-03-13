@@ -10,6 +10,12 @@ using namespace std;
 
 class Expr : virtual public Matchable {
 public:
+  enum class Kind {
+    #define EXPR(SELF, PARENT) SELF,
+    #include "AST/Expr.def"
+    #undef EXPR
+  };
+  virtual Expr::Kind getKind() const = 0;
 };
 
 
@@ -29,6 +35,10 @@ public:
     }
   }
 
+  int size() const {
+    if (!list) return 0;
+    else return list->size()+1;
+  }
   template <typename T> bool has() {
     if (list == nullptr) return true;
     else if (!dynamic_cast<T*>(element.get())) return false;
@@ -63,6 +73,8 @@ public:
     return {label.get(), expr.get()};
   }
 
+  Expr::Kind getKind() const { return Kind::LabeledExpr; }
+
   LabeledExpr(unique_ptr<ExprLabel> l, unique_ptr<Expr> e): label{move(l)}, expr{move(e)} {
     if (!label) {
       throw std::domain_error("labeled expr: label is required");
@@ -82,6 +94,8 @@ public:
     return token.lexeme;
   }
 
+  Expr::Kind getKind() const { return Kind::StringExpr; }
+
   StringExpr(Token t) : token{t} {
     if (t.isNot(Token::string_literal)) {
       throw std::domain_error("StringExpr requires a token of type string_literal");
@@ -97,6 +111,8 @@ public:
   std::string getLexeme() const {
     return token.lexeme;
   }
+
+  Expr::Kind getKind() const { return Kind::IntegerExpr; }
 
   IntegerExpr(Token t) : token{t} {
     if (t.isNot(Token::integer_literal)) {
@@ -114,6 +130,8 @@ public:
     return token.lexeme;
   }
 
+  Expr::Kind getKind() const { return Kind::DoubleExpr; }
+
   DoubleExpr(Token t) : token{t} {
     if (t.isNot(Token::double_literal)) {
       throw std::domain_error("DoubleExpr requires a token of type double_literal");
@@ -129,6 +147,8 @@ public:
   std::string getLexeme() const {
     return token.lexeme;
   }
+
+  Expr::Kind getKind() const { return Kind::IdentifierExpr; }
 
   IdentifierExpr(Token t) : token{t} {
     if (t.isNot(Token::identifier)) {
@@ -146,6 +166,8 @@ public:
     return {list.get()};
   }
 
+  Expr::Kind getKind() const { return Kind::TupleExpr; }
+
   TupleExpr(unique_ptr<ExprList> l) : list{move(l)} {}
 };
 
@@ -162,6 +184,9 @@ public:
   std::string getLexeme() const {
     return token.lexeme;
   }
+
+  Expr::Kind getKind() const { return Kind::OperatorExpr; }
+
   OperatorExpr(Token t) {
     if (t.isNot(Token::operator_id)) {
       throw std::domain_error("OperatorExpr requires a token of type operator_id");
@@ -185,6 +210,8 @@ public:
     return {op.get(), expr.get()};
   }
 
+  Expr::Kind getKind() const { return Kind::UnaryExpr; }
+
   UnaryExpr(unique_ptr<OperatorExpr> o, unique_ptr<Expr> e) : op{move(o)}, expr{move(e)} {
     if (!op) {
       throw std::domain_error("BinaryExpr: op is required");
@@ -207,6 +234,12 @@ public:
   unique_ptr<Expr> left;
   unique_ptr<OperatorExpr> op;
   unique_ptr<Expr> right;
+
+  Expr::Kind getKind() const { return Kind::BinaryExpr; }
+
+  std::vector<Matchable*> getChildren() const {
+    return {left.get(), op.get(), right.get()};
+  }
 
   BinaryExpr(unique_ptr<Expr> l, unique_ptr<OperatorExpr> o, unique_ptr<Expr> r)
   : left{move(l)}, op{move(o)}, right{move(r)} {
@@ -238,6 +271,8 @@ public:
   std::vector<Matchable*> getChildren() const {
     return {name.get(), arguments.get()};
   }
+
+  Expr::Kind getKind() const { return Kind::FunctionCall; }
 
   FunctionCall(unique_ptr<IdentifierExpr> n, unique_ptr<TupleExpr> a)
   : name{move(n)}, arguments{move(a)} {

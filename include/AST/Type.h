@@ -12,7 +12,12 @@ using namespace std;
 
 class Type : virtual public Matchable {
 public:
-
+  enum class Kind {
+    #define TYPE(SELF, PARENT) SELF,
+    #include "AST/Type.def"
+    #undef TYPE
+  };
+  virtual Type::Kind getKind() const = 0;
 };
 
 
@@ -63,6 +68,8 @@ public:
   LabeledType(unique_ptr<TypeLabel> p, unique_ptr<Type> t)
     : label{move(p)}, type{move(t)} {}
 
+  Type::Kind getKind() const { return Kind::LabeledType; }
+
   std::vector<Matchable*> getChildren() const {
     return {label.get(), type.get()};
   }
@@ -77,6 +84,8 @@ public:
 
   TypeIdentifier(Token n)
     : token{n} {}
+
+  Type::Kind getKind() const { return Kind::TypeIdentifier; }
 
   std::string getLexeme() const {
     return token.lexeme;
@@ -93,6 +102,8 @@ public:
     return {list.get()};
   }
 
+  Type::Kind getKind() const { return Kind::TupleType; }
+
   TupleType(unique_ptr<TypeList> l)
     : list{move(l)} {}
 };
@@ -107,6 +118,8 @@ public:
 
   FunctionType(unique_ptr<TypeList> p, unique_ptr<Type> r)
     : params{move(p)}, returns{move(r)} {}
+
+  Type::Kind getKind() const { return Kind::FunctionType; }
 
   std::vector<Matchable*> getChildren() const {
     return {params.get(), returns.get()};
@@ -123,6 +136,8 @@ public:
   ListType(unique_ptr<Type> t)
     : type{move(t)} {}
 
+  Type::Kind getKind() const { return Kind::ListType; }
+
   std::vector<Matchable*> getChildren() const {
     return {type.get()};
   }
@@ -138,6 +153,8 @@ public:
 
   MapType(unique_ptr<Type> k, unique_ptr<Type> v)
     : keyType{move(k)}, valType{move(v)} {}
+
+  Type::Kind getKind() const { return Kind::MapType; }
 
   std::vector<Matchable*> getChildren() const {
     return {keyType.get(), valType.get()};

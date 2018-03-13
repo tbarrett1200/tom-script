@@ -1,0 +1,5 @@
+#ifndef LIST
+#define LIST(SELF, KIND)
+#endif
+
+#define LIST(TypeList, Type)

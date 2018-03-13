@@ -1,0 +1,8 @@
+#ifndef DECL
+#define DECL(SELF, SUPER)
+#endif
+
+DECL(TypeAlias, Decl)
+DECL(VarDecl, Decl)
+DECL(LetDecl, Decl)
+DECL(FuncDecl, Decl)

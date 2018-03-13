@@ -5,6 +5,14 @@
 #include "Basic/SourceCode.h"
 #include "Parse/Parser.h"
 #include "AST/Type.h"
+#include "AST/ASTWalker.h"
+
+class TypePrinter : public ASTWalker {
+  bool visitType(Decl* t) {
+    std::cout << "decl" << std::endl;
+    return true;
+  }
+};
 
 class REPLoop {
   int count = 1;
@@ -40,9 +48,11 @@ public:
         auto source = SourceCode{sstream, "terminal"};
         auto parser = Parser{&source};
         if (!parser.token().is(Token::eof)) {
-          auto type = parser.parseDecl();
-          if (type && !parser.token().is(Token::eof)) {
-            parser.report(parser.token(), "error: expected eof");
+          try {
+            auto type = parser.parseDecl();
+            TypePrinter().traverseDecl(type.get());
+          } catch (std::string s) {
+            std::cout << s;
           }
         }
       }

@@ -1,0 +1,10 @@
+#ifndef TYPE
+#define TYPE(SELF, SUPER)
+#endif
+
+TYPE(LabeledType, Type)
+TYPE(TypeIdentifier, Type)
+TYPE(TupleType, Type)
+TYPE(FunctionType, Type)
+TYPE(ListType, Type)
+TYPE(MapType, Type)
