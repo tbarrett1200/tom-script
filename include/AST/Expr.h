@@ -1,13 +1,20 @@
 #ifndef AST_EXPR_H
 #define AST_EXPR_H
 
-#include "AST/ASTNode.h"
 #include "AST/Matchable.h"
 #include "Parse/Token.h"
+#include "AST/Type.h"
+#include "AST/DeclContext.h"
 #include "Parse/Operator.h"
+#include "AST/AmbiguousType.h"
+
+#include <memory>
 
 using namespace std;
 
+class DeclContext;
+
+class ContextSearchResult;
 class Expr : virtual public Matchable {
 public:
   enum class Kind {
@@ -16,29 +23,44 @@ public:
     #undef EXPR
   };
   virtual Expr::Kind getKind() const = 0;
+  virtual AmbiguousType getType(DeclContext*) const = 0;
 };
 
 
 class ExprList : public NonTerminal {
+private:
+  shared_ptr<TypeList> typeList ;
+
 public:
   /* member variables */
-  unique_ptr<Expr> element;
-  unique_ptr<ExprList> list;
+  shared_ptr<Expr> element;
+  shared_ptr<ExprList> list;
 
   /* Returns a vector of children for easy traversal */
-  std::vector<Matchable*> getChildren() const {
-    if (!list) return {element.get()};
+  std::vector<std::shared_ptr<Matchable>> getChildren() const {
+    if (!list) return {element};
     else {
       auto children = list->getChildren();
-      children.insert(children.begin(), element.get());
+      children.insert(children.begin(), element);
       return children;
     }
   }
 
   int size() const {
-    if (!list) return 0;
+    if (!list) return 1;
     else return list->size()+1;
   }
+
+  shared_ptr<TypeList> getTypeList(DeclContext* c) {
+    if (!typeList) {
+      auto e = element->getType(c).get();
+      auto l = list ? list->getTypeList(c) : nullptr;
+      typeList = make_shared<TypeList>(e,l);
+    }
+    return typeList;
+  };
+
+
   template <typename T> bool has() {
     if (list == nullptr) return true;
     else if (!dynamic_cast<T*>(element.get())) return false;
@@ -46,8 +68,9 @@ public:
   };
 
   /* Constructor */
-  ExprList(unique_ptr<Expr> e, unique_ptr<ExprList> l)
-    : element{move(e)}, list{move(l)} {}
+  ExprList(shared_ptr<Expr> e, shared_ptr<ExprList> l)
+    : element{move(e)}, list{move(l)} {
+  }
 };
 
 
@@ -65,17 +88,25 @@ public:
 
 class LabeledExpr : public Expr, public NonTerminal  {
 public:
-  unique_ptr<ExprLabel> label;
-  unique_ptr<Expr> expr;
+  shared_ptr<ExprLabel> label;
+  shared_ptr<Expr> expr;
 
   /* Returns a vector of children for easy traversal */
-  std::vector<Matchable*> getChildren() const {
-    return {label.get(), expr.get()};
+  std::vector<std::shared_ptr<Matchable>> getChildren() const {
+    return {label, expr};
   }
 
   Expr::Kind getKind() const { return Kind::LabeledExpr; }
 
-  LabeledExpr(unique_ptr<ExprLabel> l, unique_ptr<Expr> e): label{move(l)}, expr{move(e)} {
+  AmbiguousType getType(DeclContext* c) const {
+    std::vector<std::shared_ptr<Type>> types;
+    for (auto type: expr->getType(c).types) {
+      types.push_back(std::make_shared<LabeledType>(std::make_shared<TypeLabel>(label->name), type));
+    }
+    return {types};
+  };
+
+  LabeledExpr(shared_ptr<ExprLabel> l, shared_ptr<Expr> e): label{move(l)}, expr{move(e)} {
     if (!label) {
       throw std::domain_error("labeled expr: label is required");
     }
@@ -86,6 +117,9 @@ public:
 };
 
 class StringExpr: public Expr, public Terminal  {
+private:
+  shared_ptr<Type*> type;
+
 public:
   Token token;
 
@@ -95,6 +129,8 @@ public:
   }
 
   Expr::Kind getKind() const { return Kind::StringExpr; }
+
+  AmbiguousType getType(DeclContext*) const;
 
   StringExpr(Token t) : token{t} {
     if (t.isNot(Token::string_literal)) {
@@ -114,6 +150,8 @@ public:
 
   Expr::Kind getKind() const { return Kind::IntegerExpr; }
 
+  AmbiguousType getType(DeclContext*) const;
+
   IntegerExpr(Token t) : token{t} {
     if (t.isNot(Token::integer_literal)) {
       throw std::domain_error("IntegerExpr requires a token of type integer_literal");
@@ -131,6 +169,9 @@ public:
   }
 
   Expr::Kind getKind() const { return Kind::DoubleExpr; }
+
+
+  AmbiguousType getType(DeclContext*) const;
 
   DoubleExpr(Token t) : token{t} {
     if (t.isNot(Token::double_literal)) {
@@ -150,25 +191,27 @@ public:
 
   Expr::Kind getKind() const { return Kind::IdentifierExpr; }
 
-  IdentifierExpr(Token t) : token{t} {
-    if (t.isNot(Token::identifier)) {
-      throw std::domain_error("Identifier requires a token of type identifier");
-    }
-  }
+  AmbiguousType getType(DeclContext*) const;
+
+  IdentifierExpr(Token t) : token{t} {}
 };
 
 class TupleExpr: public Expr, public NonTerminal  {
+private:
+
 public:
-  unique_ptr<ExprList> list;
+  shared_ptr<ExprList> list;
 
   /* Returns a vector of children for easy traversal */
-  std::vector<Matchable*> getChildren() const {
-    return {list.get()};
+  std::vector<std::shared_ptr<Matchable>> getChildren() const {
+    return {list};
   }
 
   Expr::Kind getKind() const { return Kind::TupleExpr; }
 
-  TupleExpr(unique_ptr<ExprList> l) : list{move(l)} {}
+  AmbiguousType getType(DeclContext*) const;
+
+  TupleExpr(shared_ptr<ExprList> l) : list{move(l)} {}
 };
 
 /**
@@ -187,7 +230,9 @@ public:
 
   Expr::Kind getKind() const { return Kind::OperatorExpr; }
 
-  OperatorExpr(Token t) {
+  AmbiguousType getType(DeclContext*) const;
+
+  OperatorExpr(Token t) : token{t} {
     if (t.isNot(Token::operator_id)) {
       throw std::domain_error("OperatorExpr requires a token of type operator_id");
     }
@@ -202,17 +247,19 @@ public:
  */
 class UnaryExpr: public Expr, public NonTerminal  {
 public:
-  unique_ptr<OperatorExpr> op;
-  unique_ptr<Expr> expr;
+  shared_ptr<OperatorExpr> op;
+  shared_ptr<Expr> expr;
 
   /* Returns a vector of children for easy traversal */
-  std::vector<Matchable*> getChildren() const {
-    return {op.get(), expr.get()};
+  std::vector<std::shared_ptr<Matchable>> getChildren() const {
+    return {op, expr};
   }
 
   Expr::Kind getKind() const { return Kind::UnaryExpr; }
 
-  UnaryExpr(unique_ptr<OperatorExpr> o, unique_ptr<Expr> e) : op{move(o)}, expr{move(e)} {
+  AmbiguousType getType(DeclContext*) const;
+
+  UnaryExpr(shared_ptr<OperatorExpr> o, shared_ptr<Expr> e) : op{move(o)}, expr{move(e)} {
     if (!op) {
       throw std::domain_error("BinaryExpr: op is required");
     }
@@ -231,17 +278,19 @@ public:
  */
 class BinaryExpr: public Expr, public NonTerminal  {
 public:
-  unique_ptr<Expr> left;
-  unique_ptr<OperatorExpr> op;
-  unique_ptr<Expr> right;
+  shared_ptr<Expr> left;
+  shared_ptr<OperatorExpr> op;
+  shared_ptr<Expr> right;
 
   Expr::Kind getKind() const { return Kind::BinaryExpr; }
 
-  std::vector<Matchable*> getChildren() const {
-    return {left.get(), op.get(), right.get()};
+  std::vector<std::shared_ptr<Matchable>> getChildren() const {
+    return {left, op, right};
   }
 
-  BinaryExpr(unique_ptr<Expr> l, unique_ptr<OperatorExpr> o, unique_ptr<Expr> r)
+  AmbiguousType getType(DeclContext*) const;
+
+  BinaryExpr(shared_ptr<Expr> l, shared_ptr<OperatorExpr> o, shared_ptr<Expr> r)
   : left{move(l)}, op{move(o)}, right{move(r)} {
     if (!left) {
       throw std::domain_error("BinaryExpr: left is required");
@@ -255,26 +304,21 @@ public:
   }
 };
 
-/**
- * An Expr subclass that represents a function call. Composed of an Identifier
- * and a TupleExpr. All members are guarenteed to be non-null.
- *
- * <FunctionCall> ::= <Identifier> <Arguments>
- *
- */
 class FunctionCall: public Expr, public NonTerminal {
 public:
-  unique_ptr<IdentifierExpr> name;
-  unique_ptr<TupleExpr> arguments;
+  shared_ptr<IdentifierExpr> name;
+  shared_ptr<TupleExpr> arguments;
 
   /* Returns a vector of children for easy traversal */
-  std::vector<Matchable*> getChildren() const {
-    return {name.get(), arguments.get()};
+  std::vector<std::shared_ptr<Matchable>> getChildren() const {
+    return {name, arguments};
   }
 
   Expr::Kind getKind() const { return Kind::FunctionCall; }
 
-  FunctionCall(unique_ptr<IdentifierExpr> n, unique_ptr<TupleExpr> a)
+  AmbiguousType getType(DeclContext*) const;
+
+  FunctionCall(shared_ptr<IdentifierExpr> n, shared_ptr<TupleExpr> a)
   : name{move(n)}, arguments{move(a)} {
     if (!name) {
       throw std::domain_error("function call: name is required");
@@ -282,5 +326,9 @@ public:
   }
 };
 
+
+ostream& operator<<(ostream& os, Expr* x);
+ostream& operator<<(ostream& os, ExprList* x);
+ostream& operator<<(ostream& os, ExprLabel* x);
 
 #endif

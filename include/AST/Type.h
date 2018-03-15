@@ -2,10 +2,10 @@
 #define AST_TYPE_DECL
 
 #include <iostream>
+#include <list>
 
 #include "AST/ASTNode.h"
 #include "AST/Matchable.h"
-#include "AST/Expr.h"
 #include "Parse/Token.h"
 
 using namespace std;
@@ -20,7 +20,7 @@ public:
   virtual Type::Kind getKind() const = 0;
 };
 
-
+ostream& operator<<(ostream& os, Type* x);
 class TypeLabel : public Terminal {
 public:
   Token token;
@@ -32,23 +32,43 @@ public:
     return token.lexeme;
   }
 };
-
+ostream& operator<<(ostream& os, TypeLabel* x);
 
 class TypeList : public NonTerminal {
 public:
-  unique_ptr<Type> element;
-  unique_ptr<TypeList> list;
+  shared_ptr<Type> element;
+  shared_ptr<TypeList> list;
 
-  TypeList(unique_ptr<Type> e, unique_ptr<TypeList> l)
+  TypeList(std::vector<std::shared_ptr<Type>> l) {
+    if (l.size() == 0) {
+      throw std::runtime_error("type list must have at least one type");
+    }
+    if (l.size() == 1) {
+      element = l[0];
+      list = nullptr;
+    } else {
+      element = l[0];
+      l.erase(l.begin());
+      list = std::make_shared<TypeList>(l);
+    }
+  }
+
+  TypeList(shared_ptr<Type> e, shared_ptr<TypeList> l)
     : element{move(e)}, list{move(l)} {}
 
-  std::vector<Matchable*> getChildren() const {
-    if (!list) return {element.get()};
+
+  std::vector<std::shared_ptr<Matchable>> getChildren() const {
+    if (!list) return {element};
     else {
       auto children = list->getChildren();
-      children.insert(children.begin(), element.get());
+      children.insert(children.begin(), element);
       return children;
     }
+  }
+
+  int size() const {
+    if (!list) return 1;
+    else return list->size()+1;
   }
 
   template <typename T> bool has() {
@@ -58,23 +78,22 @@ public:
   };
 };
 
-
+ostream& operator<<(ostream& os, TypeList* x);
 
 class LabeledType : public Type, public NonTerminal {
 public:
-  unique_ptr<TypeLabel> label;
-  unique_ptr<Type> type;
+  shared_ptr<TypeLabel> label;
+  shared_ptr<Type> type;
 
-  LabeledType(unique_ptr<TypeLabel> p, unique_ptr<Type> t)
+  LabeledType(shared_ptr<TypeLabel> p, shared_ptr<Type> t)
     : label{move(p)}, type{move(t)} {}
 
   Type::Kind getKind() const { return Kind::LabeledType; }
 
-  std::vector<Matchable*> getChildren() const {
-    return {label.get(), type.get()};
+  std::vector<std::shared_ptr<Matchable>> getChildren() const {
+    return {label, type};
   }
 };
-
 
 
 class TypeIdentifier : public Type, public Terminal {
@@ -87,6 +106,7 @@ public:
 
   Type::Kind getKind() const { return Kind::TypeIdentifier; }
 
+
   std::string getLexeme() const {
     return token.lexeme;
   }
@@ -95,69 +115,65 @@ public:
 
 class TupleType : public Type, public NonTerminal {
 public:
-  unique_ptr<TypeList> list;
+  shared_ptr<TypeList> list;
 
-
-  std::vector<Matchable*> getChildren() const {
-    return {list.get()};
+  std::vector<std::shared_ptr<Matchable>> getChildren() const {
+    return {list};
   }
 
   Type::Kind getKind() const { return Kind::TupleType; }
 
-  TupleType(unique_ptr<TypeList> l)
+  TupleType(shared_ptr<TypeList> l)
     : list{move(l)} {}
+
 };
 
 
 
 class FunctionType : public Type, public NonTerminal {
 public:
-  unique_ptr<TypeList> params;
-  unique_ptr<Type> returns;
+  shared_ptr<TypeList> params;
+  shared_ptr<Type> returns;
 
 
-  FunctionType(unique_ptr<TypeList> p, unique_ptr<Type> r)
+  FunctionType(shared_ptr<TypeList> p, shared_ptr<Type> r)
     : params{move(p)}, returns{move(r)} {}
 
   Type::Kind getKind() const { return Kind::FunctionType; }
 
-  std::vector<Matchable*> getChildren() const {
-    return {params.get(), returns.get()};
+  std::vector<std::shared_ptr<Matchable>> getChildren() const {
+    return {params, returns};
   }
 };
 
-
-
 class ListType : public Type, public NonTerminal {
 public:
-  std::unique_ptr<Type> type;
+  std::shared_ptr<Type> type;
 
 
-  ListType(unique_ptr<Type> t)
+  ListType(shared_ptr<Type> t)
     : type{move(t)} {}
 
   Type::Kind getKind() const { return Kind::ListType; }
 
-  std::vector<Matchable*> getChildren() const {
-    return {type.get()};
+  std::vector<std::shared_ptr<Matchable>> getChildren() const {
+    return {type};
   }
 };
 
-
-
 class MapType : public Type, public NonTerminal {
 public:
-  unique_ptr<Type> keyType;
-  unique_ptr<Type> valType;
+  shared_ptr<Type> keyType;
+  shared_ptr<Type> valType;
 
 
-  MapType(unique_ptr<Type> k, unique_ptr<Type> v)
+  MapType(shared_ptr<Type> k, shared_ptr<Type> v)
     : keyType{move(k)}, valType{move(v)} {}
 
   Type::Kind getKind() const { return Kind::MapType; }
 
-  std::vector<Matchable*> getChildren() const {
-    return {keyType.get(), valType.get()};
+  std::vector<std::shared_ptr<Matchable>> getChildren() const {
+    return {keyType, valType};
   }
 };
 

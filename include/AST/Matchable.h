@@ -1,6 +1,8 @@
 #ifndef TREE_H
 #define TREE_H
 
+#include "AST/ContextSearchResult.h"
+
 #include <vector>
 #include <algorithm>
 #include <initializer_list>
@@ -9,6 +11,7 @@
 class Matchable {
 public:
   virtual bool matches(const Matchable& m, bool exact = true) const = 0;
+
   virtual bool isTerminal() const = 0;
   virtual bool isNonTerminal() const = 0;
   virtual std::vector<std::string> getFlattenedTokens() const = 0;
@@ -31,7 +34,7 @@ public:
 
 class NonTerminal : virtual public Matchable  {
 public:
-  virtual std::vector<Matchable*> getChildren() const = 0;
+  virtual std::vector<std::shared_ptr<Matchable>> getChildren() const = 0;
   virtual bool isTerminal() const { return false; }
   virtual bool isNonTerminal() const { return true; }
   std::vector<std::string> getFlattenedTokens() const {
@@ -46,9 +49,9 @@ public:
     if (m.isNonTerminal()) {
       auto mine = getChildren();
       auto other = dynamic_cast<const NonTerminal&>(m).getChildren();
-      if (!exact || mine.size() > other.size()) {
+      if (!exact || mine.size() >= other.size()) {
         for (int i=0; i<other.size(); i++) {
-          if (!mine[i]->matches(*other[i])) return false;
+          if (!(mine[i]->matches(*other[i], exact))) return false;
         }
         return true;
       } else return false;

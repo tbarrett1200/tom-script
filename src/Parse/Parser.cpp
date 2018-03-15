@@ -82,6 +82,14 @@ Token Parser::expectToken(int type, std::string name) {
   } else throw report(token(), "error: expected " + name);
 }
 
+Token Parser::expectToken(std::vector<int> types, std::string name) {
+  Token tok = token();
+  if (tok.isAny(types)) {
+    consume();
+    return tok;
+  } else throw report(token(), "error: expected " + name);
+}
+
 bool Parser::consumeOperator(std::string s) {
   Token tok = token();
   if (tok.is(Token::operator_id) && tok.lexeme == s) {

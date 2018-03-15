@@ -27,65 +27,68 @@ public:
 
   void consumeUntil(std::vector<int> types);
 
-  //unique_ptr<OperatorNode> parseOperator(int);
+  //shared_ptr<OperatorNode> parseOperator(int);
   bool parseTerminal(int type, std::string str, bool expect);
   bool consumeToken(int type);
-  Token expectToken(int typem, std::string);
+  Token expectToken(int type, std::string);
+  Token expectToken(std::vector<int> types, std::string);
 
   bool acceptToken(int type);
   bool consumeOperator(string);
 
-  static unique_ptr<Type> makeType(std::string);
-  unique_ptr<Type> parseType();
-  unique_ptr<TypeIdentifier> parseTypeIdentifier();
-  unique_ptr<TypeLabel> parseTypeLabel();
-  unique_ptr<LabeledType> parseLabeledType();
-  unique_ptr<TypeList> parseTupleTypeElementList();
-  unique_ptr<TupleType> parseTupleType();
-  unique_ptr<FunctionType> parseFunctionType(bool decl);
-  unique_ptr<Type> parseTupleOrFunctionType();
-  unique_ptr<ListType> parseListType();
-  unique_ptr<MapType> parseMapType();
-  unique_ptr<Type> parseListOrMapType();
-  unique_ptr<Decl> parseDecl();
-  unique_ptr<TypeAlias> parseTypeAlias();
-  unique_ptr<VarDecl> parseVarDecl();
-  unique_ptr<LetDecl> parseLetDecl();
-  unique_ptr<FuncDecl> parseFuncDecl();
+  static shared_ptr<Type> makeType(std::string);
+  shared_ptr<Type> parseType();
+  shared_ptr<TypeIdentifier> parseTypeIdentifier();
+  shared_ptr<TypeLabel> parseTypeLabel();
+  shared_ptr<LabeledType> parseLabeledType();
+  shared_ptr<TypeList> parseTupleTypeElementList();
+  shared_ptr<TupleType> parseTupleType();
+  shared_ptr<FunctionType> parseFunctionType(bool decl);
+  shared_ptr<Type> parseTupleOrFunctionType();
+  shared_ptr<ListType> parseListType();
+  shared_ptr<MapType> parseMapType();
+  shared_ptr<Type> parseListOrMapType();
 
-  unique_ptr<Expr> parseExpr(int precedence = OperatorTable::size());
-  unique_ptr<Expr> parseParenthesizedExpr();
-  unique_ptr<OperatorExpr> parseOperatorExpr(int precedence);
-  unique_ptr<Expr> parseBinaryExpr(int precedence);
-  unique_ptr<Expr> parseInfixNone(int p);
-  unique_ptr<Expr> parseInfixLeft(int p);
-  unique_ptr<Expr> parseInfixRight(int p);
-  unique_ptr<Expr> parseUnaryExpr();
-  unique_ptr<Expr> parseValueExpr();
-  unique_ptr<IntegerExpr> parseIntegerExpr();
-  unique_ptr<DoubleExpr> parseDoubleExpr();
-  unique_ptr<StringExpr> parseStringExpr();
-  unique_ptr<ExprLabel> parseExprLabel();
-  unique_ptr<LabeledExpr> parseLabeledExpr();
-  unique_ptr<Expr> parseLabeledExprOrExpr();
-  unique_ptr<Expr> parseIdentifierOrFunctionCall();
-  unique_ptr<ExprList> parseExprList();
-  unique_ptr<IdentifierExpr> parseIdentifier();
-  unique_ptr<Expr> parseTupleExpr();
-  unique_ptr<FunctionCall> parseFunctionCall();
-  unique_ptr<TupleExpr> parseFunctionParameters();
+  static shared_ptr<Decl> makeDecl(std::string);
+  shared_ptr<Decl> parseDecl();
+  shared_ptr<TypeAlias> parseTypeAlias();
+  shared_ptr<VarDecl> parseVarDecl();
+  shared_ptr<LetDecl> parseLetDecl();
+  shared_ptr<FuncDecl> parseFuncDecl();
+
+  shared_ptr<Expr> parseExpr(int precedence = OperatorTable::size());
+  shared_ptr<Expr> parseParenthesizedExpr();
+  shared_ptr<OperatorExpr> parseOperatorExpr(int precedence);
+  shared_ptr<Expr> parseBinaryExpr(int precedence);
+  shared_ptr<Expr> parseInfixNone(int p);
+  shared_ptr<Expr> parseInfixLeft(int p);
+  shared_ptr<Expr> parseInfixRight(int p);
+  shared_ptr<Expr> parseUnaryExpr();
+  shared_ptr<Expr> parseValueExpr();
+  shared_ptr<IntegerExpr> parseIntegerExpr();
+  shared_ptr<DoubleExpr> parseDoubleExpr();
+  shared_ptr<StringExpr> parseStringExpr();
+  shared_ptr<ExprLabel> parseExprLabel();
+  shared_ptr<LabeledExpr> parseLabeledExpr();
+  shared_ptr<Expr> parseLabeledExprOrExpr();
+  shared_ptr<Expr> parseIdentifierOrFunctionCall();
+  shared_ptr<ExprList> parseExprList();
+  shared_ptr<IdentifierExpr> parseIdentifier();
+  shared_ptr<Expr> parseTupleExpr();
+  shared_ptr<FunctionCall> parseFunctionCall();
+  shared_ptr<TupleExpr> parseFunctionParameters();
 
 
   /*
-  unique_ptr<StmtList> parseParamList();
-  unique_ptr<Stmt> parseStmt();
-  unique_ptr<IfStmt> parseIfStmt();
-  unique_ptr<WhileStmt> parseWhileStmt();
-  unique_ptr<ReturnStmt> parseReturnStmt();
-  unique_ptr<ExprStmt> parseExprStmt();
-  unique_ptr<StmtList> parseStmtList();
-  unique_ptr<BlockStmt> parseBlockStmt();
-  unique_ptr<Program> parseProgram();
+  shared_ptr<StmtList> parseParamList();
+  shared_ptr<Stmt> parseStmt();
+  shared_ptr<IfStmt> parseIfStmt();
+  shared_ptr<WhileStmt> parseWhileStmt();
+  shared_ptr<ReturnStmt> parseReturnStmt();
+  shared_ptr<ExprStmt> parseExprStmt();
+  shared_ptr<StmtList> parseStmtList();
+  shared_ptr<BlockStmt> parseBlockStmt();
+  shared_ptr<Program> parseProgram();
   */
 };
 

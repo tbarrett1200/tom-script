@@ -15,7 +15,7 @@ std::vector<int> exprStartTokens = {
 };
 
 
-unique_ptr<Expr> Parser::parseExpr(int precedence) {
+shared_ptr<Expr> Parser::parseExpr(int precedence) {
   if (token().is(Token::l_paren)) return parseTupleExpr();
 
   switch(precedence) {
@@ -26,69 +26,70 @@ unique_ptr<Expr> Parser::parseExpr(int precedence) {
 }
 
 
-unique_ptr<ExprList> Parser::parseExprList() {
+shared_ptr<ExprList> Parser::parseExprList() {
   auto expr = parseLabeledExprOrExpr();
   auto comma = token();
   if (consumeToken(Token::comma)) {
     if (acceptToken(Token::r_paren)) throw report(comma, "error: extreneous comma");
     else {
       auto next = parseExprList();
-      return make_unique<ExprList>(move(expr), move(next));
+      return make_shared<ExprList>(move(expr), move(next));
     }
-  } else return make_unique<ExprList>(move(expr), nullptr);
+  } else return make_shared<ExprList>(move(expr), nullptr);
 }
 
-unique_ptr<OperatorExpr> Parser::parseOperatorExpr(int precedence) {
+shared_ptr<OperatorExpr> Parser::parseOperatorExpr(int precedence) {
   Token tok = token();
   if (OperatorTable::level(precedence).contains(tok.lexeme)) {
     consume();
-    return make_unique<OperatorExpr>(tok);
+    return make_shared<OperatorExpr>(tok);
   } else throw report(token(), "error: expected operator");
 }
 
-unique_ptr<Expr> Parser::parseIdentifierOrFunctionCall() {
+shared_ptr<Expr> Parser::parseIdentifierOrFunctionCall() {
   auto id = parseIdentifier();
   if (!acceptToken(Token::l_paren)) return id;
   auto tuple = parseFunctionParameters();
-  return make_unique<FunctionCall>(move(id), move(tuple));
+  return make_shared<FunctionCall>(move(id), move(tuple));
 }
 
-unique_ptr<IdentifierExpr> Parser::parseIdentifier() {
-  auto token = expectToken(Token::identifier, "identifier");
-  return make_unique<IdentifierExpr>(token);
+shared_ptr<IdentifierExpr> Parser::parseIdentifier() {
+  auto token = expectToken({Token::identifier, Token::operator_id}, "identifier");
+  return make_shared<IdentifierExpr>(token);
 }
 
-unique_ptr<TupleExpr> Parser::parseFunctionParameters() {
+shared_ptr<TupleExpr> Parser::parseFunctionParameters() {
   expectToken(Token::l_paren, "left parenthesis");
+  if (consumeToken(Token::r_paren)) return make_shared<TupleExpr>(nullptr);
   auto list = parseExprList();
   expectToken(Token::r_paren, "right parenthesis");
-  return make_unique<TupleExpr>(move(list));
+  return make_shared<TupleExpr>(move(list));
 }
 
-unique_ptr<Expr> Parser::parseTupleExpr() {
+shared_ptr<Expr> Parser::parseTupleExpr() {
   expectToken(Token::l_paren, "left parenthesis");
   if (acceptToken(Token::colon)) throw report(token(), "error: expected labeled tuple member");
   auto list = parseExprList();
   expectToken(Token::r_paren, "right parenthesis");
   if (list && list->size() == 1) {
-    if (list->has<LabeledExpr>()) {
+    if (dynamic_cast<LabeledExpr*>(list->element.get())) {
       auto expr = dynamic_cast<LabeledExpr*>(list->element.get());
       auto label = expr->label->name;
       throw report(label, "error: expressions may not be labeled");
     } else return move(list->element);
   } else {
-    return make_unique<TupleExpr>(move(list));
+    return make_shared<TupleExpr>(move(list));
   }
 }
 
-unique_ptr<FunctionCall> Parser::parseFunctionCall() {
+shared_ptr<FunctionCall> Parser::parseFunctionCall() {
   auto id = parseIdentifier();
   auto tuple = parseFunctionParameters();
-  return make_unique<FunctionCall>(move(id), move(tuple));
+  return make_shared<FunctionCall>(move(id), move(tuple));
 }
 
 
-unique_ptr<Expr> Parser::parseValueExpr() {
+shared_ptr<Expr> Parser::parseValueExpr() {
   switch (token().getType()) {
   case Token::identifier:
     return parseIdentifierOrFunctionCall();
@@ -104,17 +105,17 @@ unique_ptr<Expr> Parser::parseValueExpr() {
   }
 }
 
-unique_ptr<Expr> Parser::parseUnaryExpr() {
+shared_ptr<Expr> Parser::parseUnaryExpr() {
   if (!OperatorTable::level(1).contains(token().lexeme)) {
     return parseValueExpr();
   } else {
     auto op = parseOperatorExpr(1);
     auto expr = parseValueExpr();
-    return make_unique<UnaryExpr>(move(op),move(expr));
+    return make_shared<UnaryExpr>(move(op),move(expr));
   }
 }
 
-unique_ptr<Expr> Parser::parseBinaryExpr(int precedence) {
+shared_ptr<Expr> Parser::parseBinaryExpr(int precedence) {
   switch (OperatorTable::associativity(precedence)) {
     case Associativity::left:
       return parseInfixLeft(precedence);
@@ -127,62 +128,62 @@ unique_ptr<Expr> Parser::parseBinaryExpr(int precedence) {
   }
 }
 
-unique_ptr<Expr> Parser::parseInfixNone(int p) {
+shared_ptr<Expr> Parser::parseInfixNone(int p) {
   auto left = parseExpr(p-1);
   if (!OperatorTable::level(p).contains(token().lexeme)) return left;
   auto op = parseOperatorExpr(p);
   auto right = parseExpr(p-1);
-  return make_unique<BinaryExpr>(move(left), move(op), move(right));
+  return make_shared<BinaryExpr>(move(left), move(op), move(right));
 }
 
-unique_ptr<Expr> Parser::parseInfixRight(int p) {
+shared_ptr<Expr> Parser::parseInfixRight(int p) {
   auto left = parseExpr(p-1);
   if (!OperatorTable::level(p).contains(token().lexeme)) return left;
   auto op = parseOperatorExpr(p);
   auto right = parseExpr(p);
-  return make_unique<BinaryExpr>(move(left), move(op), move(right));
+  return make_shared<BinaryExpr>(move(left), move(op), move(right));
 }
 
-unique_ptr<Expr> Parser::parseInfixLeft(int precedence) {
+shared_ptr<Expr> Parser::parseInfixLeft(int precedence) {
   auto left = parseExpr(precedence-1);
-  function<unique_ptr<Expr>(int,unique_ptr<Expr>)> continueParse;
-  continueParse = [this, &continueParse](int precedence, unique_ptr<Expr> left) -> unique_ptr<Expr> {
+  function<shared_ptr<Expr>(int,shared_ptr<Expr>)> continueParse;
+  continueParse = [this, &continueParse](int precedence, shared_ptr<Expr> left) -> shared_ptr<Expr> {
     if (!OperatorTable::level(precedence).contains(token().lexeme)) return left;
     auto op = parseOperatorExpr(precedence);
     auto right = parseExpr(precedence-1);
-    return continueParse(precedence, make_unique<BinaryExpr>(move(left),move(op),move(right)));
+    return continueParse(precedence, make_shared<BinaryExpr>(move(left),move(op),move(right)));
   };
   return continueParse(precedence, move(left));
 }
 
-unique_ptr<ExprLabel> Parser::parseExprLabel() {
+shared_ptr<ExprLabel> Parser::parseExprLabel() {
   auto token = expectToken(Token::identifier, "label");
-  return make_unique<ExprLabel>(token);
+  return make_shared<ExprLabel>(token);
 }
 
-unique_ptr<LabeledExpr> Parser::parseLabeledExpr() {
+shared_ptr<LabeledExpr> Parser::parseLabeledExpr() {
   auto label = parseExprLabel();
   expectToken(Token::colon, "colon");
   auto expr = parseExpr();
-  return make_unique<LabeledExpr>(move(label), move(expr));
+  return make_shared<LabeledExpr>(move(label), move(expr));
 }
 
-unique_ptr<Expr> Parser::parseLabeledExprOrExpr() {
+shared_ptr<Expr> Parser::parseLabeledExprOrExpr() {
   if (token().is(Token::identifier) && token(1).is(Token::colon)) return parseLabeledExpr();
   else return parseExpr();
 }
 
-unique_ptr<IntegerExpr> Parser::parseIntegerExpr() {
+shared_ptr<IntegerExpr> Parser::parseIntegerExpr() {
   auto token = expectToken(Token::integer_literal, "integer literal");
-  return make_unique<IntegerExpr>(token);
+  return make_shared<IntegerExpr>(token);
 }
 
-unique_ptr<DoubleExpr> Parser::parseDoubleExpr() {
+shared_ptr<DoubleExpr> Parser::parseDoubleExpr() {
   auto token = expectToken(Token::double_literal, "double literal");
-  return make_unique<DoubleExpr>(token);
+  return make_shared<DoubleExpr>(token);
 }
 
-unique_ptr<StringExpr> Parser::parseStringExpr() {
+shared_ptr<StringExpr> Parser::parseStringExpr() {
   auto token = expectToken(Token::string_literal, "string literal");
-  return make_unique<StringExpr>(token);
+  return make_shared<StringExpr>(token);
 }

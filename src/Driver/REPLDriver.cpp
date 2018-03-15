@@ -6,10 +6,25 @@
 #include "Parse/Parser.h"
 #include "AST/Type.h"
 #include "AST/ASTWalker.h"
+#include "AST/DeclContext.h"
+
+DeclContext globalContext{
+  Parser::makeDecl("func +(Int, Int) -> Int"),
+  Parser::makeDecl("func +(Double, Double) -> Double"),
+};
 
 class TypePrinter : public ASTWalker {
-  bool visitType(Decl* t) {
-    std::cout << "decl" << std::endl;
+public:
+  bool visitDecl(std::shared_ptr<Decl> d) {
+    d->setContext(&globalContext);
+    globalContext.addDecl(d);
+    try {
+      auto type = d->getType();
+      std::cout << d->getName() << ": " << type << std::endl;
+    } catch (std::string s) {
+      std::cout << s;
+    }
+
     return true;
   }
 };
@@ -50,7 +65,7 @@ public:
         if (!parser.token().is(Token::eof)) {
           try {
             auto type = parser.parseDecl();
-            TypePrinter().traverseDecl(type.get());
+            TypePrinter().traverseDecl(type);
           } catch (std::string s) {
             std::cout << s;
           }
