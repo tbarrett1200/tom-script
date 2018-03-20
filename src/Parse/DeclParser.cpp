@@ -14,6 +14,36 @@ shared_ptr<Decl> Parser::makeDecl(std::string text) {
   return type;
 }
 
+shared_ptr<Decl> Parser::makeTypeDecl(std::string text) {
+  const std::stringstream sstream{text};
+  auto source = SourceCode{sstream, "factory"};
+  auto parser = Parser{&source};
+  auto type = parser.parseTypeDecl();
+  if (!type) throw std::string("parse error");
+  return type;
+}
+shared_ptr<Decl> Parser::makeFuncDecl(std::string text) {
+  const std::stringstream sstream{text};
+  auto source = SourceCode{sstream, "factory"};
+  auto parser = Parser{&source};
+  auto type = parser.parseUndefFuncDecl();
+  if (!type) throw std::string("parse error");
+  return type;
+}
+
+shared_ptr<TypeDecl> Parser::parseTypeDecl() {
+  expectToken(Token::kw_typedef, "typedef");
+  auto name = expectToken(Token::identifier, "identifier");
+  return make_shared<TypeDecl>(name);
+}
+
+shared_ptr<FuncDecl> Parser::parseUndefFuncDecl() {
+  expectToken(Token::kw_func, "func");
+  auto name = expectToken({Token::identifier, Token::operator_id}, "identifier");
+  auto type = parseFunctionType(true);
+  return make_shared<FuncDecl>(name, move(type), nullptr);
+}
+
 shared_ptr<Decl> Parser::parseDecl() {
   switch(token().getType()) {
   case Token::kw_var: return parseVarDecl();
@@ -54,5 +84,6 @@ shared_ptr<FuncDecl> Parser::parseFuncDecl() {
   expectToken(Token::kw_func, "func");
   auto name = expectToken({Token::identifier, Token::operator_id}, "identifier");
   auto type = parseFunctionType(true);
-  return make_shared<FuncDecl>(name, move(type));
+  auto stmt = parseCompoundStmt();
+  return make_shared<FuncDecl>(name, move(type), stmt);
 }

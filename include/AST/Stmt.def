@@ -1,3 +1,11 @@
 #ifndef STMT
 #define STMT(SELF, SUPER)
 #endif
+
+STMT(CompoundStmt, Stmt)
+STMT(ConditionalStmt, Stmt)
+STMT(ConditionalStmtList, Stmt)
+STMT(WhileLoop, Stmt)
+STMT(ExprStmt, Stmt)
+STMT(DeclStmt, Stmt)
+STMT(ReturnStmt, Stmt)

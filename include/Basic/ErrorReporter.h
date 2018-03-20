@@ -27,8 +27,8 @@ public:
   std::string report(int r, int c, std::string err) {
     std::stringstream message;
     message << source->getPath() << ":" << r << ":"<< c << ": " << err << std::endl;
-    message << source->getLine(r) << std::endl;
-    message << std::string(c, ' ') << '^' << std::endl;
+    message << source->getLine(r);
+    message << std::string(c, ' ') << "^" << std::endl;
     return message.str();
   }
 

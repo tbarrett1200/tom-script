@@ -8,6 +8,7 @@
 
 #include <memory>
 
+/// A user overridable preorder abstract syntax tree traverser
 class ASTWalker {
 public:
 
@@ -39,7 +40,7 @@ public:
   }
   void traverseStmt(shared_ptr<Stmt> s) {
     switch (s->getKind()) {
-    #define STMT(SELF, SUPER) case Decl::Kind::SELF: traverse##SELF(dynamic_pointer_cast<SELF>(d)); break;
+    #define STMT(SELF, SUPER) case Stmt::Kind::SELF: traverse##SELF(dynamic_pointer_cast<SELF>(s)); break;
     #include "AST/Stmt.def"
     #undef STMT
     }

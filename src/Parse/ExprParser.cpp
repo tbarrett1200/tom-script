@@ -58,12 +58,12 @@ shared_ptr<IdentifierExpr> Parser::parseIdentifier() {
   return make_shared<IdentifierExpr>(token);
 }
 
-shared_ptr<TupleExpr> Parser::parseFunctionParameters() {
+shared_ptr<ExprList> Parser::parseFunctionParameters() {
   expectToken(Token::l_paren, "left parenthesis");
-  if (consumeToken(Token::r_paren)) return make_shared<TupleExpr>(nullptr);
+  if (consumeToken(Token::r_paren)) return nullptr;
   auto list = parseExprList();
   expectToken(Token::r_paren, "right parenthesis");
-  return make_shared<TupleExpr>(move(list));
+  return list;
 }
 
 shared_ptr<Expr> Parser::parseTupleExpr() {

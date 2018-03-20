@@ -7,13 +7,7 @@
 #include <assert.h>
 #include <iostream>
 
-Parser::Parser(SourceCode *src) : source{src}, lexer{src} {
-  while(true) {
-    Token t = lexer.next();
-    if (t.is(Token::eof)) break;
-    tokens.push_back(t);
-  }
-}
+Parser::Parser(SourceCode *src) : source{src}, lexer{src} {}
 
 //=*****************************************************************************
 //  # Utility
@@ -21,8 +15,8 @@ Parser::Parser(SourceCode *src) : source{src}, lexer{src} {
 
 
 Token Parser::token(int index) {
-  if (index >= tokens.size()) {
-    return lexer.getEOF();
+  while (index >= tokens.size()) {
+    tokens.push_back(lexer.next());
   }
   return tokens.at(index);
 }

@@ -1,6 +1,10 @@
 #include "AST/Type.h"
 #include "iostream"
 
+std::shared_ptr<TupleType> TupleType::make(std::shared_ptr<TypeList> l) {
+  return std::make_shared<TupleType>(l);
+}
+
 ostream& operator<<(ostream& os, Type* x) {
   if (dynamic_cast<LabeledType*>(x)) {
     auto t = dynamic_cast<LabeledType*>(x);
@@ -31,11 +35,15 @@ ostream& operator<<(ostream& os, TypeLabel* x) {
 
 ostream& operator<<(ostream& os, TypeList* x) {
   if (!x) return os;
-  
+
   if (x->list) {
     os << x->element << ", " << x->list;
   } else {
     os << x->element;
   }
   return os;
+}
+
+bool operator == (const Type& l, const Type& r) {
+  return l.matches(r);
 }

@@ -1,38 +1,34 @@
 #include "AST/AmbiguousType.h"
 #include "AST/Type.h"
-bool AmbiguousType::isEmpty() const {
-  return types.size() == 0;
-}
-bool AmbiguousType::isAmbiguous() const {
-  return types.size() > 1;
-}
-std::shared_ptr<Type> AmbiguousType::get() const {
-  return types[0];
-}
 
-AmbiguousType AmbiguousType::filterFunction(std::shared_ptr<TypeList> list) const {
+AmbiguousType AmbiguousType::filter(std::function<bool(std::shared_ptr<Type>)> func) const {
   std::vector<std::shared_ptr<Type>> filtered;
   for (auto type: types) {
-    auto func = dynamic_pointer_cast<FunctionType>(type);
-    if (func && !list && !func->params) {
-      filtered.push_back(type);
-    } else if (func && list && func->params && list->matches(static_cast<Matchable&>(*func->params))) {
-      filtered.push_back(type);
-    }
+    if (!func) throw std::logic_error("null function");
+    else if (type && func(type)) filtered.push_back(type);
   }
   return {filtered};
 }
 
-bool AmbiguousType::has(std::shared_ptr<Type> t) const {
+
+bool AmbiguousType::contains(std::shared_ptr<Type> t) const {
   for (auto type: types) {
-    if (type->matches(dynamic_cast<Matchable&>(*t))) return true;
-  } return false;
+    if (*type == *t) return true;
+  }
+  return false;
 }
 
 std::ostream& operator<<(std::ostream& os, const AmbiguousType& t) {
-  os << t.types.size() << " possible types" << std::endl;
-  for (auto type: t.types) {
-    os << "\t" << type << std::endl;
+  if (t.types.size() == 0) {
+    os << "undefined" << std::endl;
+  } else if (t.types.size() == 1) {
+    os << t.get() << std::endl;
+  } else {
+    os << t.types.size() << " possible types" << std::endl;
+    for (auto type: t.types) {
+      os << "  " << type << std::endl;
+    }
   }
+
   return os;
 }

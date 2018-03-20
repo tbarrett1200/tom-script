@@ -25,7 +25,7 @@ OperatorTable* OperatorTable::globalInstance = new OperatorTable({
     {"&&"}
   }},
   {"LogicalDisjunction", Associativity::left, Fixity::infix, false, {
-    {"&&"}
+    {"||"}
   }},
   {"Assignment", Associativity::right, Fixity::infix, true, {
     {"="}, {"+="}, {"-="}, {"*="}, {"/="}, {"%="}, {">>="}, {"<<="}

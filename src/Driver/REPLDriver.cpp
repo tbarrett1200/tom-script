@@ -5,78 +5,60 @@
 #include "Basic/SourceCode.h"
 #include "Parse/Parser.h"
 #include "AST/Type.h"
+#include "AST/Expr.h"
 #include "AST/ASTWalker.h"
-#include "AST/DeclContext.h"
+#include "AST/DeclarationContext.h"
+#include "Driver/GlobalContext.h"
 
-DeclContext globalContext{
-  Parser::makeDecl("func +(Int, Int) -> Int"),
-  Parser::makeDecl("func +(Double, Double) -> Double"),
-};
-
-class TypePrinter : public ASTWalker {
+class Interpreter : public ASTWalker {
 public:
-  bool visitDecl(std::shared_ptr<Decl> d) {
-    d->setContext(&globalContext);
-    globalContext.addDecl(d);
+  DeclarationContext *context = &globalContext;
+
+  bool visitConditionalStmtList(std::shared_ptr<ConditionalStmtList> s) {
+    return true;
+  }
+
+  bool visitWhileLoop(std::shared_ptr<WhileLoop> l) {
+    return false;
+  }
+
+  bool visitExprStmt(std::shared_ptr<ExprStmt> e) {
     try {
-      auto type = d->getType();
-      std::cout << d->getName() << ": " << type << std::endl;
+      std::cout << e->expr->getType(context);
     } catch (std::string s) {
       std::cout << s;
     }
+    return false;
+  }
 
-    return true;
-  }
-};
-
-class REPLoop {
-  int count = 1;
-public:
-  void displayPrompt() {
-    if (count < 10) {
-      std::cout << "  \033[37m" << count << ">\033[0m ";
-    } else if (count < 100) {
-      std::cout << " \033[37m" << count << ">\033[0m ";
-    } else {
-      std::cout << "\033[37m" << count << ">\033[0m ";
+  bool visitDeclStmt(std::shared_ptr<DeclStmt> d) {
+    try {
+      d->decl->setContext(&globalContext);
+      std::cout << d->decl->getType() << std::endl;
+      globalContext.add(d->decl);
+    } catch (std::string s) {
+      std::cout << s;
     }
-  }
-  void runCommand(std::string line) {
-    if (line == ":quit") {
-      exit(0);
-    } else if (line == ":help") {
-      std::cout << "beep. boop. figure it out yourself nitwit!" << std::endl;
-    } else {
-      std::cout << "error: unrecognized command " << line << "... try ':help'" << std::endl;
-    }
-  }
-  void start() {
-    std::cout << "tom-script (0.1) Enter ':help' for help and ':quit' to quit" << std::endl;
-    do {
-      displayPrompt();
-      std::string line;
-      getline(std::cin, line);
-      if (line[0] == ':') {
-        runCommand(line);
-      } else {
-        const std::stringstream sstream{line};
-        auto source = SourceCode{sstream, "terminal"};
-        auto parser = Parser{&source};
-        if (!parser.token().is(Token::eof)) {
-          try {
-            auto type = parser.parseDecl();
-            TypePrinter().traverseDecl(type);
-          } catch (std::string s) {
-            std::cout << s;
-          }
-        }
-      }
-      count++;
-    } while (!std::cin.eof());
+    return false;
   }
 };
 
 int main(int argc, char const *argv[]) {
-  REPLoop().start();
+  std::cout << "tom-script (0.1) Enter ':help' for help and ':quit' to quit" << std::endl;
+  auto source = SourceCode{};
+  auto parser = Parser{&source};
+  do {
+    if (!parser.token().is(Token::eof)) {
+      try {
+        auto type = parser.parseStmt();
+        Interpreter().traverse(type);
+      } catch (std::string s) {
+        std::cout << s;
+        parser.consumeUntil({Token::new_line, Token::eof});
+        parser.consume();
+      }
+      source.reset();
+    }
+  } while (!std::cin.eof());
   return 0;
 }

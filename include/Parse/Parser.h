@@ -6,7 +6,6 @@
 #include "Parse/Token.h"
 #include "Parse/Lexer.h"
 #include "Parse/Operator.h"
-#include "AST/ASTNode.h"
 #include "AST/Decl.h"
 #include "AST/Expr.h"
 #include "AST/Type.h"
@@ -50,6 +49,12 @@ public:
   shared_ptr<Type> parseListOrMapType();
 
   static shared_ptr<Decl> makeDecl(std::string);
+  static shared_ptr<Decl> makeTypeDecl(std::string);
+  static shared_ptr<Decl> makeFuncDecl(std::string);
+
+  shared_ptr<TypeDecl> parseTypeDecl();
+  shared_ptr<FuncDecl> parseUndefFuncDecl();
+
   shared_ptr<Decl> parseDecl();
   shared_ptr<TypeAlias> parseTypeAlias();
   shared_ptr<VarDecl> parseVarDecl();
@@ -76,12 +81,22 @@ public:
   shared_ptr<IdentifierExpr> parseIdentifier();
   shared_ptr<Expr> parseTupleExpr();
   shared_ptr<FunctionCall> parseFunctionCall();
-  shared_ptr<TupleExpr> parseFunctionParameters();
+  shared_ptr<ExprList> parseFunctionParameters();
+
+  shared_ptr<Stmt> makeStmt(std::string text);
+  shared_ptr<Stmt> parseStmt();
+  shared_ptr<ReturnStmt> parseReturnStmt();
+  shared_ptr<CompoundStmt> parseCompoundStmt();
+  shared_ptr<WhileLoop> parseWhileLoop();
+  shared_ptr<ConditionalStmt> parseConditionalStmt();
+  shared_ptr<ConditionalStmtList> parseConditionalStmtList();
+  shared_ptr<StmtList> parseStmtList();
+  shared_ptr<DeclStmt> parseDeclStmt();
+  shared_ptr<ExprStmt> parseExprStmt();
 
 
   /*
   shared_ptr<StmtList> parseParamList();
-  shared_ptr<Stmt> parseStmt();
   shared_ptr<IfStmt> parseIfStmt();
   shared_ptr<WhileStmt> parseWhileStmt();
   shared_ptr<ReturnStmt> parseReturnStmt();

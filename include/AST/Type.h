@@ -4,7 +4,6 @@
 #include <iostream>
 #include <list>
 
-#include "AST/ASTNode.h"
 #include "AST/Matchable.h"
 #include "Parse/Token.h"
 
@@ -17,10 +16,15 @@ public:
     #include "AST/Type.def"
     #undef TYPE
   };
+
+  template<typename T> const T* as() const {
+    return dynamic_cast<const T*>(this);
+  }
+
   virtual Type::Kind getKind() const = 0;
 };
 
-ostream& operator<<(ostream& os, Type* x);
+
 class TypeLabel : public Terminal {
 public:
   Token token;
@@ -32,7 +36,6 @@ public:
     return token.lexeme;
   }
 };
-ostream& operator<<(ostream& os, TypeLabel* x);
 
 class TypeList : public NonTerminal {
 public:
@@ -53,6 +56,7 @@ public:
     }
   }
 
+
   TypeList(shared_ptr<Type> e, shared_ptr<TypeList> l)
     : element{move(e)}, list{move(l)} {}
 
@@ -71,6 +75,11 @@ public:
     else return list->size()+1;
   }
 
+  std::shared_ptr<Type> operator[] (const int index){
+    if (index==0) return element;
+    else return (*list)[index-1];
+  }
+
   template <typename T> bool has() {
     if (list == nullptr) return true;
     else if (!dynamic_cast<T*>(element.get())) return false;
@@ -78,7 +87,6 @@ public:
   };
 };
 
-ostream& operator<<(ostream& os, TypeList* x);
 
 class LabeledType : public Type, public NonTerminal {
 public:
@@ -122,6 +130,8 @@ public:
   }
 
   Type::Kind getKind() const { return Kind::TupleType; }
+
+  static std::shared_ptr<TupleType> make(std::shared_ptr<TypeList>);
 
   TupleType(shared_ptr<TypeList> l)
     : list{move(l)} {}
@@ -177,5 +187,8 @@ public:
   }
 };
 
-
+ostream& operator<<(ostream& os, Type* x);
+ostream& operator<<(ostream& os, TypeLabel* x);
+ostream& operator<<(ostream& os, TypeList* x);
+bool operator == (const Type& l, const Type& r);
 #endif

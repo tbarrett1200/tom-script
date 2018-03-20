@@ -1,14 +1,20 @@
 #include "Parse/Token.h"
 #include "AST/Type.h"
 #include "AST/Expr.h"
+#include "AST/Stmt.h"
 #include "AST/Decl.h"
 #include "AST/Matchable.h"
-#include "AST/ContextSearchResult.h"
+#include "AST/Decl.h"
 
 #include <sstream>
 
 std::string DeclName::getLexeme() const {
   return token.lexeme;
+}
+
+std::shared_ptr<Decl> Decl::make(std::shared_ptr<Decl> d, std::function<std::shared_ptr<Expr>(std::shared_ptr<TupleExpr>)> f) {
+  d->func = f;
+  return d;
 }
 
 std::vector<std::shared_ptr<Matchable>> TypeAlias::getChildren() const {
@@ -32,24 +38,40 @@ Decl::Kind VarDecl::getKind() const { return Kind::VarDecl; }
 std::string VarDecl::getName() const { return name->getLexeme(); }
 shared_ptr<Type> VarDecl::getType() const {
 
-  if (!expr) return type;
+    if (!expr) return type;
 
-  AmbiguousType exprTypeResult = expr->getType(getContext());
-  if (!type) {
-    if (exprTypeResult.isAmbiguous()) {
-      throw std::string("error: ambiguous type\n");
-    } else return exprTypeResult.get();
-  } else if (exprTypeResult.isAmbiguous()) {
-    if (exprTypeResult.has(type)) {
-      return type;
-    } else throw std::string("error: types do not match\n");
-  } else if (exprTypeResult.has(type)) {
-    return type;
-  } else throw std::string("error: types do not match\n");
+    auto expr_type = expr->getType(getContext());
+
+    if (!type && expr_type.isAmbiguous()) {
+      std::stringstream ss;
+      ss << "error: ambiguously typed declaration" << std::endl << expr_type;
+      throw ss.str();
+    } else if (!type && expr_type.isEmpty()) {
+      throw std::string("error: undefined type\n");
+    } else if (!type && expr_type.isSingleton()) {
+      return expr_type.get();
+    }
+
+    auto filtered_type = expr_type.filter([this](std::shared_ptr<Type> t) {
+      return *this->type == *t;
+    });
+
+    if (filtered_type.isAmbiguous()) {
+      std::stringstream ss;
+      ss << "error: ambiguously typed declaration" << std::endl << filtered_type;
+      throw ss.str();
+    } else if (filtered_type.isSingleton()) {
+      return filtered_type.get();
+    } else {
+      throw std::string("error: undefined type\n");
+    }
 };
 
-DeclContext* VarDecl::getContext() const { return context; }
-void VarDecl::setContext(DeclContext* c) { context = c; }
+DeclarationContext* VarDecl::getContext() const { return context; }
+void VarDecl::setContext(DeclarationContext* c) { context = c; }
+void VarDecl::setExpr(std::shared_ptr<Expr> e) {
+  expr = e;
+}
 
 VarDecl::VarDecl(Token n, shared_ptr<Type> t, shared_ptr<Expr> e)
 : name{new DeclName{n}}, type{move(t)}, expr{move(e)} {}
@@ -62,27 +84,25 @@ std::vector<std::shared_ptr<Matchable>> LetDecl::getChildren() const {
 Decl::Kind LetDecl::getKind() const { return Kind::LetDecl; }
 std::string LetDecl::getName() const { return name->getLexeme(); }
 
-DeclContext* LetDecl::getContext() const { return context; }
-void LetDecl::setContext(DeclContext* c) { context = c; }
+void LetDecl::setExpr(std::shared_ptr<Expr> e) {
+  expr = e;
+}
+
+DeclarationContext* LetDecl::getContext() const { return context; }
+void LetDecl::setContext(DeclarationContext* c) { context = c; }
 
 shared_ptr<Type> LetDecl::getType() const {
 
-  AmbiguousType exprTypeResult = expr->getType(getContext());
+  auto decl_type = expr->getType(getContext()).filter([this](std::shared_ptr<Type> t){
+    return this->type ? this->type == t : true;
+  });
 
-  if (!type) {
-    if (exprTypeResult.isAmbiguous()) {
-      throw std::string("error: ambiguous type\n");
-    } else return exprTypeResult.get();
-  } else if (exprTypeResult.isAmbiguous()) {
-    if (exprTypeResult.has(type)) {
-      return type;
-    } else throw std::string("error: types do not match\n");
-  } else if (exprTypeResult.has(type)) {
-    return type;
+  if (decl_type.isAmbiguous()) {
+    throw std::string("error: ambiguous type\n");
+  } else if (decl_type.isEmpty()) {
+    throw std::string("error: types no not match\n");
   } else {
-    std::stringstream ss;
-    ss << "error: types do not match: " << type << " and " << exprTypeResult.get() << std::endl;
-    throw ss.str();
+    return decl_type.get();
   }
 };
 
@@ -94,7 +114,8 @@ LetDecl::LetDecl(Token n, shared_ptr<Type> t, shared_ptr<Expr> e)
 }
 
 std::vector<std::shared_ptr<Matchable>> FuncDecl::getChildren() const {
-  return {name, type};
+  if (!stmt) return {name, type};
+  else return {name, type, stmt};
 }
 
 Decl::Kind FuncDecl::getKind() const { return Kind::FuncDecl; }
@@ -105,11 +126,11 @@ shared_ptr<Type> FuncDecl::getType() const {
 };
 
 
-DeclContext* FuncDecl::getContext() const { return context; }
-void FuncDecl::setContext(DeclContext* c) { context = c; }
+DeclarationContext* FuncDecl::getContext() const { return context; }
+void FuncDecl::setContext(DeclarationContext* c) { context = c; }
 
-FuncDecl::FuncDecl(Token n, shared_ptr<FunctionType> t)
-: name{new DeclName{n}}, type{move(t)} {
+FuncDecl::FuncDecl(Token n, shared_ptr<FunctionType> t, shared_ptr<Stmt> s)
+: name{new DeclName{n}}, type{move(t)}, stmt{s} {
   if (!type) {
     throw domain_error("func decl must specify type");
   }

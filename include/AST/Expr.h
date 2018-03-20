@@ -4,17 +4,13 @@
 #include "AST/Matchable.h"
 #include "Parse/Token.h"
 #include "AST/Type.h"
-#include "AST/DeclContext.h"
-#include "Parse/Operator.h"
+#include "AST/DeclarationContext.h"
 #include "AST/AmbiguousType.h"
+
+#include "Parse/Operator.h"
 
 #include <memory>
 
-using namespace std;
-
-class DeclContext;
-
-class ContextSearchResult;
 class Expr : virtual public Matchable {
 public:
   enum class Kind {
@@ -22,15 +18,16 @@ public:
     #include "AST/Expr.def"
     #undef EXPR
   };
+
+  template<typename T> T* as() {
+    return dynamic_cast<T*>(this);
+  }
+
   virtual Expr::Kind getKind() const = 0;
-  virtual AmbiguousType getType(DeclContext*) const = 0;
+  virtual AmbiguousType getType(DeclarationContext*) const = 0;
 };
 
-
 class ExprList : public NonTerminal {
-private:
-  shared_ptr<TypeList> typeList ;
-
 public:
   /* member variables */
   shared_ptr<Expr> element;
@@ -51,15 +48,12 @@ public:
     else return list->size()+1;
   }
 
-  shared_ptr<TypeList> getTypeList(DeclContext* c) {
-    if (!typeList) {
-      auto e = element->getType(c).get();
-      auto l = list ? list->getTypeList(c) : nullptr;
-      typeList = make_shared<TypeList>(e,l);
-    }
-    return typeList;
-  };
-
+  std::shared_ptr<Expr> operator[] (int x) {
+    if (x == 0) return element;
+    else if (!list || x < 0) throw std::logic_error("out of bounds ExprList[]");
+    else return (*list)[x-1];
+  }
+  std::shared_ptr<TypeList> getTypeList(DeclarationContext *c) const;
 
   template <typename T> bool has() {
     if (list == nullptr) return true;
@@ -70,6 +64,12 @@ public:
   /* Constructor */
   ExprList(shared_ptr<Expr> e, shared_ptr<ExprList> l)
     : element{move(e)}, list{move(l)} {
+  }
+
+  ExprList(std::vector<shared_ptr<Expr>> v) {
+    element = v.front();
+    v.erase(v.begin());
+    list = std::make_shared<ExprList>(v);
   }
 };
 
@@ -98,13 +98,7 @@ public:
 
   Expr::Kind getKind() const { return Kind::LabeledExpr; }
 
-  AmbiguousType getType(DeclContext* c) const {
-    std::vector<std::shared_ptr<Type>> types;
-    for (auto type: expr->getType(c).types) {
-      types.push_back(std::make_shared<LabeledType>(std::make_shared<TypeLabel>(label->name), type));
-    }
-    return {types};
-  };
+  AmbiguousType getType(DeclarationContext*) const;
 
   LabeledExpr(shared_ptr<ExprLabel> l, shared_ptr<Expr> e): label{move(l)}, expr{move(e)} {
     if (!label) {
@@ -117,9 +111,6 @@ public:
 };
 
 class StringExpr: public Expr, public Terminal  {
-private:
-  shared_ptr<Type*> type;
-
 public:
   Token token;
 
@@ -130,7 +121,11 @@ public:
 
   Expr::Kind getKind() const { return Kind::StringExpr; }
 
-  AmbiguousType getType(DeclContext*) const;
+  AmbiguousType getType(DeclarationContext*) const;
+
+  std::string getString() const { return token.lexeme.substr(1,token.lexeme.size()-1); }
+
+  StringExpr(std::string s) : token{"\"" + s + "\"", Token::string_literal, 0, 0, 0} {}
 
   StringExpr(Token t) : token{t} {
     if (t.isNot(Token::string_literal)) {
@@ -150,11 +145,52 @@ public:
 
   Expr::Kind getKind() const { return Kind::IntegerExpr; }
 
-  AmbiguousType getType(DeclContext*) const;
+  int getInt() {
+    return std::stoi(token.lexeme);
+  }
+
+  AmbiguousType getType(DeclarationContext*) const;
+
+
+  IntegerExpr(int i) : token{to_string(i), Token::integer_literal, 0, 0, 0} {}
 
   IntegerExpr(Token t) : token{t} {
     if (t.isNot(Token::integer_literal)) {
       throw std::domain_error("IntegerExpr requires a token of type integer_literal");
+    }
+  }
+};
+
+
+class BoolExpr: public Expr, public Terminal  {
+public:
+  Token token;
+
+  /* Returns a vector of children for easy traversal */
+  std::string getLexeme() const {
+    return token.lexeme;
+  }
+
+  Expr::Kind getKind() const { return Kind::BoolExpr; }
+
+  bool getBool() {
+    return token.lexeme == "true";
+  }
+
+  AmbiguousType getType(DeclarationContext*) const;
+
+
+  BoolExpr(bool b) {
+  if (b) {
+     token = Token{"true", Token::kw_true, 0, 0, 0};
+   } else {
+     token = Token{"false", Token::kw_false, 0, 0, 0};
+   }
+  }
+
+  BoolExpr(Token t) : token{t} {
+    if (!(t.isAny({Token::kw_true, Token::kw_false}))) {
+      throw std::domain_error("BoolExpr requires a boolean literal");
     }
   }
 };
@@ -170,8 +206,14 @@ public:
 
   Expr::Kind getKind() const { return Kind::DoubleExpr; }
 
+  double getDouble() {
+    return std::stod(token.lexeme);
+  }
 
-  AmbiguousType getType(DeclContext*) const;
+  AmbiguousType getType(DeclarationContext*) const;
+
+
+  DoubleExpr(int i) : token{to_string(i), Token::double_literal, 0, 0, 0} {}
 
   DoubleExpr(Token t) : token{t} {
     if (t.isNot(Token::double_literal)) {
@@ -190,8 +232,8 @@ public:
   }
 
   Expr::Kind getKind() const { return Kind::IdentifierExpr; }
+  AmbiguousType getType(DeclarationContext*) const;
 
-  AmbiguousType getType(DeclContext*) const;
 
   IdentifierExpr(Token t) : token{t} {}
 };
@@ -209,9 +251,20 @@ public:
 
   Expr::Kind getKind() const { return Kind::TupleExpr; }
 
-  AmbiguousType getType(DeclContext*) const;
+  int size() const { return list->size(); }
+  std::shared_ptr<Expr> operator[] (int x) {
+    return (*list)[x];
+  }
+
+  AmbiguousType getType(DeclarationContext*) const;
+
+
+  static std::shared_ptr<TupleExpr> make(std::vector<std::shared_ptr<Expr>>);
+  static std::shared_ptr<TupleExpr> make(std::shared_ptr<ExprList>);
 
   TupleExpr(shared_ptr<ExprList> l) : list{move(l)} {}
+
+
 };
 
 /**
@@ -229,8 +282,8 @@ public:
   }
 
   Expr::Kind getKind() const { return Kind::OperatorExpr; }
+  AmbiguousType getType(DeclarationContext*) const;
 
-  AmbiguousType getType(DeclContext*) const;
 
   OperatorExpr(Token t) : token{t} {
     if (t.isNot(Token::operator_id)) {
@@ -257,7 +310,8 @@ public:
 
   Expr::Kind getKind() const { return Kind::UnaryExpr; }
 
-  AmbiguousType getType(DeclContext*) const;
+  AmbiguousType getType(DeclarationContext*) const;
+
 
   UnaryExpr(shared_ptr<OperatorExpr> o, shared_ptr<Expr> e) : op{move(o)}, expr{move(e)} {
     if (!op) {
@@ -288,7 +342,8 @@ public:
     return {left, op, right};
   }
 
-  AmbiguousType getType(DeclContext*) const;
+  AmbiguousType getType(DeclarationContext*) const;
+
 
   BinaryExpr(shared_ptr<Expr> l, shared_ptr<OperatorExpr> o, shared_ptr<Expr> r)
   : left{move(l)}, op{move(o)}, right{move(r)} {
@@ -307,7 +362,9 @@ public:
 class FunctionCall: public Expr, public NonTerminal {
 public:
   shared_ptr<IdentifierExpr> name;
-  shared_ptr<TupleExpr> arguments;
+  shared_ptr<ExprList> arguments;
+
+  FunctionCall(shared_ptr<IdentifierExpr> n, shared_ptr<ExprList> a) : name{n}, arguments{a} {}
 
   /* Returns a vector of children for easy traversal */
   std::vector<std::shared_ptr<Matchable>> getChildren() const {
@@ -316,14 +373,8 @@ public:
 
   Expr::Kind getKind() const { return Kind::FunctionCall; }
 
-  AmbiguousType getType(DeclContext*) const;
+  AmbiguousType getType(DeclarationContext*) const;
 
-  FunctionCall(shared_ptr<IdentifierExpr> n, shared_ptr<TupleExpr> a)
-  : name{move(n)}, arguments{move(a)} {
-    if (!name) {
-      throw std::domain_error("function call: name is required");
-    }
-  }
 };
 
 

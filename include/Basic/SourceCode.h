@@ -18,9 +18,12 @@ private:
   std::string text;
   // the indices of line starts
   std::vector<int> lineStarts;
+
+  bool commandLine;
+
 public:
 
-  SourceCode(const std::istream &file, std::string name) : path{name} {
+  SourceCode(const std::istream &file, std::string name) : path{name}, commandLine{false}{
     //reads the contents of a file into a string
     std::stringstream buffer;
     buffer << file.rdbuf();
@@ -35,14 +38,24 @@ public:
     lineStarts.push_back(text.length());
   }
 
+  SourceCode() : path{"stdin"} , commandLine{true} {
+    lineStarts.push_back(0);
+    std::cout << "0> ";
+  }
+
   SourceCode(std::string p) : SourceCode(std::ifstream{p}, p) {}
 
   std::string getPath() {
     return path;
   }
 
-  std::string getText() {
-    return text;
+  void reset() {
+    std::cout << lineStarts.size() << "> " ;
+    char c = std::cin.get();
+    if (c == '\n') {
+      lineStarts.push_back(text.size() + 1);
+    }
+    text += c;
   }
 
   int getLineCount() {
@@ -50,23 +63,39 @@ public:
   }
 
   std::string getLine(int i) {
-    if (i > getLineCount()-1) {
-      throw std::out_of_range("line out of bounds");
+    if (i > getLineCount()) {
+      std::stringstream ss;
+      ss << "line out of bounds " << i << " is greater than " << getLineCount() << std::endl;
+      throw std::string(ss.str());
+    } else if (i == getLineCount()) {
+      return text.substr(lineStarts[i], text.size()-2);
     } else {
-      const int start = lineStarts[i];
-      const std::string raw = text.substr(start, lineStarts[i+1]-start);
-      const std::string line = raw.back() == '\n' ? raw.substr(0, raw.length()-1) : raw;
-      return line;
+      return text.substr(lineStarts[i], lineStarts[i+1]-2);
     }
   }
 
-  int getLength(int) {
-    return text.length();
-  }
-
   char getChar(int i) {
-    if (i>=text.size()) return -1;
-    else return text[i];
+    if (commandLine) {
+      if (i > text.size() - 1) std::cout << lineStarts.size() << ". " ;
+
+      while (i > text.size() - 1) {
+        if (std::cin.eof()) return -1;
+        text += std::cin.get();
+        if (text.back() == '\n') lineStarts.push_back(text.size());
+      }
+
+      if (text.back() != '\n') {
+        do {
+          text += std::cin.get();
+        } while (text.back() != '\n');
+        lineStarts.push_back(text.size());
+      }
+
+      return text[i];
+    } else {
+      if (i>=text.size()) return -1;
+      else return text[i];
+    }
   }
 
 };

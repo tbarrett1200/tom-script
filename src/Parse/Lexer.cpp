@@ -15,7 +15,7 @@ void Lexer::advance() {
   cLoc++;
   if (source->getChar(cLoc) == '\n') {
     cRow++;
-    cCol = -1;
+    cCol = 0;
   } else {
     cCol++;
   }
@@ -41,10 +41,18 @@ Token Lexer::lexIdentifier()  {
     return Token(lexeme, Token::kw_func, sLoc, sRow, sCol);
   } else if (lexeme == "if") {
     return Token(lexeme, Token::kw_if, sLoc, sRow, sCol);
+  } else if (lexeme == "else") {
+    return Token(lexeme, Token::kw_else, sLoc, sRow, sCol);
   } else if (lexeme == "while") {
     return Token(lexeme, Token::kw_while, sLoc, sRow, sCol);
   } else if (lexeme == "return") {
     return Token(lexeme, Token::kw_return, sLoc, sRow, sCol);
+  } else if (lexeme == "true") {
+    return Token(lexeme, Token::kw_true, sLoc, sRow, sCol);
+  } else if (lexeme == "false") {
+    return Token(lexeme, Token::kw_false, sLoc, sRow, sCol);
+  } else if (lexeme == "typedef") {
+    return Token(lexeme, Token::kw_typedef, sLoc, sRow, sCol);
   } else if (lexeme == "typealias") {
     return Token(lexeme, Token::kw_typealias, sLoc, sRow, sCol);
   } else {
@@ -169,6 +177,7 @@ auto  Lexer::lexOperatorIdentifier() -> Token {
       break;
     case '&':
       if (advanceIf(at(1) == '=')) lexeme = "&=";
+      else if (advanceIf(at(1) == '&')) lexeme = "&&";
       else lexeme = "&";
       break;
     case '|':
@@ -198,7 +207,7 @@ auto  Lexer::lexOperatorIdentifier() -> Token {
 }
 
 Token Lexer::getEOF() {
-  int loc = source->getText().length();
+  int loc = 0;
   int row = source->getLineCount() - 1;
   int col = source->getLine(row).length();
   return Token("<eof>", Token::eof, loc, row, col);
@@ -220,7 +229,8 @@ Token Lexer::next() {
 
     case '\n':
     case '\r':
-      goto Restart;  // Skip whitespace.
+      cCol++;
+      return Token("<new_line>", Token::new_line, sLoc, sRow, sCol);
 
     case ' ':
     case '\t':

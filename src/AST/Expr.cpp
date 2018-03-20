@@ -1,77 +1,107 @@
 #include "AST/Expr.h"
 #include "AST/Type.h"
-#include "AST/DeclContext.h"
+#include "AST/DeclarationContext.h"
 #include "Parse/Parser.h"
-#include "AST/AmbiguousType.h"
 #include <memory>
 
-
-AmbiguousType StringExpr::getType(DeclContext* c) const {
-  return AmbiguousType({Parser::makeType("String")});
+std::shared_ptr<TupleExpr> make(std::vector<std::shared_ptr<Expr>> l) {
+  return std::make_shared<TupleExpr>(std::make_shared<ExprList>(l));
 }
 
-AmbiguousType IntegerExpr::getType(DeclContext* c) const {
-  return AmbiguousType({Parser::makeType("Int")});
-
+std::shared_ptr<TupleExpr> make(std::shared_ptr<ExprList> l) {
+  return std::make_shared<TupleExpr>(l);
 }
 
-AmbiguousType DoubleExpr::getType(DeclContext* c) const {
-  return AmbiguousType({Parser::makeType("Double")});
+AmbiguousType StringExpr::getType(DeclarationContext *c) const {
+  return {Parser::makeType("String")};
 }
 
-AmbiguousType IdentifierExpr::getType(DeclContext* c) const {
-  if (!c->hasDecl(getLexeme(), true)) throw std::string("error: use of unresolved identifier '" + getLexeme() + "'\n");
-  return c->getDecl(getLexeme(), true).getType();
+AmbiguousType IntegerExpr::getType(DeclarationContext *c) const {
+  return {Parser::makeType("Int")};
 }
 
-AmbiguousType TupleExpr::getType(DeclContext* c) const {
-  return {{make_shared<TupleType>(list->getTypeList(c))}};
+AmbiguousType DoubleExpr::getType(DeclarationContext *c) const {
+  return {Parser::makeType("Double")};
 }
 
-AmbiguousType OperatorExpr::getType(DeclContext* c) const {
-  if (!c->hasDecl(getLexeme(), true)) throw std::string("error: use of unresolved operator '" + getLexeme() + "'\n");
-  return c->getDecl(getLexeme(), true).getType();
+AmbiguousType BoolExpr::getType(DeclarationContext *c) const {
+  return {Parser::makeType("Bool")};
 }
 
-AmbiguousType UnaryExpr::getType(DeclContext* c) const {
-  auto op_type = op->getType(c);
-  auto expr_type = expr->getType(c);
-
-  if (expr_type.isAmbiguous()) {
-    throw std::string("error: ambiguous expression\n");
-  } else {
-    op_type = op_type.filterFunction(std::make_shared<TypeList>(std::vector<std::shared_ptr<Type>>{expr_type.get()}));
-    if (op_type.isAmbiguous()) {
-      throw std::string("error: ambiguous operator\n");
-    } else if (op_type.isEmpty()) {
-      throw std::string("error: operator not defined for expression type\n");
-    } else {
-      return {{dynamic_pointer_cast<FunctionType>(op_type.get())}};
-    }
-  }
+AmbiguousType IdentifierExpr::getType(DeclarationContext *c) const {
+  return c->filter([this](std::shared_ptr<Decl> d) {
+    return d->getName() == this->getLexeme();
+  }).getTypes();
 }
 
-AmbiguousType BinaryExpr::getType(DeclContext* c) const {
-  auto op_type = op->getType(c);
-  auto left_type = left->getType(c);
-  auto right_type = right->getType(c);
+AmbiguousType TupleExpr::getType(DeclarationContext *c) const {
+  return {TupleType::make(list->getTypeList(c))};
+}
 
-  if (left_type.isAmbiguous() || right_type.isAmbiguous()) {
-    throw std::string("error: ambiguous expression\n");
-  } else {
-    auto filtered_op_type = op_type.filterFunction(std::make_shared<TypeList>(std::vector<std::shared_ptr<Type>>{left_type.get(), right_type.get()}));
-    if (filtered_op_type.isAmbiguous()) {
-      throw std::string("error: ambiguous operator\n");
-    } else if (filtered_op_type.isEmpty()) {
-      std::stringstream s;
-      s << "error: operator is undefined for types (" << left_type.get() << ", " << right_type.get() << ")" << std::endl;
-      s << op_type;
-      throw std::string(s.str());
-    } else {
-      std::cout << filtered_op_type.get() << std::endl;
-      return {{dynamic_pointer_cast<FunctionType>(filtered_op_type.get())->returns}};
-    }
-  }
+std::shared_ptr<TypeList> ExprList::getTypeList(DeclarationContext *c) const {
+  return make_shared<TypeList>(element->getType(c).get(), list ? list->getTypeList(c) : nullptr);
+}
+
+AmbiguousType OperatorExpr::getType(DeclarationContext *c) const {
+  return c->filter([this](std::shared_ptr<Decl> d) {
+    return d->getName() == this->getLexeme()
+        && d->as<FuncDecl>();
+  }).getTypes();
+}
+
+AmbiguousType LabeledExpr::getType(DeclarationContext* c) const {
+  auto types = expr->getType(c).map<std::shared_ptr<Type>>([this](std::shared_ptr<Type> t){
+    return std::make_shared<LabeledType>(std::make_shared<TypeLabel>(this->label->name), t);
+  });
+  return {types};
+}
+
+AmbiguousType UnaryExpr::getType(DeclarationContext *c) const {
+  auto function_type = op->getType(c).filter([this, c](std::shared_ptr<Type> t) {
+    return t->as<FunctionType>()->params->size() == 1
+        && this->expr->getType(c).contains((*t->as<FunctionType>()->params)[0]);
+  });
+
+  auto return_type = function_type.map<std::shared_ptr<Type>>([](std::shared_ptr<Type> t){
+    return t->as<FunctionType>()->returns;
+  });
+
+  return return_type;
+}
+
+AmbiguousType BinaryExpr::getType(DeclarationContext *c) const {
+  auto function_type = op->getType(c).filter([this, c](std::shared_ptr<Type> t) {
+    return t->as<FunctionType>()->params->size() == 2
+        && this->left->getType(c).contains((*t->as<FunctionType>()->params)[0])
+        && this->right->getType(c).contains((*t->as<FunctionType>()->params)[1]);
+  });
+
+  auto return_type = function_type.map<std::shared_ptr<Type>>([](std::shared_ptr<Type> t){
+    return t->as<FunctionType>()->returns;
+  });
+
+  return return_type;
+}
+
+AmbiguousType FunctionCall::getType(DeclarationContext *c) const {
+  auto function_decl = c->filter([this](std::shared_ptr<Decl> d){
+    return this->name->getLexeme() == d->getName() && d->getType()->as<FunctionType>();
+  }).getTypes();
+
+  auto function_type = function_decl.filter([this, c](std::shared_ptr<Type> t) {
+    if (!this->arguments || !t->as<FunctionType>()->params)
+      return !this->arguments && !t->as<FunctionType>()->params;
+    else if (this->arguments->size() == t->as<FunctionType>()->params->size())
+      return t->as<FunctionType>()->params->matches(*this->arguments->getTypeList(c));
+    else
+      return false;
+  });
+
+  auto return_type = function_type.map<std::shared_ptr<Type>>([](std::shared_ptr<Type> t){
+    return t->as<FunctionType>()->returns;
+  });
+
+  return return_type;
 }
 
 ostream& operator<<(ostream& os, Expr* x) {
@@ -84,6 +114,18 @@ ostream& operator<<(ostream& os, Expr* x) {
   } else if (dynamic_cast<TupleExpr*>(x)) {
     auto t = dynamic_cast<TupleExpr*>(x);
     os << "(" << t->list << ")";
+  } else if (dynamic_cast<IntegerExpr*>(x)) {
+    auto t = dynamic_cast<IntegerExpr*>(x);
+    os  << t->token.lexeme ;
+  } else if (dynamic_cast<DoubleExpr*>(x)) {
+    auto t = dynamic_cast<DoubleExpr*>(x);
+    os  << t->token.lexeme ;
+  } else if (dynamic_cast<BoolExpr*>(x)) {
+    auto t = dynamic_cast<BoolExpr*>(x);
+    os  << t->token.lexeme ;
+  } else if (dynamic_cast<StringExpr*>(x)) {
+    auto t = dynamic_cast<StringExpr*>(x);
+    os  << t->token.lexeme ;
   } else {
     os << "expr";
   }
@@ -105,23 +147,4 @@ ostream& operator<<(ostream& os, ExprList* x) {
 ostream& operator<<(ostream& os, ExprLabel* x) {
   os << x->getLexeme();
   return os;
-}
-
-AmbiguousType FunctionCall::getType(DeclContext* c) const {
-  auto all = name->getType(c);
-  std::shared_ptr<TypeList> args = arguments->list ? arguments->list->getTypeList(c) : nullptr;
-  auto filtered = all.filterFunction(args);
-  if (filtered.isAmbiguous()) {
-    std::vector<std::shared_ptr<Type>> types;
-    for (auto type: filtered.types) {
-      types.push_back(dynamic_pointer_cast<FunctionType>(type)->returns);
-    }
-    return {types};
-  } else if (filtered.isEmpty()) {
-    std::stringstream s;
-    s << "error: function " << name->getLexeme() << arguments->list->getTypeList(c) << " not declared" << std::endl;
-    throw std::string("error: function not found\n");
-  } else {
-    return {{dynamic_pointer_cast<FunctionType>(filtered.get())->returns}};
-  }
 }
