@@ -20,46 +20,32 @@ class AmbiguousType;
 /// attempt to find a single decl;
 class AmbiguousDecl {
 public:
-  /// the possible remaining decls
-  std::vector<std::shared_ptr<Decl>> decls;
+  std::vector<std::shared_ptr<Decl>> decls;   /// the possible remaining decls
 
   /// constructs an ambiguous decl with the specified vector of decls
   AmbiguousDecl(std::vector<std::shared_ptr<Decl>> d) : decls{d} {}
   AmbiguousDecl(std::initializer_list<std::shared_ptr<Decl>> d) : decls{d} {}
 
-  /// returns true if there are no possible decls remaining
-  bool isEmpty() const {
-    return decls.size() == 0;
-  }
+  /// returns true if there are no possible declarations remaining
+  bool isEmpty() const { return decls.size() == 0; }
 
-  /// returns true if there are multiple decls remaining
-  bool isSingleton() const {
-    return decls.size() == 1;
-  }
+  /// returns true if there are multiple declarations remaining
+  bool isSingleton() const { return decls.size() == 1; }
 
-  bool isAmbiguous() const {
-    return decls.size() > 1;
-  }
+  /// returns true if there is only one declaration remaining
+  bool isAmbiguous() const { return decls.size() > 1; }
 
   AmbiguousType getTypes() const;
 
-  /// returns the sole remaining decl
-  /// throws a std::logic_error if empty or ambiguous
-  std::shared_ptr<Decl> get() const {
-    if (isEmpty()) {
-      throw std::logic_error("cannot access empty decl");
-    } else if (isAmbiguous()) {
-      throw std::logic_error("cannot access ambiguous decl");
-    } else {
-      return decls[0];
-    }
-  }
+  /// returns the sole remaining declaration or throws a std::logic_error if
+  /// the set is empty or ambiguous
+  std::shared_ptr<Decl> get() const;
 
   /// returns an AmbiguousType with only members of specified decl subclass
   AmbiguousDecl filter(std::function<bool(std::shared_ptr<Decl>)>) const;
 };
 
-// prints a human readable representation of the AmbiguousType to the stream
+/// prints a human readable representation of the AmbiguousType to the stream
 std::ostream& operator<<(std::ostream& os, const AmbiguousDecl& t);
 
 #endif

@@ -7,7 +7,7 @@
 #include "AST/Matchable.h"
 #include "Parse/Token.h"
 
-using namespace std;
+class DeclarationContext;
 
 class Type : virtual public Matchable {
 public:
@@ -16,71 +16,38 @@ public:
     #include "AST/Type.def"
     #undef TYPE
   };
-
-  template<typename T> const T* as() const {
-    return dynamic_cast<const T*>(this);
-  }
-
+  template<typename T> const T* as() const;
   virtual Type::Kind getKind() const = 0;
 };
-
 
 class TypeLabel : public Terminal {
 public:
   Token token;
 
-  TypeLabel(Token n)
-    : token{n} {}
+  // Constructors
+  TypeLabel(Token n) : token{n} {}
 
-  std::string getLexeme() const {
-    return token.lexeme;
-  }
+  // Matchable Overrides
+  std::string getLexeme() const { return token.lexeme; }
 };
 
 class TypeList : public NonTerminal {
 public:
-  shared_ptr<Type> element;
-  shared_ptr<TypeList> list;
+  std::shared_ptr<Type> element;
+  std::shared_ptr<TypeList> list;
 
-  TypeList(std::vector<std::shared_ptr<Type>> l) {
-    if (l.size() == 0) {
-      throw std::runtime_error("type list must have at least one type");
-    }
-    if (l.size() == 1) {
-      element = l[0];
-      list = nullptr;
-    } else {
-      element = l[0];
-      l.erase(l.begin());
-      list = std::make_shared<TypeList>(l);
-    }
-  }
+  // Constructors
+  TypeList(std::vector<std::shared_ptr<Type>> l);
+  TypeList(std::shared_ptr<Type> e, std::shared_ptr<TypeList> l);
 
+  // Matchable Overrides
+  std::vector<std::shared_ptr<Matchable>> getChildren() const;
 
-  TypeList(shared_ptr<Type> e, shared_ptr<TypeList> l)
-    : element{move(e)}, list{move(l)} {}
+  // Utility Methods
+  int size() const;
+  std::shared_ptr<Type> operator[] (const int);
 
-
-  std::vector<std::shared_ptr<Matchable>> getChildren() const {
-    if (!list) return {element};
-    else {
-      auto children = list->getChildren();
-      children.insert(children.begin(), element);
-      return children;
-    }
-  }
-
-  int size() const {
-    if (!list) return 1;
-    else return list->size()+1;
-  }
-
-  std::shared_ptr<Type> operator[] (const int index){
-    if (index==0) return element;
-    else return (*list)[index-1];
-  }
-
-  template <typename T> bool has() {
+  template <typename T> bool has() const {
     if (list == nullptr) return true;
     else if (!dynamic_cast<T*>(element.get())) return false;
     else return list->has<T>();
@@ -90,17 +57,17 @@ public:
 
 class LabeledType : public Type, public NonTerminal {
 public:
-  shared_ptr<TypeLabel> label;
-  shared_ptr<Type> type;
+  std::shared_ptr<TypeLabel> label;
+  std::shared_ptr<Type> type;
 
-  LabeledType(shared_ptr<TypeLabel> p, shared_ptr<Type> t)
-    : label{move(p)}, type{move(t)} {}
+  // Constructors
+  LabeledType(std::shared_ptr<TypeLabel> p, std::shared_ptr<Type> t);
 
-  Type::Kind getKind() const { return Kind::LabeledType; }
+  // Type Overrides
+  Type::Kind getKind() const;
 
-  std::vector<std::shared_ptr<Matchable>> getChildren() const {
-    return {label, type};
-  }
+  // Matchable Overrides
+  std::vector<std::shared_ptr<Matchable>> getChildren() const;
 };
 
 
@@ -108,49 +75,46 @@ class TypeIdentifier : public Type, public Terminal {
 public:
   Token token;
 
+  // Constructors
+  TypeIdentifier(Token n) : token{n} {}
 
-  TypeIdentifier(Token n)
-    : token{n} {}
-
+  // Type Overrides
   Type::Kind getKind() const { return Kind::TypeIdentifier; }
 
-
-  std::string getLexeme() const {
-    return token.lexeme;
-  }
+  // Matchable Overrides
+  std::string getLexeme() const { return token.lexeme; }
 };
 
 
 class TupleType : public Type, public NonTerminal {
 public:
-  shared_ptr<TypeList> list;
+  std::shared_ptr<TypeList> list;
 
-  std::vector<std::shared_ptr<Matchable>> getChildren() const {
-    return {list};
-  }
+  // Constructors
+  TupleType(std::shared_ptr<TypeList> l) : list{move(l)} {}
 
-  Type::Kind getKind() const { return Kind::TupleType; }
-
+  // Factory Methods
   static std::shared_ptr<TupleType> make(std::shared_ptr<TypeList>);
 
-  TupleType(shared_ptr<TypeList> l)
-    : list{move(l)} {}
+  // Type Overrides
+  Type::Kind getKind() const { return Kind::TupleType; }
 
+  // Matchable Overrides
+  std::vector<std::shared_ptr<Matchable>> getChildren() const { return {list}; }
 };
-
-
 
 class FunctionType : public Type, public NonTerminal {
 public:
-  shared_ptr<TypeList> params;
-  shared_ptr<Type> returns;
+  std::shared_ptr<TypeList> params;
+  std::shared_ptr<Type> returns;
 
+  // Constructors
+  FunctionType(std::shared_ptr<TypeList> p, std::shared_ptr<Type> r) : params{p}, returns{r} {}
 
-  FunctionType(shared_ptr<TypeList> p, shared_ptr<Type> r)
-    : params{move(p)}, returns{move(r)} {}
-
+  // Type Overrides
   Type::Kind getKind() const { return Kind::FunctionType; }
 
+  // Matchable Overrides
   std::vector<std::shared_ptr<Matchable>> getChildren() const {
     return {params, returns};
   }
@@ -160,12 +124,13 @@ class ListType : public Type, public NonTerminal {
 public:
   std::shared_ptr<Type> type;
 
+  // Constructors
+  ListType(std::shared_ptr<Type> t) : type{t} {}
 
-  ListType(shared_ptr<Type> t)
-    : type{move(t)} {}
-
+  // Type Overrides
   Type::Kind getKind() const { return Kind::ListType; }
 
+  // Matchable Overrides
   std::vector<std::shared_ptr<Matchable>> getChildren() const {
     return {type};
   }
@@ -173,22 +138,29 @@ public:
 
 class MapType : public Type, public NonTerminal {
 public:
-  shared_ptr<Type> keyType;
-  shared_ptr<Type> valType;
+  std::shared_ptr<Type> keyType;
+  std::shared_ptr<Type> valType;
 
+  // Constructors
+  MapType(std::shared_ptr<Type> k, std::shared_ptr<Type> v) : keyType{k}, valType{v} {}
 
-  MapType(shared_ptr<Type> k, shared_ptr<Type> v)
-    : keyType{move(k)}, valType{move(v)} {}
-
+  // Type Overrides
   Type::Kind getKind() const { return Kind::MapType; }
 
+  // Matchable Overrides
   std::vector<std::shared_ptr<Matchable>> getChildren() const {
     return {keyType, valType};
   }
 };
 
-ostream& operator<<(ostream& os, Type* x);
-ostream& operator<<(ostream& os, TypeLabel* x);
-ostream& operator<<(ostream& os, TypeList* x);
+std::ostream& operator<<(std::ostream& os, Type* x);
+std::ostream& operator<<(std::ostream& os, TypeLabel* x);
+std::ostream& operator<<(std::ostream& os, TypeList* x);
+
+bool equal(std::shared_ptr<Type> t1, std::shared_ptr<Type> t2, DeclarationContext *c);
+bool equal(std::shared_ptr<TypeList> t1, std::shared_ptr<TypeList> t2, DeclarationContext *c);
+
 bool operator == (const Type& l, const Type& r);
+bool operator == (const TypeList& l, const TypeList& r);
+
 #endif

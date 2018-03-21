@@ -19,12 +19,17 @@ public:
     #undef EXPR
   };
 
+  AmbiguousType type = {};
+
   template<typename T> T* as() {
     return dynamic_cast<T*>(this);
   }
 
+  AmbiguousType getType() const {
+    return type;
+  }
+
   virtual Expr::Kind getKind() const = 0;
-  virtual AmbiguousType getType(DeclarationContext*) const = 0;
 };
 
 class ExprList : public NonTerminal {
@@ -98,7 +103,6 @@ public:
 
   Expr::Kind getKind() const { return Kind::LabeledExpr; }
 
-  AmbiguousType getType(DeclarationContext*) const;
 
   LabeledExpr(shared_ptr<ExprLabel> l, shared_ptr<Expr> e): label{move(l)}, expr{move(e)} {
     if (!label) {
@@ -121,7 +125,6 @@ public:
 
   Expr::Kind getKind() const { return Kind::StringExpr; }
 
-  AmbiguousType getType(DeclarationContext*) const;
 
   std::string getString() const { return token.lexeme.substr(1,token.lexeme.size()-1); }
 
@@ -149,7 +152,6 @@ public:
     return std::stoi(token.lexeme);
   }
 
-  AmbiguousType getType(DeclarationContext*) const;
 
 
   IntegerExpr(int i) : token{to_string(i), Token::integer_literal, 0, 0, 0} {}
@@ -176,8 +178,6 @@ public:
   bool getBool() {
     return token.lexeme == "true";
   }
-
-  AmbiguousType getType(DeclarationContext*) const;
 
 
   BoolExpr(bool b) {
@@ -210,7 +210,6 @@ public:
     return std::stod(token.lexeme);
   }
 
-  AmbiguousType getType(DeclarationContext*) const;
 
 
   DoubleExpr(int i) : token{to_string(i), Token::double_literal, 0, 0, 0} {}
@@ -232,7 +231,6 @@ public:
   }
 
   Expr::Kind getKind() const { return Kind::IdentifierExpr; }
-  AmbiguousType getType(DeclarationContext*) const;
 
 
   IdentifierExpr(Token t) : token{t} {}
@@ -256,7 +254,6 @@ public:
     return (*list)[x];
   }
 
-  AmbiguousType getType(DeclarationContext*) const;
 
 
   static std::shared_ptr<TupleExpr> make(std::vector<std::shared_ptr<Expr>>);
@@ -282,7 +279,6 @@ public:
   }
 
   Expr::Kind getKind() const { return Kind::OperatorExpr; }
-  AmbiguousType getType(DeclarationContext*) const;
 
 
   OperatorExpr(Token t) : token{t} {
@@ -310,7 +306,6 @@ public:
 
   Expr::Kind getKind() const { return Kind::UnaryExpr; }
 
-  AmbiguousType getType(DeclarationContext*) const;
 
 
   UnaryExpr(shared_ptr<OperatorExpr> o, shared_ptr<Expr> e) : op{move(o)}, expr{move(e)} {
@@ -342,7 +337,6 @@ public:
     return {left, op, right};
   }
 
-  AmbiguousType getType(DeclarationContext*) const;
 
 
   BinaryExpr(shared_ptr<Expr> l, shared_ptr<OperatorExpr> o, shared_ptr<Expr> r)
@@ -373,7 +367,6 @@ public:
 
   Expr::Kind getKind() const { return Kind::FunctionCall; }
 
-  AmbiguousType getType(DeclarationContext*) const;
 
 };
 

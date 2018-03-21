@@ -18,6 +18,16 @@ AmbiguousType AmbiguousDecl::getTypes() const {
   return types;
 }
 
+std::shared_ptr<Decl> AmbiguousDecl::get() const {
+  if (isEmpty()) {
+    throw std::logic_error("cannot access empty decl");
+  } else if (isAmbiguous()) {
+    throw std::logic_error("cannot access ambiguous decl");
+  } else {
+    return decls[0];
+  }
+}
+
 std::ostream& operator<<(std::ostream& os, const AmbiguousDecl& d) {
   os << d.decls.size() << " possible declarations" << std::endl;
   for (auto decl: d.decls) {

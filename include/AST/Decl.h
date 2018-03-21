@@ -36,6 +36,7 @@ public:
   virtual void setContext(DeclarationContext*) = 0;
 };
 
+ostream& operator<<(ostream& os, Decl& x);
 
 class DeclName : public Terminal {
 public:
@@ -128,6 +129,7 @@ public:
   LetDecl(Token n, shared_ptr<Type> t, shared_ptr<Expr> e);
 };
 
+/// A named, explicitly typed function
 class FuncDecl : public Decl, public NonTerminal {
 private:
   DeclarationContext *context;
@@ -136,18 +138,24 @@ public:
   shared_ptr<FunctionType> type;
   shared_ptr<Stmt> stmt;
 
-  std::shared_ptr<Expr> getExpr() const { return nullptr; }
-  void setExpr(std::shared_ptr<Expr>) {};
+  /// Constructs a Function Declaration
+  FuncDecl(Token n, shared_ptr<FunctionType> t, shared_ptr<Stmt> s);
 
-  std::vector<std::shared_ptr<Matchable>> getChildren() const;
+  /// Declaration Class Overrides
   Decl::Kind getKind() const;
   std::string getName() const;
   shared_ptr<Type> getType() const;
+
+  // Declaration Context Management
   DeclarationContext* getContext() const;
   void setContext(DeclarationContext* c);
 
-  FuncDecl(Token n, shared_ptr<FunctionType> t, shared_ptr<Stmt> s);
+  // Matchable Class Overrides
+  std::vector<std::shared_ptr<Matchable>> getChildren() const;
 
+  // Interpretation
+  std::shared_ptr<Expr> getExpr() const { return nullptr; }
+  void setExpr(std::shared_ptr<Expr>) {};
 
 };
 #endif

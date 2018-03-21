@@ -37,8 +37,10 @@ public:
   std::vector<std::string> getFlattenedTokens() const {
     std::vector<std::string> list;
     for (auto child: getChildren()) {
-      auto tokens = child->getFlattenedTokens();
-      list.insert(list.end(), tokens.begin(), tokens.end());
+      if (child != nullptr) {
+        auto tokens = child->getFlattenedTokens();
+        list.insert(list.end(), tokens.begin(), tokens.end());
+      }
     }
     return list;
   }
