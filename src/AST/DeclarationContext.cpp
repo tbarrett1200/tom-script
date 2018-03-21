@@ -6,7 +6,7 @@
 
 bool DeclarationContext::add(std::shared_ptr<Decl> d) {
   for (auto element: elements) {
-    if (element->getName() == d->getName() && *element->getType() == *d->getType()) {
+    if (element->getName() == d->getName() && equal(element->getType(), d->getType(), this)) {
       return false;
     }
   }
@@ -16,7 +16,7 @@ bool DeclarationContext::add(std::shared_ptr<Decl> d) {
 
 bool DeclarationContext::hasLocal(std::shared_ptr<Decl> d) {
   for (auto element: elements) {
-    if (element->getName() == d->getName() && *element->getType() == *d->getType()) {
+    if (element->getName() == d->getName() && equal(element->getType(), d->getType(), this)) {
       return true;
     }
   }

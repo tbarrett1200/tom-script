@@ -13,7 +13,7 @@
 #include "AST/DeclarationContext.h"
 #include "Driver/GlobalContext.h"
 
-class Interpreter : public ASTWalker {
+class TypeAnnotator : public ASTWalker {
 public:
   DeclarationContext *context = &globalContext;
   std::stack<std::shared_ptr<Expr>> stack;
@@ -84,10 +84,10 @@ public:
     traverseExpr(e->expr);
     AmbiguousTypeList paramType{{e->expr->type}};
 
-    AmbiguousType decls = context->filter([e, paramType](std::shared_ptr<Decl> d) {
+    AmbiguousType decls = context->filter([e, paramType, this](std::shared_ptr<Decl> d) {
       return d->getName() == e->op->getLexeme()
           && d->as<FuncDecl>()
-          && paramType.hasPermutation(d->as<FuncDecl>()->type->params);
+          && paramType.hasPermutation(d->as<FuncDecl>()->type->params, this->context);
     }).getTypes().map<std::shared_ptr<Type>>([](std::shared_ptr<Type> t){
       return t->as<FunctionType>()->returns;
     });;
@@ -121,10 +121,10 @@ public:
       traverse(e->arguments);
       AmbiguousTypeList paramType{e->arguments};
 
-      AmbiguousType decls = context->filter([e, paramType](std::shared_ptr<Decl> d) {
+      AmbiguousType decls = context->filter([e, paramType, this](std::shared_ptr<Decl> d) {
         return d->getName() == e->name->getLexeme()
             && d->as<FuncDecl>()
-            && paramType.hasPermutation(d->as<FuncDecl>()->type->params);
+            && paramType.hasPermutation(d->as<FuncDecl>()->type->params, this->context);
       }).getTypes().map<std::shared_ptr<Type>>([](std::shared_ptr<Type> t){
         return t->as<FunctionType>()->returns;
       });;
@@ -164,23 +164,31 @@ public:
 
   bool visitTypeAlias(std::shared_ptr<TypeAlias> d) {
     d->setContext(context);
-    if (context->has(d)) std::cout << "error: redeclaration of " << d << std::endl;
-    else context->add(d);
-    return true;
+    if (context->has(d)) std::cout << "error: redeclaration of " << *d << std::endl;
+    else {
+      context->add(d);
+      std::cout << "declared " << *d << std::endl;
+    }
+    return false;
   }
 
   bool visitFuncDecl(std::shared_ptr<FuncDecl> d) {
     d->setContext(context);
     if (context->has(d)) std::cout << "error: redeclaration of " << *d << std::endl;
-    else context->add(d);
-    return true;
+    else {
+      context->add(d);
+      std::cout << "declared " << *d << std::endl;
+    }
+    return false;
   }
-
   bool visitLetDecl(std::shared_ptr<LetDecl> d) {
     if (d->expr) traverseExpr(d->expr);
     d->setContext(context);
     if (context->has(d)) std::cout << "error: redeclaration of " << *d << std::endl;
-    else context->add(d);
+    else {
+      context->add(d);
+      std::cout << "declared " << *d << std::endl;
+    }
     return false;
   }
 
@@ -188,7 +196,10 @@ public:
     if (d->expr) traverseExpr(d->expr);
     d->setContext(context);
     if (context->has(d)) std::cout << "error: redeclaration of " << *d << std::endl;
-    else context->add(d);
+    else {
+      context->add(d);
+      std::cout << "declared " << *d << std::endl;
+    }
     return false;
   }
 };
@@ -202,7 +213,7 @@ int main(int argc, char const *argv[]) {
     if (!parser.token().is(Token::eof)) {
       try {
         auto type = parser.parseStmt();
-        Interpreter().traverse(type);
+        TypeAnnotator().traverse(type);
       } catch (std::string s) {
         std::cout << s;
         parser.consumeUntil({Token::new_line, Token::eof});

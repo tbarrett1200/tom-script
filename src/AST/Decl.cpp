@@ -9,7 +9,18 @@
 #include <sstream>
 
 ostream& operator<<(ostream& os, Decl& x) {
-  os << x.getName();
+  if (x.getKind() == Decl::Kind::TypeAlias) {
+    auto t = x.getType();
+    auto f = x.getContext()->getFundamentalType(t);
+    os << x.getName() << " => " << t;
+    while (!(*f == *t)) {
+      os << " => " << f;
+      t = f;
+      f = x.getContext()->getFundamentalType(t);
+    }
+  } else {
+    os << x.getName() << ": " << x.getType() << " => " << x.getContext()->getFundamentalType(x.getType());
+  }
   return os;
 }
 
@@ -45,12 +56,9 @@ shared_ptr<Type> VarDecl::getType() const {
 
   if (expr && type) {
     auto decl_type = expr->getType().filter([this](std::shared_ptr<Type> t){
-      if (this->type) {
-        auto f1 = this->getContext()->getFundamentalType(t);
-        auto f2 = this->getContext()->getFundamentalType(this->type);
-        return *f1 == *f2;
-      } else return false;
+        return equal(t, this->type, this->getContext());
     });
+
     if (decl_type.isAmbiguous()) {
       std::stringstream ss;
       ss << "error: ambiguous type" << std::endl << decl_type;
@@ -110,11 +118,7 @@ shared_ptr<Type> LetDecl::getType() const {
 
     if (expr && type) {
       auto decl_type = expr->getType().filter([this](std::shared_ptr<Type> t){
-        if (this->type) {
-          auto f1 = this->getContext()->getFundamentalType(t);
-          auto f2 = this->getContext()->getFundamentalType(this->type);
-          return *f1 == *f2;
-        } else return false;
+        return equal(t, this->type, this->getContext());
       });
       if (decl_type.isAmbiguous()) {
         std::stringstream ss;

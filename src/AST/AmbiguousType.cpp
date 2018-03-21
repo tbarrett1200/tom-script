@@ -14,19 +14,8 @@ AmbiguousType AmbiguousType::filter(std::function<bool(std::shared_ptr<Type>)> f
 }
 
 
-bool AmbiguousType::contains(std::shared_ptr<Type> t) const {
-  for (auto type: types) {
-    if (*type == *t) return true;
-  }
-  return false;
-}
-
 bool AmbiguousType::contains(std::shared_ptr<Type> t, DeclarationContext* c) const {
-  auto f1 = c->getFundamentalType(t);
-  for (auto type: types) {
-    auto f2 = c->getFundamentalType(type);
-    if (*f1 == *f2) return true;
-  }
+  for (auto type: types) if (equal(t, type, c)) return true;
   return false;
 }
 
@@ -77,13 +66,6 @@ int AmbiguousTypeList::size() const {
   if (!list) return 1;
   else return 1 + list->size();
 }
-
-bool AmbiguousTypeList::hasPermutation(std::shared_ptr<TypeList> l) const {
-  if (!l) return false;
-  if (l->size() != size()) return false;
-  else if (!list) return true;
-  else return element->contains(l->element) && list->hasPermutation(l->list);
-};
 
 bool AmbiguousTypeList::hasPermutation(std::shared_ptr<TypeList> l, DeclarationContext* c) const {
   if (!l) return false;

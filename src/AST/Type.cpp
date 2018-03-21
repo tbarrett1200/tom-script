@@ -129,10 +129,17 @@ bool operator == (const Type& l, const Type& r) {
     case Type::Kind::TypeIdentifier:
       return l.as<TypeIdentifier>()->getLexeme() == r.as<TypeIdentifier>()->getLexeme();
     case Type::Kind::TupleType:
-      return *l.as<TupleType>()->list == *r.as<TupleType>()->list;
+      if (l.as<TupleType>()->list && r.as<TupleType>()->list)
+        return *l.as<TupleType>()->list == *r.as<TupleType>()->list;
+      else if (!l.as<TupleType>()->list && !r.as<TupleType>()->list)
+        return true;
+      else return false;
     case Type::Kind::FunctionType:
-      return *l.as<FunctionType>()->params == *r.as<FunctionType>()->params
-          && *l.as<FunctionType>()->returns == *r.as<FunctionType>()->returns;
+      if (l.as<FunctionType>()->params && r.as<FunctionType>()->params)
+        return *l.as<FunctionType>()->params == *r.as<FunctionType>()->params;
+      else if (!l.as<FunctionType>()->params && !r.as<FunctionType>()->params)
+        return true;
+      else return false;
     case Type::Kind::ListType:
       return *l.as<ListType>()->type == *r.as<ListType>()->type;
     case Type::Kind::MapType:
@@ -143,5 +150,8 @@ bool operator == (const Type& l, const Type& r) {
 }
 
 bool operator == (const TypeList& l, const TypeList& r) {
-  return *l.element == *r.element && *l.list == *r.list;
+  if (!(*l.element == *r.element)) return false;
+  if (l.list && r.list) return *l.list == *r.list;
+  else if (!l.list && !r.list) return true;
+  else return false;
 }
