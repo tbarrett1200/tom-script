@@ -102,6 +102,7 @@ std::ostream& operator<<(std::ostream& os, TypeLabel* x) {
 }
 
 std::ostream& operator<<(std::ostream& os, TypeList* x) {
+  if (!x) return os;
   os << x->element;
   if (x->list) os  << ", " << x->list;
   return os;

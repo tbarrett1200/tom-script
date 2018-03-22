@@ -70,7 +70,7 @@ int AmbiguousTypeList::size() const {
 bool AmbiguousTypeList::hasPermutation(std::shared_ptr<TypeList> l, DeclarationContext* c) const {
   if (!l) return false;
   if (l->size() != size()) return false;
-  else if (!list) return true;
+  else if (!list) return element->contains(l->element, c);
   else return element->contains(l->element, c) && list->hasPermutation(l->list, c);
 };
 

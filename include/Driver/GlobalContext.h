@@ -5,16 +5,11 @@
 #include "Parse/Parser.h"
 
 DeclarationContext globalContext {
-  Parser::makeTypeDecl("typedef Void"),
   Parser::makeTypeDecl("typedef Int"),
   Parser::makeTypeDecl("typedef Double"),
   Parser::makeTypeDecl("typedef Bool"),
   Parser::makeTypeDecl("typedef String"),
-  Decl::make(Parser::makeFuncDecl("func Print(Int) -> Void"), [](std::shared_ptr<TupleExpr> args){
-    int param1 = (*args)[0]->as<IntegerExpr>()->getInt();
-    std::cout << param1 << std::endl;
-    return nullptr;
-  }),
+  Parser::makeDecl("typealias Void = ()"),
   Decl::make(Parser::makeFuncDecl("func Print(Int) -> Void"), [](std::shared_ptr<TupleExpr> args){
     int param1 = (*args)[0]->as<IntegerExpr>()->getInt();
     std::cout << param1 << std::endl;

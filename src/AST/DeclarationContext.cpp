@@ -24,12 +24,14 @@ bool DeclarationContext::hasLocal(std::shared_ptr<Decl> d) {
 }
 
 std::shared_ptr<TypeList> DeclarationContext::getFundamentalType(std::shared_ptr<TypeList> t) {
+  if (!t) return nullptr;
   auto e = getFundamentalType(t->element);
   auto list = t->list ? getFundamentalType(t->list) : nullptr;
   return std::make_shared<TypeList>(e, list);
 }
 
 std::shared_ptr<Type> DeclarationContext::getFundamentalType(std::shared_ptr<Type> t) {
+  if (!t) return nullptr;
   if (t->getKind() == Type::Kind::TupleType) {
     return make_shared<TupleType>(getFundamentalType(t->as<TupleType>()->list));
   } else if (t->getKind() == Type::Kind::FunctionType) {
