@@ -2,15 +2,15 @@
 #define AST_DECL_H
 
 #include "Parse/Token.h"
-#include "AST/Type.h"
-#include "AST/Expr.h"
 #include "AST/Matchable.h"
 #include "AST/DeclarationContext.h"
-#include "Sema/RuntimeStack.h"
 
 #include <vector>
 
 class CompoundStmt;
+class FunctionType;
+class RuntimeStack;
+class StackReference;
 
 class Decl : virtual public Matchable {
 
@@ -29,11 +29,8 @@ public:
   template<typename T> T* as() {
     return dynamic_cast<T*>(this);
   }
-
   static std::shared_ptr<Decl> make(std::shared_ptr<Decl>, std::function<void(RuntimeStack& stack)>);
-
   virtual std::shared_ptr<Type> getType() const = 0;
-
   virtual DeclarationContext* getContext() const = 0;
   virtual void setContext(DeclarationContext*) = 0;
 };
@@ -42,31 +39,26 @@ std::ostream& operator<<(std::ostream& os, Decl& x);
 
 class DeclName : public Terminal {
 public:
-  /* member variables */
   Token token;
-
   std::string getLexeme() const;
-  DeclName(Token n) : token{n} {};
+  DeclName(Token n);
 };
 
 
 class TypeDecl : public Decl, public NonTerminal {
 private:
   DeclarationContext *context;
-
 public:
   std::shared_ptr<DeclName> name;
-
-  virtual std::shared_ptr<Expr> getExpr() const { return nullptr; };
-  virtual void setExpr(std::shared_ptr<Expr> e) {};
-
-  std::vector<std::shared_ptr<Matchable>> getChildren() const { return {name}; }
-  Decl::Kind getKind() const {return Kind::TypeDecl; }
-  std::string getName() const { return name->token.lexeme; }
-  std::shared_ptr<Type> getType() const { return nullptr; }
-  DeclarationContext* getContext() const { return context;}
-  void setContext(DeclarationContext* c) {context = c;}
-  TypeDecl(Token n) : name{std::make_shared<DeclName>(n)} {}
+  std::shared_ptr<Expr> getExpr() const;
+  void setExpr(std::shared_ptr<Expr> e);
+  std::vector<std::shared_ptr<Matchable>> getChildren() const;
+  Decl::Kind getKind() const;
+  std::string getName() const;
+  std::shared_ptr<Type> getType() const;
+  DeclarationContext* getContext() const;
+  void setContext(DeclarationContext* c);
+  TypeDecl(Token n);
 };
 
 class TypeAlias : public Decl, public NonTerminal {
@@ -77,15 +69,15 @@ public:
   std::shared_ptr<DeclName> name;
   std::shared_ptr<Type> type;
 
-  virtual std::shared_ptr<Expr> getExpr() const { return nullptr; };
-  virtual void setExpr(std::shared_ptr<Expr> e) {};
+  std::shared_ptr<Expr> getExpr() const;
+  void setExpr(std::shared_ptr<Expr> e);
 
   std::vector<std::shared_ptr<Matchable>> getChildren() const;
   Decl::Kind getKind() const;
   std::string getName() const;
   std::shared_ptr<Type> getType() const;
-  DeclarationContext* getContext() const { return context;}
-  void setContext(DeclarationContext* c) {context = c;}
+  DeclarationContext* getContext() const;
+  void setContext(DeclarationContext* c);
   TypeAlias(Token n, std::shared_ptr<Type> t);
 };
 
@@ -98,7 +90,7 @@ public:
   std::shared_ptr<Type> type;
   std::shared_ptr<Expr> expr;
 
-  std::shared_ptr<Expr> getExpr() const { return expr; }
+  std::shared_ptr<Expr> getExpr() const;
   void setExpr(std::shared_ptr<Expr>);
 
   std::vector<std::shared_ptr<Matchable>> getChildren() const;
@@ -119,7 +111,7 @@ public:
   std::shared_ptr<Type> type;
   std::shared_ptr<Expr> expr;
 
-  std::shared_ptr<Expr> getExpr() const { return expr; }
+  std::shared_ptr<Expr> getExpr() const;
   void setExpr(std::shared_ptr<Expr>);
 
   std::vector<std::shared_ptr<Matchable>> getChildren() const;
@@ -142,25 +134,13 @@ public:
   std::shared_ptr<Type> type;
   std::shared_ptr<Expr> default_value;
 
-  ParamDecl(Token p, Token s, std::shared_ptr<Type> t)
-  : primary{std::make_shared<DeclName>(p)},
-    secondary{std::make_shared<DeclName>(s)},
-    type{t} {}
-
-  Decl::Kind getKind() const { return Decl::Kind::ParamDecl; }
-  std::string getName() const { return secondary->getLexeme(); }
-  std::shared_ptr<Type> getType() const {
-    if (primary->token.lexeme == "_") return type;
-    else return std::make_shared<LabeledType>(std::make_shared<TypeLabel>(primary->token), type);
-  }
-
-  std::vector<std::shared_ptr<Matchable>> getChildren() const {
-    return { primary, secondary, type };
-  }
-
-  // Declaration Context Management
-  DeclarationContext* getContext() const { return context; }
-  void setContext(DeclarationContext* c) { context = c; }
+  ParamDecl(Token p, Token s, std::shared_ptr<Type> t);
+  Decl::Kind getKind() const;
+  std::string getName() const;
+  std::shared_ptr<Type> getType() const;
+  std::vector<std::shared_ptr<Matchable>> getChildren() const;
+  DeclarationContext* getContext() const;
+  void setContext(DeclarationContext* c);
 };
 
 class ParamDeclList : public NonTerminal {
@@ -168,22 +148,10 @@ public:
   std::shared_ptr<ParamDecl> element;
   std::shared_ptr<ParamDeclList> list;
 
-  ParamDeclList(std::shared_ptr<ParamDecl> e, std::shared_ptr<ParamDeclList> l)
-  : element{e}, list{l} {
-    if (!e) throw std::logic_error("violated precondition: element is required");
-  }
-
-  std::shared_ptr<TypeList> getTypeList() const {
-    return std::make_shared<TypeList>(element->getType(), list ? list->getTypeList(): nullptr);
-  }
-
-  std::vector<std::shared_ptr<Matchable>> getChildren() const {
-    return { element, list };
-  }
-  void setContext(DeclarationContext* c) {
-    element->setContext(c);
-    if (list) list->setContext(c);
-  }
+  ParamDeclList(std::shared_ptr<ParamDecl> e, std::shared_ptr<ParamDeclList> l);
+  std::shared_ptr<TypeList> getTypeList() const;
+  std::vector<std::shared_ptr<Matchable>> getChildren() const;
+  void setContext(DeclarationContext* c);
 };
 
 /// A named, explicitly typed function
@@ -198,19 +166,12 @@ public:
   std::shared_ptr<FunctionType> type;
   std::shared_ptr<CompoundStmt> stmt;
 
-  /// Constructs a Function Declaration
   FuncDecl(Token n, std::shared_ptr<ParamDeclList> t, std::shared_ptr<Type>, std::shared_ptr<CompoundStmt> s);
-
-  /// Declaration Class Overrides
   Decl::Kind getKind() const;
   std::string getName() const;
   std::shared_ptr<Type> getType() const;
-
-  // Declaration Context Management
   DeclarationContext* getContext() const;
   void setContext(DeclarationContext* c);
-
-  // Matchable Class Overrides
   std::vector<std::shared_ptr<Matchable>> getChildren() const;
 
 };
