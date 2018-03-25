@@ -9,17 +9,17 @@
 #include <sstream>
 
 ostream& operator<<(ostream& os, Decl& x) {
+
   if (x.getKind() == Decl::Kind::TypeAlias) {
     auto t = x.getType();
     auto f = x.getContext()->getFundamentalType(t);
     os << x.getName() << " => " << t;
-    while (!(*f == *t)) {
-      os << " => " << f;
-      t = f;
-      f = x.getContext()->getFundamentalType(t);
-    }
+    if (!(*f == *t)) os << " => " << f;
   } else {
-    os << x.getName() << ": " << x.getType() << " => " << x.getContext()->getFundamentalType(x.getType());
+    auto t = x.getType();
+    auto f = x.getContext()->getFundamentalType(t);
+    os << x.getName() << ": " << t;
+    if (!(*f == *t)) os << " => " << f;
   }
   return os;
 }
@@ -28,7 +28,7 @@ std::string DeclName::getLexeme() const {
   return token.lexeme;
 }
 
-std::shared_ptr<Decl> Decl::make(std::shared_ptr<Decl> d, std::function<std::shared_ptr<Expr>(std::shared_ptr<TupleExpr>)> f) {
+std::shared_ptr<Decl> Decl::make(std::shared_ptr<Decl> d, std::function<void(RuntimeStack& vector)> f) {
   d->func = f;
   return d;
 }
@@ -167,13 +167,9 @@ shared_ptr<Type> FuncDecl::getType() const {
   return type;
 };
 
+DeclarationContext* FuncDecl::getContext() const { return context.get(); }
+void FuncDecl::setContext(DeclarationContext* c) { context->setParent(c); }
 
-DeclarationContext* FuncDecl::getContext() const { return context; }
-void FuncDecl::setContext(DeclarationContext* c) { context = c; }
-
-FuncDecl::FuncDecl(Token n, shared_ptr<FunctionType> t, shared_ptr<Stmt> s)
-: name{new DeclName{n}}, type{move(t)}, stmt{s} {
-  if (!type) {
-    throw domain_error("func decl must specify type");
-  }
-}
+FuncDecl::FuncDecl(Token n, shared_ptr<ParamDeclList> p, shared_ptr<Type> r, shared_ptr<CompoundStmt> s)
+: name{new DeclName{n}}, params{p}, returnType{r},
+  type{new FunctionType(p ? p->getTypeList() : nullptr, r)}, stmt{s} {}

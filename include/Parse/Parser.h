@@ -42,7 +42,7 @@ public:
   shared_ptr<LabeledType> parseLabeledType();
   shared_ptr<TypeList> parseTupleTypeElementList();
   shared_ptr<TupleType> parseTupleType();
-  shared_ptr<FunctionType> parseFunctionType(bool decl);
+  shared_ptr<FunctionType> parseFunctionType();
   shared_ptr<Type> parseTupleOrFunctionType();
   shared_ptr<ListType> parseListType();
   shared_ptr<MapType> parseMapType();
@@ -60,6 +60,8 @@ public:
   shared_ptr<VarDecl> parseVarDecl();
   shared_ptr<LetDecl> parseLetDecl();
   shared_ptr<FuncDecl> parseFuncDecl();
+  shared_ptr<ParamDecl> parseParamDecl();
+  shared_ptr<ParamDeclList> parseParamDeclList();
 
   shared_ptr<Expr> parseExpr(int precedence = OperatorTable::size());
   shared_ptr<Expr> parseParenthesizedExpr();

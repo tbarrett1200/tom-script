@@ -2,6 +2,11 @@
 #include "AST/AmbiguousType.h"
 #include "AST/Decl.h"
 
+AmbiguousDecl AmbiguousDecl::filter(std::shared_ptr<IdentifierExpr> e) {
+  return filter([e](std::shared_ptr<Decl> d){
+    return (d->as<VarDecl>() || d->as<LetDecl>()) && d->getName() == e->getLexeme();
+  });
+}
 AmbiguousDecl AmbiguousDecl::filter(std::function<bool(std::shared_ptr<Decl>)> func) const {
   std::vector<std::shared_ptr<Decl>> filtered;
   for (auto decl: decls) {

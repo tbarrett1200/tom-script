@@ -47,6 +47,7 @@ public:
   /// throws a std::logic_error if empty or ambiguous
   std::shared_ptr<Type> get() const;
 
+  AmbiguousType label(std::shared_ptr<class ExprLabel> l);
   /// returns an AmbiguousType with only members of specified type subclass
   AmbiguousType filter(std::function<bool(std::shared_ptr<Type>)>) const;
 

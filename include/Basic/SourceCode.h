@@ -40,7 +40,7 @@ public:
 
   SourceCode() : path{"stdin"} , commandLine{true} {
     lineStarts.push_back(0);
-    std::cout << "0> ";
+    std::cout << "1> ";
   }
 
   SourceCode(std::string p) : SourceCode(std::ifstream{p}, p) {}

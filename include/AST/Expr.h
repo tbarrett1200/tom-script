@@ -10,6 +10,9 @@
 #include "Parse/Operator.h"
 
 #include <memory>
+#include <stack>
+
+class StackReference;
 
 class Expr : virtual public Matchable {
 public:
@@ -48,6 +51,22 @@ public:
     }
   }
 
+  std::vector<std::shared_ptr<Expr>> vector() const {
+    if (!list) {
+      return {element};
+    } else {
+      auto l = list->vector();
+      l.insert(l.begin(), element);
+      return l;
+    }
+  }
+
+  std::shared_ptr<ExprList> reverse() const {
+    auto v = vector();
+    std::reverse(v.begin(),v.end());
+    return make_shared<ExprList>(v);
+  }
+
   int size() const {
     if (!list) return 1;
     else return list->size()+1;
@@ -74,7 +93,7 @@ public:
   ExprList(std::vector<shared_ptr<Expr>> v) {
     element = v.front();
     v.erase(v.begin());
-    list = std::make_shared<ExprList>(v);
+    list = v.size() > 0 ? std::make_shared<ExprList>(v) : nullptr;
   }
 };
 
@@ -126,21 +145,15 @@ public:
   Expr::Kind getKind() const { return Kind::StringExpr; }
 
 
-  std::string getString() const { return token.lexeme.substr(1,token.lexeme.size()-1); }
+  std::string getString() const { return token.lexeme.substr(1,token.lexeme.size()-2); }
 
-  StringExpr(std::string s) : token{"\"" + s + "\"", Token::string_literal, 0, 0, 0} {}
-
-  StringExpr(Token t) : token{t} {
-    if (t.isNot(Token::string_literal)) {
-      throw std::domain_error("StringExpr requires a token of type string_literal");
-    }
-  }
+  StringExpr(std::string s);
+  StringExpr(Token t);
 };
 
 class IntegerExpr: public Expr, public Terminal  {
 public:
   Token token;
-
   /* Returns a vector of children for easy traversal */
   std::string getLexeme() const {
     return token.lexeme;
@@ -152,15 +165,8 @@ public:
     return std::stoi(token.lexeme);
   }
 
-
-
-  IntegerExpr(int i) : token{to_string(i), Token::integer_literal, 0, 0, 0} {}
-
-  IntegerExpr(Token t) : token{t} {
-    if (t.isNot(Token::integer_literal)) {
-      throw std::domain_error("IntegerExpr requires a token of type integer_literal");
-    }
-  }
+  IntegerExpr(int i);
+  IntegerExpr(Token t);
 };
 
 
@@ -179,20 +185,8 @@ public:
     return token.lexeme == "true";
   }
 
-
-  BoolExpr(bool b) {
-  if (b) {
-     token = Token{"true", Token::kw_true, 0, 0, 0};
-   } else {
-     token = Token{"false", Token::kw_false, 0, 0, 0};
-   }
-  }
-
-  BoolExpr(Token t) : token{t} {
-    if (!(t.isAny({Token::kw_true, Token::kw_false}))) {
-      throw std::domain_error("BoolExpr requires a boolean literal");
-    }
-  }
+  BoolExpr(bool b);
+  BoolExpr(Token t);
 };
 
 class DoubleExpr: public Expr, public Terminal  {
@@ -210,20 +204,14 @@ public:
     return std::stod(token.lexeme);
   }
 
-
-
-  DoubleExpr(int i) : token{to_string(i), Token::double_literal, 0, 0, 0} {}
-
-  DoubleExpr(Token t) : token{t} {
-    if (t.isNot(Token::double_literal)) {
-      throw std::domain_error("DoubleExpr requires a token of type double_literal");
-    }
-  }
+  DoubleExpr(int i);
+  DoubleExpr(Token t);
 };
 
 class IdentifierExpr: public Expr, public Terminal  {
 public:
   Token token;
+  std::shared_ptr<Decl> decl;
 
   /* Returns a vector of children for easy traversal */
   std::string getLexeme() const {
@@ -298,6 +286,7 @@ class UnaryExpr: public Expr, public NonTerminal  {
 public:
   shared_ptr<OperatorExpr> op;
   shared_ptr<Expr> expr;
+  shared_ptr<class FuncDecl> decl;
 
   /* Returns a vector of children for easy traversal */
   std::vector<std::shared_ptr<Matchable>> getChildren() const {
@@ -330,6 +319,7 @@ public:
   shared_ptr<Expr> left;
   shared_ptr<OperatorExpr> op;
   shared_ptr<Expr> right;
+  shared_ptr<class FuncDecl> decl;
 
   Expr::Kind getKind() const { return Kind::BinaryExpr; }
 
@@ -357,6 +347,7 @@ class FunctionCall: public Expr, public NonTerminal {
 public:
   shared_ptr<IdentifierExpr> name;
   shared_ptr<ExprList> arguments;
+  shared_ptr<class FuncDecl> decl;
 
   FunctionCall(shared_ptr<IdentifierExpr> n, shared_ptr<ExprList> a) : name{n}, arguments{a} {}
 
@@ -366,10 +357,15 @@ public:
   }
 
   Expr::Kind getKind() const { return Kind::FunctionCall; }
-
-
 };
 
+class StackReference: public Expr, public Terminal {
+public:
+  int location;
+  StackReference(int l) : location{l} {}
+  std::string getLexeme() const { return "*"; }
+  Expr::Kind getKind() const { return Kind::StackReference; }
+};
 
 ostream& operator<<(ostream& os, Expr* x);
 ostream& operator<<(ostream& os, ExprList* x);

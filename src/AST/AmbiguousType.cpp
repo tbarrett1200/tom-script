@@ -4,6 +4,12 @@
 
 #include <vector>
 
+AmbiguousType AmbiguousType::label(std::shared_ptr<class ExprLabel> l) {
+  return {map<std::shared_ptr<Type>>([l](std::shared_ptr<Type> type){
+    return make_shared<LabeledType>(make_shared<TypeLabel>(l->name), type);
+  })};
+}
+
 AmbiguousType AmbiguousType::filter(std::function<bool(std::shared_ptr<Type>)> func) const {
   std::vector<std::shared_ptr<Type>> filtered;
   for (auto type: types) {
@@ -31,9 +37,9 @@ std::shared_ptr<Type> AmbiguousType::get() const {
 
 std::ostream& operator<<(std::ostream& os, const AmbiguousType& t) {
   if (t.types.size() == 0) {
-    os << "undefined" << std::endl;
+    os << "empty";
   } else if (t.types.size() == 1) {
-    os << t.get() << std::endl;
+    os << t.get();
   } else {
     os << t.types.size() << " possible types" << std::endl;
     for (auto type: t.types) {

@@ -1,6 +1,7 @@
 #include "AST/DeclarationContext.h"
 #include "AST/AmbiguousDecl.h"
 #include "AST/Decl.h"
+#include "AST/Expr.h"
 #include "AST/Type.h"
 #include "Parse/Parser.h"
 
@@ -10,11 +11,14 @@ bool DeclarationContext::add(std::shared_ptr<Decl> d) {
       return false;
     }
   }
+  d->location = std::make_shared<StackReference>(getSize());
   elements.push_back(d);
   return true;
 }
 
 bool DeclarationContext::hasLocal(std::shared_ptr<Decl> d) {
+  if (!d) return false;
+
   for (auto element: elements) {
     if (element->getName() == d->getName() && equal(element->getType(), d->getType(), this)) {
       return true;
@@ -61,8 +65,24 @@ std::shared_ptr<Type> DeclarationContext::getFundamentalType(std::shared_ptr<Typ
   }
 }
 
+int DeclarationContext::getSize() {
+  int size = 0;
+  for (auto decl: elements) {
+    if (dynamic_pointer_cast<VarDecl>(decl) || dynamic_pointer_cast<LetDecl>(decl))
+      size++;
+  }
+  return size;
+}
+
 bool DeclarationContext::has(std::shared_ptr<Decl> d) {
   return hasLocal(d) || (parent && parent->has(d));
+}
+
+AmbiguousDecl DeclarationContext::filter(std::shared_ptr<class IdentifierExpr> e) {
+  AmbiguousDecl self = AmbiguousDecl{elements}.filter(e);
+  if (self.isEmpty()) {
+    return parent ? parent->filter(e) : self;
+  } else return self;
 }
 
 AmbiguousDecl DeclarationContext::filter(std::function<bool(std::shared_ptr<Decl>)> func) {

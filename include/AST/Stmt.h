@@ -7,6 +7,9 @@
 
 #import <memory>
 
+class ReturnStmt;
+class ConditionalStmtList;
+
 class Stmt : virtual public Matchable {
 public:
   enum class Kind {
@@ -14,6 +17,7 @@ public:
     #include "AST/Stmt.def"
     #undef STMT
   };
+  virtual bool returns() const = 0;
   virtual Stmt::Kind getKind() const = 0;
 };
 
@@ -23,51 +27,33 @@ public:
   std::shared_ptr<Stmt> element;
   std::shared_ptr<StmtList> list;
 
-  StmtList(std::shared_ptr<Stmt> e, std::shared_ptr<StmtList> l)
-    : element{move(e)}, list{move(l)} {}
+  // Constructors
+  StmtList(std::shared_ptr<Stmt> e, std::shared_ptr<StmtList> l);
+  StmtList(std::vector<std::shared_ptr<Stmt>> l);
 
-  StmtList(std::vector<std::shared_ptr<Stmt>> l) {
-    if (l.size() == 0) {
-      throw std::runtime_error("type list must have at least one type");
-    }
-    if (l.size() == 1) {
-      element = l[0];
-      list = nullptr;
-    } else {
-      element = l[0];
-      l.erase(l.begin());
-      list = std::make_shared<StmtList>(l);
-    }
-  }
+  // Matchable
+  std::vector<std::shared_ptr<Matchable>> getChildren() const;
 
-  std::vector<std::shared_ptr<Matchable>> getChildren() const {
-    if (!list) return {element};
-    else {
-      auto children = list->getChildren();
-      children.insert(children.begin(), element);
-      return children;
-    }
-  }
-
-  int size() const {
-    if (!list) return 1;
-    else return list->size()+1;
-  }
+  // Utility Methods
+  template <typename T> bool has() const;
+  bool returns() const;
+  int size() const;
 };
-
 
 class CompoundStmt : public Stmt, public NonTerminal {
 public:
   std::shared_ptr<StmtList> list;
+  std::shared_ptr<DeclarationContext> context = make_shared<DeclarationContext>();
 
-  Stmt::Kind getKind() const { return Kind::CompoundStmt;}
+  // Constructors
+  CompoundStmt(std::shared_ptr<StmtList> l);
 
-  std::vector<std::shared_ptr<Matchable>> getChildren() const {
-    return {list};
-  }
+  // Matchable
+  std::vector<std::shared_ptr<Matchable>> getChildren() const;
 
-  CompoundStmt(std::shared_ptr<StmtList> l)
-    : list{l} {}
+  // Utility Methods
+  Stmt::Kind getKind() const;
+  bool returns() const;
 };
 
 class ConditionalStmt : public Stmt, public NonTerminal {
@@ -75,15 +61,18 @@ public:
   std::shared_ptr<Expr> condition;
   std::shared_ptr<CompoundStmt> stmt;
 
-  Stmt::Kind getKind() const { return Kind::ConditionalStmt;}
+  // Constructors
+  ConditionalStmt(std::shared_ptr<Expr> c, std::shared_ptr<CompoundStmt> s);
 
-  std::vector<std::shared_ptr<Matchable>> getChildren() const {
-    if (!condition) { return {stmt}; }
-    else return {condition, stmt};
-  }
+  // Stmt Overrides
+  Stmt::Kind getKind() const;
 
-  ConditionalStmt(std::shared_ptr<Expr> c, std::shared_ptr<CompoundStmt> s)
-    : condition{c}, stmt{s} {}
+  // Matchable
+  std::vector<std::shared_ptr<Matchable>> getChildren() const;
+
+  // Utility Methods
+  bool returns() const;
+  bool isElseStmt() const;
 };
 
 
@@ -92,38 +81,20 @@ public:
   std::shared_ptr<ConditionalStmt> element;
   std::shared_ptr<ConditionalStmtList> list;
 
-  ConditionalStmtList(std::shared_ptr<ConditionalStmt> e, std::shared_ptr<ConditionalStmtList> l)
-    : element{move(e)}, list{move(l)} {}
+  // Constructors
+  ConditionalStmtList(std::shared_ptr<ConditionalStmt> e, std::shared_ptr<ConditionalStmtList> l);
+  ConditionalStmtList(std::vector<std::shared_ptr<ConditionalStmt>> l);
 
-  ConditionalStmtList(std::vector<std::shared_ptr<ConditionalStmt>> l) {
-    if (l.size() == 0) {
-      throw std::runtime_error("type list must have at least one type");
-    }
-    if (l.size() == 1) {
-      element = l[0];
-      list = nullptr;
-    } else {
-      element = l[0];
-      l.erase(l.begin());
-      list = std::make_shared<ConditionalStmtList>(l);
-    }
-  }
+  // Stmt Overrides
+  Stmt::Kind getKind() const;
 
-  Stmt::Kind getKind() const { return Kind::ConditionalStmtList; }
+  // Matchable
+  std::vector<std::shared_ptr<Matchable>> getChildren() const;
 
-  std::vector<std::shared_ptr<Matchable>> getChildren() const {
-    if (!list) return {element};
-    else {
-      auto children = list->getChildren();
-      children.insert(children.begin(), element);
-      return children;
-    }
-  }
-
-  int size() const {
-    if (!list) return 1;
-    else return list->size()+1;
-  }
+  // Utility Methods
+  bool hasElseStmt() const;
+  bool returns() const;
+  int size() const;
 };
 
 class WhileLoop : public Stmt, public NonTerminal {
@@ -131,31 +102,36 @@ public:
   std::shared_ptr<Expr> condition;
   std::shared_ptr<CompoundStmt> stmt;
 
+  // Constructors
+  WhileLoop(std::shared_ptr<Expr> c, std::shared_ptr<CompoundStmt> s);
 
-  Stmt::Kind getKind() const { return Kind::WhileLoop;}
+  // Stmt Overrides
+  Stmt::Kind getKind() const;
 
-  std::vector<std::shared_ptr<Matchable>> getChildren() const {
-    return {condition, stmt};
-  }
+  // Matchable
+  std::vector<std::shared_ptr<Matchable>> getChildren() const;
 
-  WhileLoop(std::shared_ptr<Expr> c, std::shared_ptr<CompoundStmt> s)
-    : condition{c}, stmt{s} {}
+  // Utility Methods
+  bool returns() const;
 };
 
 
 class ReturnStmt : public Stmt, public NonTerminal {
 public:
   std::shared_ptr<Expr> expr;
+  std::shared_ptr<StackReference> location;
 
+  // Constructors
+  ReturnStmt(std::shared_ptr<Expr> d);
 
-  Stmt::Kind getKind() const { return Kind::ReturnStmt;}
+  // Stmt Overrides
+  Stmt::Kind getKind() const;
 
-  std::vector<std::shared_ptr<Matchable>> getChildren() const {
-    return {expr};
-  }
+  // Matchable
+  std::vector<std::shared_ptr<Matchable>> getChildren() const;
 
-  ReturnStmt(std::shared_ptr<Expr> d)
-    : expr{d} {}
+  // Utility Methods
+  bool returns() const;
 };
 
 
@@ -163,15 +139,17 @@ class ExprStmt : public Stmt, public NonTerminal {
 public:
   std::shared_ptr<Expr> expr;
 
+  // Constructors
+  ExprStmt(std::shared_ptr<Expr> d);
 
-  Stmt::Kind getKind() const { return Kind::ExprStmt;}
+  // Stmt Overrides
+  Stmt::Kind getKind() const;
 
-  std::vector<std::shared_ptr<Matchable>> getChildren() const {
-    return {expr};
-  }
+  // Matchable
+  std::vector<std::shared_ptr<Matchable>> getChildren() const;
 
-  ExprStmt(std::shared_ptr<Expr> d)
-    : expr{d} {}
+  // Utility Methods
+  bool returns() const;
 };
 
 
@@ -179,15 +157,17 @@ class DeclStmt : public Stmt, public NonTerminal {
 public:
   std::shared_ptr<Decl> decl;
 
+  // Constructors
+  DeclStmt(std::shared_ptr<Decl> d);
 
-  Stmt::Kind getKind() const { return Kind::DeclStmt;}
+  // Stmt Overrides
+  Stmt::Kind getKind() const;
 
-  std::vector<std::shared_ptr<Matchable>> getChildren() const {
-    return {decl};
-  }
+  // Matchable
+  std::vector<std::shared_ptr<Matchable>> getChildren() const;
 
-  DeclStmt(std::shared_ptr<Decl> d)
-    : decl{d} {}
+  // Utility Methods
+  bool returns() const;
 };
 
 #endif

@@ -7,49 +7,31 @@
 
 class TypeChecker : public ASTWalker {
 public:
-  DeclarationContext *context = &globalContext;
-  bool error = false;
+  DeclarationContext* context = globalContext.get();
+  std::shared_ptr<Type> returns;
 
   bool visitLabeledExpr(std::shared_ptr<LabeledExpr> e) {
     traverseExpr(e->expr);
-    std::vector<std::shared_ptr<Type>> types;
-    for (auto type: e->expr->type.types) {
-      types.push_back({make_shared<LabeledType>(make_shared<TypeLabel>(e->label->name), type)});
-    }
-    e->type = {types};
-    return false;
-  }
-
-  bool visitIntegerExpr(std::shared_ptr<IntegerExpr> e) {
-    e->type = {Parser::makeType("Int")};
-    return false;
-  }
-
-  bool visitStringExpr(std::shared_ptr<StringExpr> e) {
-    e->type = {Parser::makeType("String")};
-    return false;
-  }
-
-  bool visitBoolExpr(std::shared_ptr<BoolExpr> e) {
-    e->type = {Parser::makeType("Bool")};
-    return false;
-  }
-
-  bool visitDoubleExpr(std::shared_ptr<DoubleExpr> e) {
-    e->type = {Parser::makeType("Double")};
+    e->type = e->expr->type.label(e->label);
     return false;
   }
 
   bool visitIdentifierExpr(std::shared_ptr<IdentifierExpr> e) {
-    auto decls = context->filter([e](std::shared_ptr<Decl> d) {
-      return d->getName() == e->getLexeme();
-    });
+    auto decls = context->filter(e);
 
     if (decls.isEmpty()) {
       std::stringstream ss;
       ss << "error: "  << e->getLexeme() << " has not been declared" << std::endl;
       throw ss.str();
-    } else e->type = decls.getTypes();
+    } else if (decls.isAmbiguous()) {
+      std::stringstream ss;
+      ss << "error: "  << e->getLexeme() << " is ambiguous" << std::endl;
+      throw ss.str();
+    } else {
+      e->type = decls.getTypes();
+      e->decl = decls.get();
+    }
+
     return false;
   }
 
@@ -80,19 +62,28 @@ public:
     traverseExpr(e->expr);
     AmbiguousTypeList paramType{{e->expr->type}};
 
-    AmbiguousType decls = context->filter([e, paramType, this](std::shared_ptr<Decl> d) {
+    AmbiguousDecl decls = context->filter([e, paramType, this](std::shared_ptr<Decl> d) {
       return d->getName() == e->op->getLexeme()
           && d->as<FuncDecl>()
           && paramType.hasPermutation(d->as<FuncDecl>()->type->params, this->context);
-    }).getTypes().map<std::shared_ptr<Type>>([](std::shared_ptr<Type> t){
+    });
+
+    AmbiguousType types = decls.getTypes().map<std::shared_ptr<Type>>([](std::shared_ptr<Type> t){
       return t->as<FunctionType>()->returns;
     });;
 
     if (decls.isEmpty()) {
       std::stringstream ss;
-      ss << "error: operator " << e->op << " has not been declared for these types "<< std::endl;
+      ss << "error: unary operator " << e->op << " has not been declared for these types "<< std::endl;
       throw ss.str();
-    } else e->type = decls;
+    } else if (decls.isAmbiguous()) {
+      std::stringstream ss;
+      ss << "error: unary operator " << e->op << " is ambiguous for these types "<< std::endl;
+      throw ss.str();
+    } else {
+      e->type = types;
+      e->decl = dynamic_pointer_cast<FuncDecl>(decls.get());
+    }
     return false;
   }
 
@@ -100,19 +91,29 @@ public:
     traverseExpr(e->left);
     traverseExpr(e->right);
     AmbiguousTypeList paramType{{e->left->type, e->right->type}};
-    AmbiguousType decls = context->filter([e, paramType, this](std::shared_ptr<Decl> d) {
+
+    AmbiguousDecl decls = context->filter([e, paramType, this](std::shared_ptr<Decl> d) {
       return d->getName() == e->op->getLexeme()
           && d->as<FuncDecl>()
           && paramType.hasPermutation(d->as<FuncDecl>()->type->params, this->context);
-    }).getTypes().map<std::shared_ptr<Type>>([](std::shared_ptr<Type> t){
-      return t->as<FunctionType>()->returns;
     });
+
+    AmbiguousType types = decls.getTypes().map<std::shared_ptr<Type>>([](std::shared_ptr<Type> t){
+      return t->as<FunctionType>()->returns;
+    });;
 
     if (decls.isEmpty()) {
       std::stringstream ss;
-      ss << "error: operator " << e->op << " has not been declared for these types "<< std::endl;
+      ss << "error: binary operator " << e->op << " has not been declared for these types "<< std::endl;
       throw ss.str();
-    } else e->type = decls;
+    }else if (decls.isAmbiguous()) {
+      std::stringstream ss;
+      ss << "error: binary operator " << e->op << " is ambiguous for these types "<< std::endl;
+      throw ss.str();
+    } else {
+      e->decl = dynamic_pointer_cast<FuncDecl>(decls.get());
+      e->type = types;
+    }
     return false;
   }
 
@@ -121,33 +122,57 @@ public:
       traverse(e->arguments);
       AmbiguousTypeList paramType{e->arguments};
 
-      AmbiguousType decls = context->filter([e, paramType, this](std::shared_ptr<Decl> d) {
+      AmbiguousDecl decls = context->filter([e, paramType, this](std::shared_ptr<Decl> d) {
         return d->getName() == e->name->getLexeme()
             && d->as<FuncDecl>()
             && paramType.hasPermutation(d->as<FuncDecl>()->type->params, this->context);
-      }).getTypes().map<std::shared_ptr<Type>>([](std::shared_ptr<Type> t){
+      });
+
+      AmbiguousType type = decls.getTypes().map<std::shared_ptr<Type>>([](std::shared_ptr<Type> t){
         return t->as<FunctionType>()->returns;
       });;
 
       if (decls.isEmpty()) {
         std::stringstream ss;
         ss << "error: function " << e->name->getLexeme() << " has not been declared for these types "<< std::endl;
+        for (auto decl: context->local()) {
+          ss << "how about " << *decl << " ?" << std::endl;
+        }
         throw ss.str();
-      } else e->type = decls;
+      } else if (decls.isAmbiguous()) {
+        std::stringstream ss;
+        ss << "error: function " << e->name->getLexeme() << " is ambiguous "<< std::endl;
+        throw ss.str();
+      } else {
+        e->type = type;
+        e->decl = dynamic_pointer_cast<FuncDecl>(decls.get());
+      }
     } else {
-      AmbiguousType decls = context->filter([e](std::shared_ptr<Decl> d) {
+      AmbiguousDecl decls = context->filter([e](std::shared_ptr<Decl> d) {
         return d->getName() == e->name->getLexeme()
             && d->as<FuncDecl>()
             && d->as<FuncDecl>()->type->params == nullptr;
-      }).getTypes().map<std::shared_ptr<Type>>([](std::shared_ptr<Type> t){
+      });
+
+      AmbiguousType types = decls.getTypes().map<std::shared_ptr<Type>>([](std::shared_ptr<Type> t){
         return t->as<FunctionType>()->returns;
       });;
 
       if (decls.isEmpty()) {
         std::stringstream ss;
         ss << "error: function " << e->name->getLexeme() << " has not been declared for these types "<< std::endl;
+        for (auto decl: context->local()) {
+          ss << "how about " << *decl << " ?" << std::endl;
+        }
         throw ss.str();
-      } else e->type = decls;
+      } else if (decls.isAmbiguous()) {
+        std::stringstream ss;
+        ss << "error: function " << e->name->getLexeme() << " is ambiguous "<< std::endl;
+        throw ss.str();
+      } else {
+        e->type = types;
+        e->decl = dynamic_pointer_cast<FuncDecl>(decls.get());
+      }
     }
     return false;
   }
@@ -157,11 +182,6 @@ public:
     if (s->expr->type.isSingleton()) {
       auto type = s->expr->type.get();
       auto fund = context->getFundamentalType(type);
-      if (*type == *fund) {
-        std::cout << type << std::endl;
-      } else {
-        std::cout << type << " => " << context->getFundamentalType(type) << std::endl;
-      }
     } else {
       std::stringstream ss;
       ss << "error: ambiguous expression " << std::endl << s->expr->type;
@@ -170,55 +190,108 @@ public:
     return false;
   }
 
+  bool visitCompoundStmt(std::shared_ptr<CompoundStmt> s) {
+    s->context = std::make_shared<DeclarationContext>();
+    s->context->setParent(context);
+    context = s->context.get();
+    traverse(s->list);
+    context = context->getParent();
+    return false;
+  }
+
   bool visitTypeAlias(std::shared_ptr<TypeAlias> d) {
     d->setContext(context);
-    if (context->has(d)) {
+    if (context->hasLocal(d)) {
       std::stringstream ss;
       ss << "error: redeclaration of " << *d << std::endl;
       throw ss;
     } else {
       context->add(d);
-      std::cout << "declared " << *d << std::endl;
     }
     return false;
   }
 
   bool visitFuncDecl(std::shared_ptr<FuncDecl> d) {
-    d->setContext(context);
-    if (context->has(d)) {
+    // checks for redeclaration
+    if (context->hasLocal(d)) {
       std::stringstream ss;
       ss << "error: redeclaration of " << *d << std::endl;
       throw ss.str();
+    }
+    // sets context for deeper checking
+    context->add(d);
+    d->setContext(context);
+    context = d->getContext();
+
+    if (d->params) {
+      traverse(d->params);
+    }
+
+    // semantic checks
+    if (d->stmt) {
+      returns = d->type->returns;
+      traverseCompoundStmt(d->stmt);
+      returns = nullptr;
+      if (!d->stmt->returns()) throw std::string("error: doesn't return\n");
+    }
+
+    context = context->getParent();
+    return false;
+  }
+
+  bool visitReturnStmt(std::shared_ptr<ReturnStmt> s) {
+    if (!returns) {
+      std::stringstream ss;
+      ss << "error: you can't return here dipshit " << std::endl;
+      throw ss.str();
+    } else if (returns && !s->expr){
+      std::stringstream ss;
+      ss << "error: you gotta return something dipshit " << std::endl;
+      throw ss.str();
     } else {
-      context->add(d);
-      std::cout << "declared " << *d << std::endl;
+      traverseExpr(s->expr);
+
+      if (s->expr->type.isEmpty()) {
+        std::stringstream ss;
+        ss << "error: you're returning the wrong type dipshit " << this->returns << " vs " << s->expr->type << std::endl;
+        throw ss.str();
+      } else if (s->expr->type.isAmbiguous()) {
+        std::stringstream ss;
+        ss << "error: this is ambiguous you worthless dirtbag" << std::endl;
+        throw ss.str();
+      }
     }
     return false;
   }
+
   bool visitLetDecl(std::shared_ptr<LetDecl> d) {
     if (d->expr) traverseExpr(d->expr);
     d->setContext(context);
-    if (context->has(d)) {
+    if (context->hasLocal(d)) {
       std::stringstream ss;
       ss << "error: redeclaration of " << *d << std::endl;
-      throw ss;
+      throw ss.str();
     }  else {
       context->add(d);
-      std::cout << "declared " << *d << std::endl;
     }
+    return false;
+  }
+
+  bool visitParamDecl(std::shared_ptr<ParamDecl> d) {
+    auto var = std::make_shared<VarDecl>(d->secondary->token, d->type, d->default_value);
+    context->add(var);
     return false;
   }
 
   bool visitVarDecl(std::shared_ptr<VarDecl> d) {
     if (d->expr) traverseExpr(d->expr);
     d->setContext(context);
-    if (context->has(d)) {
+    if (context->hasLocal(d)) {
       std::stringstream ss;
       ss << "error: redeclaration of " << *d << std::endl;
       throw ss;
     } else {
       context->add(d);
-      std::cout << "declared " << *d << std::endl;
     }
     return false;
   }

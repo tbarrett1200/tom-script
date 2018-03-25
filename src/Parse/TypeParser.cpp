@@ -58,12 +58,12 @@ shared_ptr<TupleType> Parser::parseTupleType() {
   return make_shared<TupleType>(move(list));
 }
 
-shared_ptr<FunctionType> Parser::parseFunctionType(bool decl = false) {
+shared_ptr<FunctionType> Parser::parseFunctionType() {
   expectToken(Token::l_paren, "left parenthesis");
   auto list = token().is(Token::r_paren)? nullptr: parseTupleTypeElementList();
   expectToken(Token::r_paren, "right parenthesis");
 
-  if (!decl && list && list->has<LabeledType>()) {
+  if (list && list->has<LabeledType>()) {
     auto expr = dynamic_cast<LabeledType*>(list->element.get());
     auto label = expr->label->token;
     throw report(label, "error: function type parameter elements may not be labeled");

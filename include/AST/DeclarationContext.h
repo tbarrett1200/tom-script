@@ -22,12 +22,21 @@ class AmbiguousDecl;
  */
 class DeclarationContext {
 private:
-  DeclarationContext *parent = nullptr; /// the parent scope
+  DeclarationContext* parent = nullptr; /// the parent scope
   std::vector<std::shared_ptr<Decl>> elements = {}; /// the local declarations
 public:
   /** constructs a declaration context from a list of declarations */
   DeclarationContext(std::initializer_list<std::shared_ptr<Decl>> e): elements{e} {}
+  DeclarationContext(std::vector<std::shared_ptr<Decl>> e): elements{e} {}
+  DeclarationContext() = default;
 
+  void setParent(DeclarationContext* p) {
+    parent = p;
+  }
+
+  DeclarationContext* getParent() {
+    return parent;
+  }
   /**
    * Adds a declaration to the local scope if not already defined.
    * returns true if added and false if the declaration already exists.
@@ -37,11 +46,17 @@ public:
   /** returns true if the given declaration is defined at any scope */
   bool has(std::shared_ptr<Decl> d);
 
+  std::vector<std::shared_ptr<Decl>> local() const { return elements; }
+
+  int getSize();
+
   std::shared_ptr<TypeList> getFundamentalType(std::shared_ptr<TypeList> t);
   std::shared_ptr<Type> getFundamentalType(std::shared_ptr<Type>);
 
   /** returns true if the given declaration is defined in the local scope */
   bool hasLocal(std::shared_ptr<Decl> d);
+
+  AmbiguousDecl filter(std::shared_ptr<class IdentifierExpr> e);
 
   /**
    * Returns an ambiguous declaration set from the lowest scope which has an

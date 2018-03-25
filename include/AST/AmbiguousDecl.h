@@ -41,6 +41,8 @@ public:
   /// the set is empty or ambiguous
   std::shared_ptr<Decl> get() const;
 
+  AmbiguousDecl filter(std::shared_ptr<class IdentifierExpr> e);
+
   /// returns an AmbiguousType with only members of specified decl subclass
   AmbiguousDecl filter(std::function<bool(std::shared_ptr<Decl>)>) const;
 };

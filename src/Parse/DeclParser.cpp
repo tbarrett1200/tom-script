@@ -40,8 +40,11 @@ shared_ptr<TypeDecl> Parser::parseTypeDecl() {
 shared_ptr<FuncDecl> Parser::parseUndefFuncDecl() {
   expectToken(Token::kw_func, "func");
   auto name = expectToken({Token::identifier, Token::operator_id}, "identifier");
-  auto type = parseFunctionType(true);
-  return make_shared<FuncDecl>(name, move(type), nullptr);
+  expectToken(Token::l_paren, "left parenthesis");
+  auto param = parseParamDeclList();
+  expectToken(Token::r_paren, "right parenthesis");  if (!consumeOperator("->")) throw report(token(), "error: expected ->");
+  auto type = parseType();
+  return make_shared<FuncDecl>(name, param, type, nullptr);
 }
 
 shared_ptr<Decl> Parser::parseDecl() {
@@ -80,10 +83,28 @@ shared_ptr<LetDecl> Parser::parseLetDecl() {
   } else throw report(token(), "constants must be initialized at declaration");
 }
 
+shared_ptr<ParamDecl> Parser::parseParamDecl() {
+  auto primary = expectToken(Token::identifier, "identifier");
+  auto secondary = acceptToken(Token::identifier) ? expectToken(Token::identifier, "identifier") : primary;
+  expectToken(Token::colon, "colon");
+  auto type = parseType();
+  return make_shared<ParamDecl>(primary, secondary, type);
+}
+
+shared_ptr<ParamDeclList> Parser::parseParamDeclList() {
+  auto element = parseParamDecl();
+  auto list = consumeToken(Token::comma) ? parseParamDeclList() : nullptr;
+  return make_shared<ParamDeclList>(element, list);
+}
+
 shared_ptr<FuncDecl> Parser::parseFuncDecl() {
   expectToken(Token::kw_func, "func");
   auto name = expectToken({Token::identifier, Token::operator_id}, "identifier");
-  auto type = parseFunctionType(true);
+  expectToken(Token::l_paren, "left parenthesis");
+  auto param = acceptToken(Token::r_paren) ? nullptr : parseParamDeclList();
+  expectToken(Token::r_paren, "right parenthesis");
+  if (!consumeOperator("->")) throw report(token(), "error: expected ->");
+  auto type = parseType();
   auto stmt = parseCompoundStmt();
-  return make_shared<FuncDecl>(name, move(type), stmt);
+  return make_shared<FuncDecl>(name, param, type, stmt);
 }

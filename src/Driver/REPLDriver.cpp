@@ -8,18 +8,22 @@
 #include "AST/ASTWalker.h"
 #include "Driver/GlobalContext.h"
 #include "Sema/TypeChecker.h"
- 
+#include "Sema/Interpreter.h"
+
 
 int main(int argc, char const *argv[]) {
   std::cout << "tom-script (0.1) Enter ':help' for help and ':quit' to quit" << std::endl;
   auto source = SourceCode{};
   auto parser = Parser{&source};
+  auto semantic = TypeChecker();
+  auto interpreter = Interpreter();
   do {
     if (!parser.token().is(Token::eof)) {
       try {
-        auto type = parser.parseStmt();
+        auto stmt = parser.parseStmt();
         try {
-          TypeChecker().traverse(type);
+          semantic.traverse(stmt);
+          interpreter.traverse(stmt);
         } catch (std::string s) {
           std::cout << s;
         }
