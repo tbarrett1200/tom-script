@@ -2,16 +2,13 @@
 #define AST_EXPR_H
 
 #include "AST/Matchable.h"
-#include "Parse/Token.h"
-#include "AST/Type.h"
-#include "AST/DeclarationContext.h"
 #include "AST/AmbiguousType.h"
-
-#include "Parse/Operator.h"
+#include "Parse/Token.h"
 
 #include <memory>
 #include <stack>
 
+class Decl;
 class StackReference;
 
 class Expr : virtual public Matchable {
@@ -24,7 +21,10 @@ public:
 
   AmbiguousType type = {};
 
-  template<typename T> T* as();
+  template<typename T> T* as() {
+    return dynamic_cast<T*>(this);
+  }
+
   AmbiguousType getType() const;
   virtual Expr::Kind getKind() const = 0;
 };
@@ -32,8 +32,8 @@ public:
 class ExprList : public NonTerminal {
 public:
   /* member variables */
-  shared_ptr<Expr> element;
-  shared_ptr<ExprList> list;
+  std::shared_ptr<Expr> element;
+  std::shared_ptr<ExprList> list;
 
   /* Returns a vector of children for easy traversal */
   std::vector<std::shared_ptr<Matchable>> getChildren() const;
@@ -43,8 +43,8 @@ public:
   std::shared_ptr<Expr> operator[] (int x);
   std::shared_ptr<TypeList> getTypeList(DeclarationContext *c) const;
   template <typename T> bool has();
-  ExprList(shared_ptr<Expr> e, shared_ptr<ExprList> l);
-  ExprList(std::vector<shared_ptr<Expr>> v);
+  ExprList(std::shared_ptr<Expr> e, std::shared_ptr<ExprList> l);
+  ExprList(std::vector<std::shared_ptr<Expr>> v);
 };
 
 
@@ -59,13 +59,13 @@ public:
 
 class LabeledExpr : public Expr, public NonTerminal  {
 public:
-  shared_ptr<ExprLabel> label;
-  shared_ptr<Expr> expr;
+  std::shared_ptr<ExprLabel> label;
+  std::shared_ptr<Expr> expr;
 
   /* Returns a vector of children for easy traversal */
   std::vector<std::shared_ptr<Matchable>> getChildren() const;
   Expr::Kind getKind() const;
-  LabeledExpr(shared_ptr<ExprLabel> l, shared_ptr<Expr> e);
+  LabeledExpr(std::shared_ptr<ExprLabel> l, std::shared_ptr<Expr> e);
 };
 
 class StringExpr: public Expr, public Terminal  {
@@ -132,16 +132,17 @@ class TupleExpr: public Expr, public NonTerminal  {
 private:
 
 public:
-  shared_ptr<ExprList> list;
+  std::shared_ptr<ExprList> list;
 
   /* Returns a vector of children for easy traversal */
   std::vector<std::shared_ptr<Matchable>> getChildren() const;
   Expr::Kind getKind() const;
   int size() const;
+  std::shared_ptr<Expr> operator[] (int x);
   static std::shared_ptr<TupleExpr> make(std::vector<std::shared_ptr<Expr>>);
   static std::shared_ptr<TupleExpr> make(std::shared_ptr<ExprList>);
 
-  TupleExpr(shared_ptr<ExprList> l);
+  TupleExpr(std::shared_ptr<ExprList> l);
 
 
 };
@@ -169,14 +170,14 @@ public:
  */
 class UnaryExpr: public Expr, public NonTerminal  {
 public:
-  shared_ptr<OperatorExpr> op;
-  shared_ptr<Expr> expr;
-  shared_ptr<class FuncDecl> decl;
+  std::shared_ptr<OperatorExpr> op;
+  std::shared_ptr<Expr> expr;
+  std::shared_ptr<class FuncDecl> decl;
 
   /* Returns a vector of children for easy traversal */
   std::vector<std::shared_ptr<Matchable>> getChildren() const;
   Expr::Kind getKind() const;
-  UnaryExpr(shared_ptr<OperatorExpr> o, shared_ptr<Expr> e);
+  UnaryExpr(std::shared_ptr<OperatorExpr> o, std::shared_ptr<Expr> e);
 };
 
 /**
@@ -188,23 +189,23 @@ public:
  */
 class BinaryExpr: public Expr, public NonTerminal  {
 public:
-  shared_ptr<Expr> left;
-  shared_ptr<OperatorExpr> op;
-  shared_ptr<Expr> right;
-  shared_ptr<class FuncDecl> decl;
+  std::shared_ptr<Expr> left;
+  std::shared_ptr<OperatorExpr> op;
+  std::shared_ptr<Expr> right;
+  std::shared_ptr<class FuncDecl> decl;
 
   Expr::Kind getKind() const;
   std::vector<std::shared_ptr<Matchable>> getChildren() const;
-  BinaryExpr(shared_ptr<Expr> l, shared_ptr<OperatorExpr> o, shared_ptr<Expr> r);
+  BinaryExpr(std::shared_ptr<Expr> l, std::shared_ptr<OperatorExpr> o, std::shared_ptr<Expr> r);
 };
 
 class FunctionCall: public Expr, public NonTerminal {
 public:
-  shared_ptr<IdentifierExpr> name;
-  shared_ptr<ExprList> arguments;
-  shared_ptr<class FuncDecl> decl;
+  std::shared_ptr<IdentifierExpr> name;
+  std::shared_ptr<ExprList> arguments;
+  std::shared_ptr<class FuncDecl> decl;
 
-  FunctionCall(shared_ptr<IdentifierExpr> n, shared_ptr<ExprList> a);
+  FunctionCall(std::shared_ptr<IdentifierExpr> n, std::shared_ptr<ExprList> a);
   std::vector<std::shared_ptr<Matchable>> getChildren() const;
   Expr::Kind getKind() const;
 };
@@ -217,8 +218,8 @@ public:
   Expr::Kind getKind() const;
 };
 
-ostream& operator<<(ostream& os, Expr* x);
-ostream& operator<<(ostream& os, ExprList* x);
-ostream& operator<<(ostream& os, ExprLabel* x);
+std::ostream& operator<<(std::ostream& os, Expr* x);
+std::ostream& operator<<(std::ostream& os, ExprList* x);
+std::ostream& operator<<(std::ostream& os, ExprLabel* x);
 
 #endif

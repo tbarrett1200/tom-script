@@ -37,15 +37,15 @@ std::shared_ptr<TypeList> DeclarationContext::getFundamentalType(std::shared_ptr
 std::shared_ptr<Type> DeclarationContext::getFundamentalType(std::shared_ptr<Type> t) {
   if (!t) return nullptr;
   if (t->getKind() == Type::Kind::TupleType) {
-    return make_shared<TupleType>(getFundamentalType(t->as<TupleType>()->list));
+    return std::make_shared<TupleType>(getFundamentalType(t->as<TupleType>()->list));
   } else if (t->getKind() == Type::Kind::FunctionType) {
-      return make_shared<FunctionType>(getFundamentalType(t->as<FunctionType>()->params), getFundamentalType(t->as<FunctionType>()->returns));
+      return std::make_shared<FunctionType>(getFundamentalType(t->as<FunctionType>()->params), getFundamentalType(t->as<FunctionType>()->returns));
   } else if (t->getKind() == Type::Kind::LabeledType) {
-      return make_shared<LabeledType>(t->as<LabeledType>()->label, getFundamentalType(t->as<LabeledType>()->type));
+      return std::make_shared<LabeledType>(t->as<LabeledType>()->label, getFundamentalType(t->as<LabeledType>()->type));
   } else if (t->getKind() == Type::Kind::ListType) {
-      return make_shared<ListType>(getFundamentalType(t->as<ListType>()->type));
+      return std::make_shared<ListType>(getFundamentalType(t->as<ListType>()->type));
   } else if (t->getKind() == Type::Kind::MapType) {
-      return make_shared<MapType>(getFundamentalType(t->as<MapType>()->keyType), getFundamentalType(t->as<MapType>()->valType));
+      return std::make_shared<MapType>(getFundamentalType(t->as<MapType>()->keyType), getFundamentalType(t->as<MapType>()->valType));
   }else if (t->getKind() == Type::Kind::TypeIdentifier) {
     AmbiguousDecl decls = filter([t](std::shared_ptr<Decl> d) {
       return d->as<TypeAlias>() && d->as<TypeAlias>()->getName() == t->as<TypeIdentifier>()->getLexeme();
@@ -68,7 +68,7 @@ std::shared_ptr<Type> DeclarationContext::getFundamentalType(std::shared_ptr<Typ
 int DeclarationContext::getSize() {
   int size = 0;
   for (auto decl: elements) {
-    if (dynamic_pointer_cast<VarDecl>(decl) || dynamic_pointer_cast<LetDecl>(decl))
+    if (std::dynamic_pointer_cast<VarDecl>(decl) || std::dynamic_pointer_cast<LetDecl>(decl))
       size++;
   }
   return size;

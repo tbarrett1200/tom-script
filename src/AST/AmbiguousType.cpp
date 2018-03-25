@@ -6,7 +6,7 @@
 
 AmbiguousType AmbiguousType::label(std::shared_ptr<class ExprLabel> l) {
   return {map<std::shared_ptr<Type>>([l](std::shared_ptr<Type> type){
-    return make_shared<LabeledType>(make_shared<TypeLabel>(l->name), type);
+    return std::make_shared<LabeledType>(std::make_shared<TypeLabel>(l->name), type);
   })};
 }
 
@@ -51,21 +51,21 @@ std::ostream& operator<<(std::ostream& os, const AmbiguousType& t) {
 }
 
 AmbiguousTypeList::AmbiguousTypeList(AmbiguousType t, AmbiguousTypeList l)
-: element{make_shared<AmbiguousType>(t)}, list{make_shared<AmbiguousTypeList>(l)} {}
+: element{std::make_shared<AmbiguousType>(t)}, list{std::make_shared<AmbiguousTypeList>(l)} {}
 
 AmbiguousTypeList::AmbiguousTypeList(AmbiguousType t)
-: element{make_shared<AmbiguousType>(t)}, list{nullptr} {}
+: element{std::make_shared<AmbiguousType>(t)}, list{nullptr} {}
 
 AmbiguousTypeList::AmbiguousTypeList(std::shared_ptr<ExprList> l)
-: element{make_shared<AmbiguousType>(l->element->type)} {
-  if (l->list) list = make_shared<AmbiguousTypeList>(l->list);
+: element{std::make_shared<AmbiguousType>(l->element->type)} {
+  if (l->list) list = std::make_shared<AmbiguousTypeList>(l->list);
 }
 
 
 AmbiguousTypeList::AmbiguousTypeList(std::vector<AmbiguousType> l) {
-  element = make_shared<AmbiguousType>(l.front());
+  element = std::make_shared<AmbiguousType>(l.front());
   l.erase(l.begin());
-  list = l.size() > 0 ? make_shared<AmbiguousTypeList>(l) : nullptr;
+  list = l.size() > 0 ? std::make_shared<AmbiguousTypeList>(l) : nullptr;
 }
 
 int AmbiguousTypeList::size() const {

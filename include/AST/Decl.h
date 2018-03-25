@@ -32,13 +32,13 @@ public:
 
   static std::shared_ptr<Decl> make(std::shared_ptr<Decl>, std::function<void(RuntimeStack& stack)>);
 
-  virtual shared_ptr<Type> getType() const = 0;
+  virtual std::shared_ptr<Type> getType() const = 0;
 
   virtual DeclarationContext* getContext() const = 0;
   virtual void setContext(DeclarationContext*) = 0;
 };
 
-ostream& operator<<(ostream& os, Decl& x);
+std::ostream& operator<<(std::ostream& os, Decl& x);
 
 class DeclName : public Terminal {
 public:
@@ -55,7 +55,7 @@ private:
   DeclarationContext *context;
 
 public:
-  shared_ptr<DeclName> name;
+  std::shared_ptr<DeclName> name;
 
   virtual std::shared_ptr<Expr> getExpr() const { return nullptr; };
   virtual void setExpr(std::shared_ptr<Expr> e) {};
@@ -63,10 +63,10 @@ public:
   std::vector<std::shared_ptr<Matchable>> getChildren() const { return {name}; }
   Decl::Kind getKind() const {return Kind::TypeDecl; }
   std::string getName() const { return name->token.lexeme; }
-  shared_ptr<Type> getType() const { return nullptr; }
+  std::shared_ptr<Type> getType() const { return nullptr; }
   DeclarationContext* getContext() const { return context;}
   void setContext(DeclarationContext* c) {context = c;}
-  TypeDecl(Token n) : name{make_shared<DeclName>(n)} {}
+  TypeDecl(Token n) : name{std::make_shared<DeclName>(n)} {}
 };
 
 class TypeAlias : public Decl, public NonTerminal {
@@ -74,8 +74,8 @@ private:
   DeclarationContext *context;
 
 public:
-  shared_ptr<DeclName> name;
-  shared_ptr<Type> type;
+  std::shared_ptr<DeclName> name;
+  std::shared_ptr<Type> type;
 
   virtual std::shared_ptr<Expr> getExpr() const { return nullptr; };
   virtual void setExpr(std::shared_ptr<Expr> e) {};
@@ -83,10 +83,10 @@ public:
   std::vector<std::shared_ptr<Matchable>> getChildren() const;
   Decl::Kind getKind() const;
   std::string getName() const;
-  shared_ptr<Type> getType() const;
+  std::shared_ptr<Type> getType() const;
   DeclarationContext* getContext() const { return context;}
   void setContext(DeclarationContext* c) {context = c;}
-  TypeAlias(Token n, shared_ptr<Type> t);
+  TypeAlias(Token n, std::shared_ptr<Type> t);
 };
 
 class VarDecl : public Decl, public NonTerminal {
@@ -94,8 +94,8 @@ private:
   DeclarationContext *context;
 
 public:
-  shared_ptr<DeclName> name;
-  shared_ptr<Type> type;
+  std::shared_ptr<DeclName> name;
+  std::shared_ptr<Type> type;
   std::shared_ptr<Expr> expr;
 
   std::shared_ptr<Expr> getExpr() const { return expr; }
@@ -104,10 +104,10 @@ public:
   std::vector<std::shared_ptr<Matchable>> getChildren() const;
   Decl::Kind getKind() const;
   std::string getName() const;
-  shared_ptr<Type> getType() const;
+  std::shared_ptr<Type> getType() const;
   DeclarationContext* getContext() const;
   void setContext(DeclarationContext* c);
-  VarDecl(Token n, shared_ptr<Type> t, shared_ptr<Expr> e);
+  VarDecl(Token n, std::shared_ptr<Type> t, std::shared_ptr<Expr> e);
 };
 
 class LetDecl : public Decl, public NonTerminal {
@@ -115,9 +115,9 @@ private:
   DeclarationContext *context;
 
 public:
-  shared_ptr<DeclName> name;
-  shared_ptr<Type> type;
-  shared_ptr<Expr> expr;
+  std::shared_ptr<DeclName> name;
+  std::shared_ptr<Type> type;
+  std::shared_ptr<Expr> expr;
 
   std::shared_ptr<Expr> getExpr() const { return expr; }
   void setExpr(std::shared_ptr<Expr>);
@@ -127,8 +127,8 @@ public:
   std::string getName() const;
   DeclarationContext* getContext() const;
   void setContext(DeclarationContext* c);
-  shared_ptr<Type> getType() const;
-  LetDecl(Token n, shared_ptr<Type> t, shared_ptr<Expr> e);
+  std::shared_ptr<Type> getType() const;
+  LetDecl(Token n, std::shared_ptr<Type> t, std::shared_ptr<Expr> e);
 };
 
 
@@ -142,14 +142,14 @@ public:
   std::shared_ptr<Type> type;
   std::shared_ptr<Expr> default_value;
 
-  ParamDecl(Token p, Token s, shared_ptr<Type> t)
+  ParamDecl(Token p, Token s, std::shared_ptr<Type> t)
   : primary{std::make_shared<DeclName>(p)},
     secondary{std::make_shared<DeclName>(s)},
     type{t} {}
 
   Decl::Kind getKind() const { return Decl::Kind::ParamDecl; }
   std::string getName() const { return secondary->getLexeme(); }
-  shared_ptr<Type> getType() const {
+  std::shared_ptr<Type> getType() const {
     if (primary->token.lexeme == "_") return type;
     else return std::make_shared<LabeledType>(std::make_shared<TypeLabel>(primary->token), type);
   }
@@ -170,7 +170,7 @@ public:
 
   ParamDeclList(std::shared_ptr<ParamDecl> e, std::shared_ptr<ParamDeclList> l)
   : element{e}, list{l} {
-    if (!e) throw logic_error("violated precondition: element is required");
+    if (!e) throw std::logic_error("violated precondition: element is required");
   }
 
   std::shared_ptr<TypeList> getTypeList() const {
@@ -189,22 +189,22 @@ public:
 /// A named, explicitly typed function
 class FuncDecl : public Decl, public NonTerminal {
 private:
-  std::shared_ptr<DeclarationContext> context = make_shared<DeclarationContext>();
+  std::shared_ptr<DeclarationContext> context = std::make_shared<DeclarationContext>();
 
 public:
-  shared_ptr<DeclName> name;
-  shared_ptr<ParamDeclList> params;
-  shared_ptr<Type> returnType;
-  shared_ptr<FunctionType> type;
-  shared_ptr<CompoundStmt> stmt;
+  std::shared_ptr<DeclName> name;
+  std::shared_ptr<ParamDeclList> params;
+  std::shared_ptr<Type> returnType;
+  std::shared_ptr<FunctionType> type;
+  std::shared_ptr<CompoundStmt> stmt;
 
   /// Constructs a Function Declaration
-  FuncDecl(Token n, shared_ptr<ParamDeclList> t, shared_ptr<Type>, shared_ptr<CompoundStmt> s);
+  FuncDecl(Token n, std::shared_ptr<ParamDeclList> t, std::shared_ptr<Type>, std::shared_ptr<CompoundStmt> s);
 
   /// Declaration Class Overrides
   Decl::Kind getKind() const;
   std::string getName() const;
-  shared_ptr<Type> getType() const;
+  std::shared_ptr<Type> getType() const;
 
   // Declaration Context Management
   DeclarationContext* getContext() const;

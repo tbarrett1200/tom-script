@@ -10,10 +10,6 @@
 // Expr
 //=--------------------------------------------------------------------------=//
 
-template<typename T> T* Expr::as() {
-  return dynamic_cast<T*>(this);
-}
-
 AmbiguousType Expr::getType() const {
   return type;
 }

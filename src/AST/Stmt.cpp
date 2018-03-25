@@ -5,7 +5,7 @@
 //----------------------------------------------------------------------------//
 
 template <typename T> bool StmtList::has() const {
-  return dynamic_pointer_cast<T>(element) || list ? list->has<T>() : false;
+  return std::dynamic_pointer_cast<T>(element) || list ? list->has<T>() : false;
 }
 
 StmtList::StmtList(std::shared_ptr<Stmt> e, std::shared_ptr<StmtList> l)
@@ -68,7 +68,7 @@ std::vector<std::shared_ptr<Matchable>> CompoundStmt::getChildren() const {
 
 
 ConditionalStmt::ConditionalStmt(std::shared_ptr<Expr> c, std::shared_ptr<CompoundStmt> s) : condition{c}, stmt{s} {
-  if (!s) throw logic_error("violated precondition: statement is required");
+  if (!s) throw std::logic_error("violated precondition: statement is required");
 }
 
 Stmt::Kind ConditionalStmt::getKind() const { return Kind::ConditionalStmt;}
@@ -91,8 +91,8 @@ std::vector<std::shared_ptr<Matchable>> ConditionalStmt::getChildren() const {
 //----------------------------------------------------------------------------//
 
 ConditionalStmtList::ConditionalStmtList(std::shared_ptr<ConditionalStmt> e, std::shared_ptr<ConditionalStmtList> l): element{e}, list{l} {
-  if (!e) throw logic_error("violated precondition: statement is required");
-  if (e->isElseStmt() && list) throw logic_error("violated precondition: else statement must be last statement in list");
+  if (!e) throw std::logic_error("violated precondition: statement is required");
+  if (e->isElseStmt() && list) throw std::logic_error("violated precondition: else statement must be last statement in list");
 }
 
 ConditionalStmtList::ConditionalStmtList(std::vector<std::shared_ptr<ConditionalStmt>> l) {
@@ -144,8 +144,8 @@ bool ConditionalStmtList::hasElseStmt() const {
 //----------------------------------------------------------------------------//
 
 WhileLoop::WhileLoop(std::shared_ptr<Expr> c, std::shared_ptr<CompoundStmt> s): condition{c}, stmt{s} {
-  if (!c) throw logic_error("violated precondition: condition is required");
-  if (!s) throw logic_error("violated precondition: statement is required");
+  if (!c) throw std::logic_error("violated precondition: condition is required");
+  if (!s) throw std::logic_error("violated precondition: statement is required");
 }
 
 bool WhileLoop::returns() const {
@@ -181,7 +181,7 @@ std::vector<std::shared_ptr<Matchable>> ReturnStmt::getChildren() const {
 //----------------------------------------------------------------------------//
 
 ExprStmt::ExprStmt(std::shared_ptr<Expr> e): expr{e} {
-  if (!e) throw logic_error("violated precondition: expr is required");
+  if (!e) throw std::logic_error("violated precondition: expr is required");
 }
 
 bool ExprStmt::returns() const {
@@ -200,7 +200,7 @@ std::vector<std::shared_ptr<Matchable>> ExprStmt::getChildren() const {
 //----------------------------------------------------------------------------//
 
 DeclStmt::DeclStmt(std::shared_ptr<Decl> d): decl{d} {
-  if (!d) throw logic_error("violated precondition: decl is required");
+  if (!d) throw std::logic_error("violated precondition: decl is required");
 }
 
 Stmt::Kind DeclStmt::getKind() const { return Kind::DeclStmt;}

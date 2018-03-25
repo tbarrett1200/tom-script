@@ -43,7 +43,7 @@ public:
 class CompoundStmt : public Stmt, public NonTerminal {
 public:
   std::shared_ptr<StmtList> list;
-  std::shared_ptr<DeclarationContext> context = make_shared<DeclarationContext>();
+  std::shared_ptr<DeclarationContext> context = std::make_shared<DeclarationContext>();
 
   // Constructors
   CompoundStmt(std::shared_ptr<StmtList> l);
