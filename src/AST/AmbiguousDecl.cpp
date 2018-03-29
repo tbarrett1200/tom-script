@@ -1,6 +1,7 @@
 #include "AST/AmbiguousDecl.h"
 #include "AST/AmbiguousType.h"
 #include "AST/Decl.h"
+#include "AST/Expr.h"
 
 AmbiguousDecl AmbiguousDecl::filter(std::shared_ptr<IdentifierExpr> e) {
   return filter([e](std::shared_ptr<Decl> d){

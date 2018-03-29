@@ -38,9 +38,6 @@ public:
   /// returns true if there is only one type remaining
   bool isAmbiguous() const { return types.size() > 1; }
 
-  /// returns true if the set contains the given type
-  bool contains(std::shared_ptr<Type>) const;
-
   bool contains(std::shared_ptr<Type>, DeclarationContext *c) const;
 
   /// returns the sole remaining type

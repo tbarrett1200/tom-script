@@ -101,7 +101,7 @@ shared_ptr<Expr> Parser::parseValueExpr() {
     return parseStringExpr();
   case Token::l_paren:
     return parseTupleExpr();
-  default: throw report(token(), "error: expected value");
+  default: throw report(token(), "error: expected value, but got " + token().lexeme);
   }
 }
 

@@ -19,13 +19,12 @@ public:
     #undef EXPR
   };
 
-  AmbiguousType type = {};
+  std::shared_ptr<Type> type;
 
   template<typename T> T* as() {
     return dynamic_cast<T*>(this);
   }
 
-  AmbiguousType getType() const;
   virtual Expr::Kind getKind() const = 0;
 };
 
@@ -41,7 +40,7 @@ public:
   std::shared_ptr<ExprList> reverse() const;
   int size() const;
   std::shared_ptr<Expr> operator[] (int x);
-  std::shared_ptr<TypeList> getTypeList(DeclarationContext *c) const;
+  std::shared_ptr<TypeList> getTypeList() const;
   template <typename T> bool has();
   ExprList(std::shared_ptr<Expr> e, std::shared_ptr<ExprList> l);
   ExprList(std::vector<std::shared_ptr<Expr>> v);
@@ -155,6 +154,8 @@ public:
 class OperatorExpr: public Expr, public Terminal {
 public:
   Token token;
+  std::shared_ptr<class FuncDecl> decl;
+  std::shared_ptr<TypeList> paramType;
 
   /* Returns a vector of children for easy traversal */
   std::string getLexeme() const;
@@ -172,7 +173,6 @@ class UnaryExpr: public Expr, public NonTerminal  {
 public:
   std::shared_ptr<OperatorExpr> op;
   std::shared_ptr<Expr> expr;
-  std::shared_ptr<class FuncDecl> decl;
 
   /* Returns a vector of children for easy traversal */
   std::vector<std::shared_ptr<Matchable>> getChildren() const;
@@ -192,7 +192,6 @@ public:
   std::shared_ptr<Expr> left;
   std::shared_ptr<OperatorExpr> op;
   std::shared_ptr<Expr> right;
-  std::shared_ptr<class FuncDecl> decl;
 
   Expr::Kind getKind() const;
   std::vector<std::shared_ptr<Matchable>> getChildren() const;

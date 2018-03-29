@@ -93,6 +93,6 @@ shared_ptr<WhileLoop> Parser::parseWhileLoop()  {
 
 shared_ptr<ReturnStmt> Parser::parseReturnStmt() {
   expectToken(Token::kw_return, "return");
-  auto expr = parseExpr();
+  auto expr = consumeToken(Token::new_line) ? nullptr: parseExpr();
   return std::make_shared<ReturnStmt>(expr);
 }

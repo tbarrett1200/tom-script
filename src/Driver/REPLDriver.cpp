@@ -6,7 +6,6 @@
 #include "Basic/SourceCode.h"
 #include "Parse/Parser.h"
 #include "AST/ASTWalker.h"
-#include "Driver/GlobalContext.h"
 #include "Sema/TypeChecker.h"
 #include "Sema/Interpreter.h"
 

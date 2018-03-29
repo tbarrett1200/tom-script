@@ -111,7 +111,7 @@ public:
   // Constructors
   FunctionType(std::shared_ptr<TypeList> p, std::shared_ptr<Type> r) : params{p}, returns{r} {}
 
-  // Type Overrides
+  // Type Overridess
   Type::Kind getKind() const { return Kind::FunctionType; }
 
   // Matchable Overrides
@@ -160,6 +160,7 @@ std::ostream& operator<<(std::ostream& os, TypeList* x);
 bool equal(std::shared_ptr<Type> t1, std::shared_ptr<Type> t2, DeclarationContext *c);
 bool equal(std::shared_ptr<TypeList> t1, std::shared_ptr<TypeList> t2, DeclarationContext *c);
 
+bool operator != (const Type& l, const Type& r);
 bool operator == (const Type& l, const Type& r);
 bool operator == (const TypeList& l, const TypeList& r);
 

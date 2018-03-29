@@ -58,6 +58,7 @@ public:
 
   AmbiguousDecl filter(std::shared_ptr<class IdentifierExpr> e);
 
+  static std::shared_ptr<DeclarationContext> globalContext;
   /**
    * Returns an ambiguous declaration set from the lowest scope which has an
    * element matching the given pattern. This allows for lexical shadowing. Although

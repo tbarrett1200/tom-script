@@ -56,12 +56,6 @@ AmbiguousTypeList::AmbiguousTypeList(AmbiguousType t, AmbiguousTypeList l)
 AmbiguousTypeList::AmbiguousTypeList(AmbiguousType t)
 : element{std::make_shared<AmbiguousType>(t)}, list{nullptr} {}
 
-AmbiguousTypeList::AmbiguousTypeList(std::shared_ptr<ExprList> l)
-: element{std::make_shared<AmbiguousType>(l->element->type)} {
-  if (l->list) list = std::make_shared<AmbiguousTypeList>(l->list);
-}
-
-
 AmbiguousTypeList::AmbiguousTypeList(std::vector<AmbiguousType> l) {
   element = std::make_shared<AmbiguousType>(l.front());
   l.erase(l.begin());

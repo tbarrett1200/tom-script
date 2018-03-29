@@ -10,9 +10,7 @@
 // Expr
 //=--------------------------------------------------------------------------=//
 
-AmbiguousType Expr::getType() const {
-  return type;
-}
+
 
 //=--------------------------------------------------------------------------=//
 // ExprList
@@ -47,6 +45,10 @@ std::shared_ptr<ExprList> ExprList::reverse() const {
 int ExprList::size() const {
   if (!list) return 1;
   else return list->size()+1;
+}
+
+std::shared_ptr<TypeList> ExprList::getTypeList() const {
+  return std::make_shared<TypeList>(element->type, list ? list->getTypeList() : nullptr);
 }
 
 std::shared_ptr<Expr> ExprList::operator[] (int x) {
@@ -360,6 +362,9 @@ ostream& operator<<(ostream& os, Expr* x) {
     os  << t->token.lexeme ;
   } else if (dynamic_cast<StringExpr*>(x)) {
     auto t = dynamic_cast<StringExpr*>(x);
+    os  << t->token.lexeme ;
+  } else if (dynamic_cast<OperatorExpr*>(x)) {
+    auto t = dynamic_cast<OperatorExpr*>(x);
     os  << t->token.lexeme ;
   } else if (dynamic_cast<FunctionCall*>(x)) {
     auto t = dynamic_cast<FunctionCall*>(x);

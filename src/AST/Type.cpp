@@ -121,6 +121,10 @@ bool equal(std::shared_ptr<TypeList> t1, std::shared_ptr<TypeList> t2, Declarati
       && t1->list ? equal(t1->list, t2->list, c) : true;
 }
 
+bool operator != (const Type& l, const Type& r) {
+  return !(l==r);
+}
+
 bool operator == (const Type& l, const Type& r) {
   if (l.getKind() != r.getKind()) return false;
   switch (l.getKind()) {
@@ -151,6 +155,10 @@ bool operator == (const Type& l, const Type& r) {
 }
 
 bool operator == (const TypeList& l, const TypeList& r) {
+  if (!l.element && !r.element) return true;
+  else if (!l.element || !r.element) return false;
+  else if (l.size() != r.size()) return false;
+
   if (!(*l.element == *r.element)) return false;
   if (l.list && r.list) return *l.list == *r.list;
   else if (!l.list && !r.list) return true;

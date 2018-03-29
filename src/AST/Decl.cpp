@@ -17,9 +17,7 @@ std::ostream& operator<<(std::ostream& os, Decl& x) {
     if (!(*f == *t)) os << " => " << f;
   } else {
     auto t = x.getType();
-    auto f = x.getContext()->getFundamentalType(t);
     os << x.getName() << ": " << t;
-    if (!(*f == *t)) os << " => " << f;
   }
   return os;
 }
@@ -85,38 +83,7 @@ std::shared_ptr<Expr> VarDecl::getExpr() const { return expr; }
 Decl::Kind VarDecl::getKind() const { return Kind::VarDecl; }
 std::string VarDecl::getName() const { return name->getLexeme(); }
 std::shared_ptr<Type> VarDecl::getType() const {
-
-  if (expr && type) {
-    auto decl_type = expr->getType().filter([this](std::shared_ptr<Type> t){
-        return equal(t, this->type, this->getContext());
-    });
-
-    if (decl_type.isAmbiguous()) {
-      std::stringstream ss;
-      ss << "error: ambiguous type" << std::endl << decl_type;
-      throw ss;
-    } else if (decl_type.isEmpty()) {
-      std::stringstream ss;
-      ss << "error: expression type does not resolve to " << std::endl << getContext()->getFundamentalType(type);
-      throw ss;
-    } else {
-      return type;
-    }
-  } else if (expr) {
-    if (expr->type.isAmbiguous()) {
-      std::stringstream ss;
-      ss << "error: ambiguous type" << std::endl << expr->type;
-      throw ss;
-    } else if (expr->type.isEmpty()) {
-      std::stringstream ss;
-      ss << "error: expression type does not resolve to " << std::endl << getContext()->getFundamentalType(type);
-      throw ss;
-    } else {
-      return expr->type.get();
-    }
-  } else if (type) {
-    return type;
-  } else return nullptr;
+  return type;
 }
 
 
@@ -150,38 +117,7 @@ DeclarationContext* LetDecl::getContext() const { return context; }
 void LetDecl::setContext(DeclarationContext* c) { context = c; }
 
 std::shared_ptr<Type> LetDecl::getType() const {
-
-
-    if (expr && type) {
-      auto decl_type = expr->getType().filter([this](std::shared_ptr<Type> t){
-        return equal(t, this->type, this->getContext());
-      });
-      if (decl_type.isAmbiguous()) {
-        std::stringstream ss;
-        ss << "error: ambiguous type" << std::endl << decl_type;
-        throw ss;
-      } else if (decl_type.isEmpty()) {
-        std::stringstream ss;
-        ss << "error: expression type does not resolve to " << std::endl << getContext()->getFundamentalType(type);
-        throw ss;
-      } else {
-        return type;
-      }
-    } else if (expr) {
-      if (expr->type.isAmbiguous()) {
-        std::stringstream ss;
-        ss << "error: ambiguous type" << std::endl << expr->type;
-        throw ss;
-      } else if (expr->type.isEmpty()) {
-        std::stringstream ss;
-        ss << "error: expression type does not resolve to " << std::endl << getContext()->getFundamentalType(type);
-        throw ss;
-      } else {
-        return expr->type.get();
-      }
-    } else if (type) {
-      return type;
-    } else return nullptr;
+  return type;
 };
 
 LetDecl::LetDecl(Token n, std::shared_ptr<Type> t, std::shared_ptr<Expr> e)

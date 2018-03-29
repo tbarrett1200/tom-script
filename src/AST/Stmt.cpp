@@ -173,7 +173,8 @@ bool ReturnStmt::returns() const {
 Stmt::Kind ReturnStmt::getKind() const { return Kind::ReturnStmt;}
 
 std::vector<std::shared_ptr<Matchable>> ReturnStmt::getChildren() const {
-  return {expr};
+  if (expr) return {expr};
+  else return {};
 }
 
 //----------------------------------------------------------------------------//
