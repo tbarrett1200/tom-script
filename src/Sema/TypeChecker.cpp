@@ -193,7 +193,9 @@ bool TypeChecker::visitReturnStmt(std::shared_ptr<ReturnStmt> s) {
 
 bool TypeChecker::visitParamDecl(std::shared_ptr<ParamDecl> d) {
   auto var = std::make_shared<VarDecl>(d->secondary->token, d->type, nullptr);
-  context->add(var);
+  context->add(var, [](const DeclarationContext& c){
+    return -c.getSize()-1;
+  });
   return false;
 }
 

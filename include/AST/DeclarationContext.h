@@ -42,13 +42,14 @@ public:
    * returns true if added and false if the declaration already exists.
    */
   bool add(std::shared_ptr<Decl> d);
+  bool add(std::shared_ptr<Decl> d, std::function<int(const DeclarationContext&)> loc);
 
   /** returns true if the given declaration is defined at any scope */
   bool has(std::shared_ptr<Decl> d);
 
   std::vector<std::shared_ptr<Decl>> local() const { return elements; }
 
-  int getSize();
+  int getSize() const;
 
   std::shared_ptr<TypeList> getFundamentalType(std::shared_ptr<TypeList> t);
   std::shared_ptr<Type> getFundamentalType(std::shared_ptr<Type>);

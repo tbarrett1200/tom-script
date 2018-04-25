@@ -9,60 +9,34 @@ class StackReference;
 
 class RuntimeStack {
 private:
+  // the runtime stack, which stores all local variables and temporary values
   std::vector<std::shared_ptr<Expr>> memory;
-  std::vector<std::shared_ptr<Expr>> temp;
-  std::shared_ptr<StackReference> base;
+  // the returned value from a function
+  std::shared_ptr<Expr> func_result;
+  // the location of the stack base
+  std::shared_ptr<StackReference> base_pointer;
 
 public:
+  RuntimeStack();
+  void push(std::shared_ptr<Expr> e);
+  std::shared_ptr<Expr> pop();
 
-  void pushTemp(std::shared_ptr<Expr> e) {
-    temp.push_back(e);
-  }
+  int size() const;
 
-  std::shared_ptr<Expr> popTemp() {
-    if (temp.size() > 0) {
-      auto ret = temp.back();
-      temp.pop_back();
-      return ret;
-    } else return nullptr;
-  }
+  std::shared_ptr<Expr> getResult() const;
+  void setResult(std::shared_ptr<Expr> e);
 
-  void push(std::shared_ptr<Expr> e) {
-    memory.push_back(e);
-  }
+  std::shared_ptr<StackReference> getBase() const;
+  void setBase(std::shared_ptr<StackReference> e);
 
-  std::shared_ptr<Expr> pop() {
-    if (memory.size() > 0) {
-      auto ret = memory.back();
-      memory.pop_back();
-      return ret;
-    } else return nullptr;
-  }
+  std::shared_ptr<Expr> top() const;
+  std::shared_ptr<Expr> top(int i) const;
+  std::shared_ptr<Expr> at(int i) const;
+  std::shared_ptr<Expr> get(std::shared_ptr<StackReference> o) const;
+  std::shared_ptr<Expr> get(int i) const;
+  std::shared_ptr<Expr> param(int i) const;
 
-  int size() const {
-    return memory.size();
-  }
-  void move(int offset) {
-    if (offset>0) {
-      for (int i = 0; i < offset; i++) {
-        memory.push_back(nullptr);
-      }
-    } else if (offset<0) {
-      for (int i = 0; i < -offset; i++) {
-        memory.pop_back();
-      }
-    }
-  }
-
-  std::shared_ptr<Expr> top() {
-    return memory.back();
-  }
-
-  std::shared_ptr<Expr> top(int i) {
-    return memory[memory.size()-1-i];
-  }
-
-  std::shared_ptr<Expr> get(std::shared_ptr<StackReference> o);
+  void offset(int offset);
   void set(std::shared_ptr<StackReference>, std::shared_ptr<Expr>);
 
 };

@@ -12,181 +12,186 @@ std::shared_ptr<DeclarationContext> DeclarationContext::globalContext = std::mak
   Parser::makeTypeDecl("typedef Bool"),
   Parser::makeTypeDecl("typedef String"),
   Parser::makeDecl("typealias Void = ()"),
+  Decl::make(Parser::makeFuncDecl("func stack() -> Void"), [](RuntimeStack& stack){
+    for(int i = 0; i < stack.size()-1; i++) {
+      std::cout << "[" << i << "]\t" << stack.at(i) << std::endl;
+    }
+  }),
   Decl::make(Parser::makeFuncDecl("func print(_ :Int) -> Void"), [](RuntimeStack& stack){
-    int param2 = stack.top()->as<IntegerExpr>()->getInt();
-    std::cout << param2 << std::endl;
+    int param1 = stack.param(1)->as<IntegerExpr>()->getInt();
+    std::cout << param1 << std::endl;
   }),
   Decl::make(Parser::makeFuncDecl("func print(_:Double) -> Void"), [](RuntimeStack& stack){
-    double param2 = stack.top()->as<DoubleExpr>()->getDouble();
-    std::cout << param2 << std::endl;
+    double param1 = stack.param(1)->as<DoubleExpr>()->getDouble();
+    std::cout << param1 << std::endl;
   }),
   Decl::make(Parser::makeFuncDecl("func sqrt(_:Double) -> Double"), [](RuntimeStack& stack){
-    double param2 = stack.top()->as<DoubleExpr>()->getDouble();
-    stack.pushTemp(make_shared<DoubleExpr>(sqrt(param2)));
+    double param1 = stack.param(1)->as<DoubleExpr>()->getDouble();
+    stack.setResult(make_shared<DoubleExpr>(sqrt(param1)));
   }),
   Decl::make(Parser::makeFuncDecl("func print(_:String) -> Void"), [](RuntimeStack& stack){
-    string param2 = stack.top()->as<StringExpr>()->getString();
-    std::cout << param2 << std::endl;
+    string param1 = stack.param(1)->as<StringExpr>()->getString();
+    std::cout << param1 << std::endl;
   }),
   Decl::make(Parser::makeFuncDecl("func Double(_:Int) -> Double"), [](RuntimeStack& stack){
-    int param2 = stack.top()->as<IntegerExpr>()->getInt();
-    stack.pushTemp(make_shared<DoubleExpr>(static_cast<double>(param2)));
+    int param1 = stack.param(1)->as<IntegerExpr>()->getInt();
+    stack.setResult(make_shared<DoubleExpr>(static_cast<double>(param1)));
   }),
   Decl::make(Parser::makeFuncDecl("func Int(_:Double) -> Int"), [](RuntimeStack& stack){
-    double param2 = stack.top()->as<DoubleExpr>()->getDouble();
-    stack.pushTemp(make_shared<IntegerExpr>(static_cast<int>(param2)));
+    double param1 = stack.param(1)->as<DoubleExpr>()->getDouble();
+    stack.setResult(make_shared<IntegerExpr>(static_cast<int>(param1)));
   }),
   Decl::make(Parser::makeFuncDecl("func +(_:Int) -> Int"), [](RuntimeStack& stack){
-    double param2 = stack.top()->as<IntegerExpr>()->getInt();
-    stack.pushTemp(make_shared<IntegerExpr>(+param2));
+    double param1 = stack.param(1)->as<IntegerExpr>()->getInt();
+    stack.setResult(make_shared<IntegerExpr>(+param1));
   }),
   Decl::make(Parser::makeFuncDecl("func +(_:Int, _:Int) -> Int"), [](RuntimeStack& stack){
-    double param2 = stack.top()->as<IntegerExpr>()->getInt();
-    double param1 = stack.top(1)->as<IntegerExpr>()->getInt();
-    stack.pushTemp(make_shared<IntegerExpr>(param2 + param1));
+    double param1 = stack.param(1)->as<IntegerExpr>()->getInt();
+    double param2 = stack.param(2)->as<IntegerExpr>()->getInt();
+    stack.setResult(make_shared<IntegerExpr>(param1 + param2));
   }),
   Decl::make(Parser::makeFuncDecl("func +(_:String, _:String) -> String"), [](RuntimeStack& stack){
-    std::string param2 = stack.top()->as<StringExpr>()->getString();
-    std::string param1 = stack.top(1)->as<StringExpr>()->getString();
-    stack.pushTemp(make_shared<StringExpr>(param2 + param1));
+    std::string param1 = stack.param(1)->as<StringExpr>()->getString();
+    std::string param2 = stack.param(2)->as<StringExpr>()->getString();
+    stack.setResult(make_shared<StringExpr>(param1 + param2));
   }),
   Decl::make(Parser::makeFuncDecl("func +(_:Double, _:Double) -> Double"), [](RuntimeStack& stack){
-    double param2 = stack.top()->as<DoubleExpr>()->getDouble();
-    double param1 = stack.top(1)->as<DoubleExpr>()->getDouble();
-    stack.pushTemp(make_shared<DoubleExpr>(param2 + param1));
+    double param1 = stack.param(1)->as<DoubleExpr>()->getDouble();
+    double param2 = stack.param(2)->as<DoubleExpr>()->getDouble();
+    stack.setResult(make_shared<DoubleExpr>(param1 + param2));
   }),
   Decl::make(Parser::makeFuncDecl("func -(_:Int) -> Int"), [](RuntimeStack& stack){
-    double param2 = stack.top()->as<IntegerExpr>()->getInt();
-    stack.pushTemp(make_shared<IntegerExpr>(-param2));
+    double param1 = stack.param(1)->as<IntegerExpr>()->getInt();
+    stack.setResult(make_shared<IntegerExpr>(-param1));
   }),
   Decl::make(Parser::makeFuncDecl("func -(_:Int, _:Int) -> Int"), [](RuntimeStack& stack){
-    double param2 = stack.top()->as<IntegerExpr>()->getInt();
-    double param1 = stack.top(1)->as<IntegerExpr>()->getInt();
-    stack.pushTemp(make_shared<IntegerExpr>(param1 - param2));
+    double param1 = stack.param(1)->as<IntegerExpr>()->getInt();
+    double param2 = stack.param(2)->as<IntegerExpr>()->getInt();
+    stack.setResult(make_shared<IntegerExpr>(param1 - param2));
   }),
   Decl::make(Parser::makeFuncDecl("func -(_:Double, _:Double) -> Double"), [](RuntimeStack& stack){
-    double param2 = stack.top()->as<DoubleExpr>()->getDouble();
-    double param1 = stack.top(1)->as<DoubleExpr>()->getDouble();
-    stack.pushTemp(make_shared<DoubleExpr>(param1 - param2));
+    double param1 = stack.param(1)->as<DoubleExpr>()->getDouble();
+    double param2 = stack.param(2)->as<DoubleExpr>()->getDouble();
+    stack.setResult(make_shared<DoubleExpr>(param1 - param2));
   }),
   Decl::make(Parser::makeFuncDecl("func *(_:Int, _:Int) -> Int"), [](RuntimeStack& stack){
-    double param2 = stack.top()->as<IntegerExpr>()->getInt();
-    double param1 = stack.top(1)->as<IntegerExpr>()->getInt();
-    stack.pushTemp(make_shared<IntegerExpr>(param2 * param1));
+    double param1 = stack.param(1)->as<IntegerExpr>()->getInt();
+    double param2 = stack.param(2)->as<IntegerExpr>()->getInt();
+    stack.setResult(make_shared<IntegerExpr>(param1 * param2));
   }),
   Decl::make(Parser::makeFuncDecl("func *(_:Double, _:Double) -> Double"), [](RuntimeStack& stack){
-    double param2 = stack.top()->as<DoubleExpr>()->getDouble();
-    double param1 = stack.top(1)->as<DoubleExpr>()->getDouble();
-    stack.pushTemp(make_shared<DoubleExpr>(param2 * param1));
+    double param1 = stack.param(1)->as<DoubleExpr>()->getDouble();
+    double param2 = stack.param(2)->as<DoubleExpr>()->getDouble();
+    stack.setResult(make_shared<DoubleExpr>(param1 * param2));
   }),
   Decl::make(Parser::makeFuncDecl("func /(_:Int, _:Int) -> Int"), [](RuntimeStack& stack){
-    double param2 = stack.top()->as<IntegerExpr>()->getInt();
-    double param1 = stack.top(1)->as<IntegerExpr>()->getInt();
-    stack.pushTemp(make_shared<IntegerExpr>(param2 / param1));
+    double param1 = stack.param(1)->as<IntegerExpr>()->getInt();
+    double param2 = stack.param(2)->as<IntegerExpr>()->getInt();
+    stack.setResult(make_shared<IntegerExpr>(param1 / param2));
   }),
   Decl::make(Parser::makeFuncDecl("func /(_:Double, _:Double) -> Double"), [](RuntimeStack& stack){
-    double param2 = stack.top()->as<DoubleExpr>()->getDouble();
-    double param1 = stack.top(1)->as<DoubleExpr>()->getDouble();
-    stack.pushTemp(make_shared<DoubleExpr>(param2 / param1));
+    double param1 = stack.param(1)->as<DoubleExpr>()->getDouble();
+    double param2 = stack.param(2)->as<DoubleExpr>()->getDouble();
+    stack.setResult(make_shared<DoubleExpr>(param1 / param2));
   }),
   Decl::make(Parser::makeFuncDecl("func %(_:Int, _:Int) -> Int"), [](RuntimeStack& stack){
-    int param2 = stack.top()->as<IntegerExpr>()->getInt();
-    int param1 = stack.top(1)->as<IntegerExpr>()->getInt();
-    stack.pushTemp(make_shared<IntegerExpr>(param2 % param1));
+    int param1 = stack.param(1)->as<IntegerExpr>()->getInt();
+    int param2 = stack.param(2)->as<IntegerExpr>()->getInt();
+    stack.setResult(make_shared<IntegerExpr>(param1 % param2));
   }),
   Decl::make(Parser::makeFuncDecl("func <<(_:Int, _:Int) -> Int"), [](RuntimeStack& stack){
-    int param2 = stack.top()->as<IntegerExpr>()->getInt();
-    int param1 = stack.top(1)->as<IntegerExpr>()->getInt();
-    stack.pushTemp(make_shared<IntegerExpr>(param2 << param1));
+    int param1 = stack.param(1)->as<IntegerExpr>()->getInt();
+    int param2 = stack.param(2)->as<IntegerExpr>()->getInt();
+    stack.setResult(make_shared<IntegerExpr>(param1 << param2));
   }),
   Decl::make(Parser::makeFuncDecl("func >>(_:Int, _:Int) -> Int"), [](RuntimeStack& stack){
-    int param2 = stack.top()->as<IntegerExpr>()->getInt();
-    int param1 = stack.top(1)->as<IntegerExpr>()->getInt();
-    stack.pushTemp(make_shared<IntegerExpr>(param2 >> param1));
+    int param1 = stack.param(1)->as<IntegerExpr>()->getInt();
+    int param2 = stack.param(2)->as<IntegerExpr>()->getInt();
+    stack.setResult(make_shared<IntegerExpr>(param1 >> param2));
   }),
   Decl::make(Parser::makeFuncDecl("func ==(_:Int, _:Int) -> Bool"), [](RuntimeStack& stack){
-    int param2 = stack.top()->as<IntegerExpr>()->getInt();
-    int param1 = stack.top(1)->as<IntegerExpr>()->getInt();
-    stack.pushTemp(make_shared<BoolExpr>(param2 == param1));
+    int param1 = stack.param(1)->as<IntegerExpr>()->getInt();
+    int param2 = stack.param(2)->as<IntegerExpr>()->getInt();
+    stack.setResult(make_shared<BoolExpr>(param1 == param2));
   }),
   Decl::make(Parser::makeFuncDecl("func ==(_:Double, _:Double) -> Bool"), [](RuntimeStack& stack){
-    double param2 = stack.top()->as<DoubleExpr>()->getDouble();
-    double param1 = stack.top(1)->as<DoubleExpr>()->getDouble();
-    stack.pushTemp(make_shared<BoolExpr>(param2 == param1));
+    double param1 = stack.param(1)->as<DoubleExpr>()->getDouble();
+    double param2 = stack.param(2)->as<DoubleExpr>()->getDouble();
+    stack.setResult(make_shared<BoolExpr>(param1 == param2));
   }),
   Decl::make(Parser::makeFuncDecl("func ==(_:Bool, _:Bool) -> Bool"), [](RuntimeStack& stack){
-    bool param2 = stack.top()->as<BoolExpr>()->getBool();
-    bool param1 = stack.top(1)->as<BoolExpr>()->getBool();
-    stack.pushTemp(make_shared<BoolExpr>(param2 == param1));
+    bool param1 = stack.param(1)->as<BoolExpr>()->getBool();
+    bool param2 = stack.param(2)->as<BoolExpr>()->getBool();
+    stack.setResult(make_shared<BoolExpr>(param1 == param2));
   }),
   Decl::make(Parser::makeFuncDecl("func !=(_:Int, _:Int) -> Bool"), [](RuntimeStack& stack){
-    int param2 = stack.top()->as<IntegerExpr>()->getInt();
-    int param1 = stack.top(1)->as<IntegerExpr>()->getInt();
-    stack.pushTemp(make_shared<BoolExpr>(param2 != param1));
+    int param1 = stack.param(1)->as<IntegerExpr>()->getInt();
+    int param2 = stack.param(2)->as<IntegerExpr>()->getInt();
+    stack.setResult(make_shared<BoolExpr>(param1 != param2));
   }),
   Decl::make(Parser::makeFuncDecl("func !=(_:Double, _:Double) -> Bool"), [](RuntimeStack& stack){
-    double param2 = stack.top()->as<DoubleExpr>()->getDouble();
-    double param1 = stack.top(1)->as<DoubleExpr>()->getDouble();
-    stack.pushTemp(make_shared<BoolExpr>(param2 != param1));
+    double param1 = stack.param(1)->as<DoubleExpr>()->getDouble();
+    double param2 = stack.param(2)->as<DoubleExpr>()->getDouble();
+    stack.setResult(make_shared<BoolExpr>(param1 != param2));
   }),
   Decl::make(Parser::makeFuncDecl("func !=(_:Bool, _:Bool) -> Bool"), [](RuntimeStack& stack){
-    bool param2 = stack.top()->as<BoolExpr>()->getBool();
-    bool param1 = stack.top(1)->as<BoolExpr>()->getBool();
-    stack.pushTemp(make_shared<BoolExpr>(param2 != param1));
+    bool param1 = stack.param(1)->as<BoolExpr>()->getBool();
+    bool param2 = stack.param(2)->as<BoolExpr>()->getBool();
+    stack.setResult(make_shared<BoolExpr>(param1 != param2));
   }),
   Decl::make(Parser::makeFuncDecl("func >(_:Int, _:Int) -> Bool"), [](RuntimeStack& stack){
-    int param2 = stack.top()->as<IntegerExpr>()->getInt();
-    int param1 = stack.top(1)->as<IntegerExpr>()->getInt();
-    stack.pushTemp(make_shared<BoolExpr>(param1 > param2));
+    int param1 = stack.param(1)->as<IntegerExpr>()->getInt();
+    int param2 = stack.param(2)->as<IntegerExpr>()->getInt();
+    stack.setResult(make_shared<BoolExpr>(param1 > param2));
   }),
   Decl::make(Parser::makeFuncDecl("func >(_:Double, _:Double) -> Bool"), [](RuntimeStack& stack){
-    double param2 = stack.top()->as<DoubleExpr>()->getDouble();
-    double param1 = stack.top(1)->as<DoubleExpr>()->getDouble();
-    stack.pushTemp(make_shared<BoolExpr>(param1 > param2));
+    double param1 = stack.param(1)->as<DoubleExpr>()->getDouble();
+    double param2 = stack.param(2)->as<DoubleExpr>()->getDouble();
+    stack.setResult(make_shared<BoolExpr>(param1 > param2));
   }),
   Decl::make(Parser::makeFuncDecl("func <(_:Int, _:Int) -> Bool"), [](RuntimeStack& stack){
-    int param2 = stack.top()->as<IntegerExpr>()->getInt();
-    int param1 = stack.top(1)->as<IntegerExpr>()->getInt();
-    stack.pushTemp(make_shared<BoolExpr>(param1 < param2));
+    int param1 = stack.param(1)->as<IntegerExpr>()->getInt();
+    int param2 = stack.param(2)->as<IntegerExpr>()->getInt();
+    stack.setResult(make_shared<BoolExpr>(param1 < param2));
   }),
   Decl::make(Parser::makeFuncDecl("func <(_:Double, _:Double) -> Bool"), [](RuntimeStack& stack){
-    double param2 = stack.top()->as<DoubleExpr>()->getDouble();
-    double param1 = stack.top(1)->as<DoubleExpr>()->getDouble();
-    stack.pushTemp(make_shared<BoolExpr>(param1 < param2));
+    double param1 = stack.param(1)->as<DoubleExpr>()->getDouble();
+    double param2 = stack.param(2)->as<DoubleExpr>()->getDouble();
+    stack.setResult(make_shared<BoolExpr>(param1 < param2));
   }),
   Decl::make(Parser::makeFuncDecl("func >=(_:Int, _:Int) -> Bool"), [](RuntimeStack& stack){
-    int param2 = stack.top()->as<IntegerExpr>()->getInt();
-    int param1 = stack.top(1)->as<IntegerExpr>()->getInt();
-    stack.pushTemp(make_shared<BoolExpr>(param1 >= param2));
+    int param1 = stack.param(1)->as<IntegerExpr>()->getInt();
+    int param2 = stack.param(2)->as<IntegerExpr>()->getInt();
+    stack.setResult(make_shared<BoolExpr>(param1 >= param2));
   }),
   Decl::make(Parser::makeFuncDecl("func >=(_:Double, _:Double) -> Bool"), [](RuntimeStack& stack){
-    double param2 = stack.top()->as<DoubleExpr>()->getDouble();
-    double param1 = stack.top(1)->as<DoubleExpr>()->getDouble();
-    stack.pushTemp(make_shared<BoolExpr>(param1 >= param2));
+    double param1 = stack.param(1)->as<DoubleExpr>()->getDouble();
+    double param2 = stack.param(2)->as<DoubleExpr>()->getDouble();
+    stack.setResult(make_shared<BoolExpr>(param1 >= param2));
   }),
   Decl::make(Parser::makeFuncDecl("func <=(_:Int, _:Int) -> Bool"), [](RuntimeStack& stack){
-    int param2 = stack.top()->as<IntegerExpr>()->getInt();
-    int param1 = stack.top(1)->as<IntegerExpr>()->getInt();
-    stack.pushTemp(make_shared<BoolExpr>(param1 <= param2));
+    int param1 = stack.param(1)->as<IntegerExpr>()->getInt();
+    int param2 = stack.param(2)->as<IntegerExpr>()->getInt();
+    stack.setResult(make_shared<BoolExpr>(param1 <= param2));
   }),
   Decl::make(Parser::makeFuncDecl("func <=(_:Double, _:Double) -> Bool"), [](RuntimeStack& stack){
-    double param2 = stack.top()->as<DoubleExpr>()->getDouble();
-    double param1 = stack.top(1)->as<DoubleExpr>()->getDouble();
-    stack.pushTemp(make_shared<BoolExpr>(param1 <= param2));
+    double param1 = stack.param(1)->as<DoubleExpr>()->getDouble();
+    double param2 = stack.param(2)->as<DoubleExpr>()->getDouble();
+    stack.setResult(make_shared<BoolExpr>(param1 <= param2));
   }),
   Decl::make(Parser::makeFuncDecl("func &&(_:Bool, _:Bool) -> Bool"), [](RuntimeStack& stack){
-    bool param2 = stack.top()->as<BoolExpr>()->getBool();
-    bool param1 = stack.top(1)->as<BoolExpr>()->getBool();
-    stack.pushTemp(make_shared<BoolExpr>(param2 && param1));
+    bool param1 = stack.param(1)->as<BoolExpr>()->getBool();
+    bool param2 = stack.param(2)->as<BoolExpr>()->getBool();
+    stack.setResult(make_shared<BoolExpr>(param1 && param2));
   }),
   Decl::make(Parser::makeFuncDecl("func ||(_:Bool, _:Bool) -> Bool"), [](RuntimeStack& stack){
-    bool param2 = stack.top()->as<BoolExpr>()->getBool();
-    bool param1 = stack.top(1)->as<BoolExpr>()->getBool();
-    stack.pushTemp(make_shared<BoolExpr>(param2 || param1));
+    bool param1 = stack.param(1)->as<BoolExpr>()->getBool();
+    bool param2 = stack.param(2)->as<BoolExpr>()->getBool();
+    stack.setResult(make_shared<BoolExpr>(param1 || param2));
   }),
   Decl::make(Parser::makeFuncDecl("func !(_:Bool) -> _:Bool"), [](RuntimeStack& stack){
-    bool param2 = stack.top()->as<BoolExpr>()->getBool();
-    stack.pushTemp(make_shared<BoolExpr>(!param2));
+    bool param1 = stack.param(1)->as<BoolExpr>()->getBool();
+    stack.setResult(make_shared<BoolExpr>(!param1));
   })
 });
 
@@ -196,10 +201,22 @@ bool DeclarationContext::add(std::shared_ptr<Decl> d) {
       return false;
     }
   }
-  d->location = std::make_shared<StackReference>(getSize());
+  d->location = std::make_shared<StackReference>(getSize()+1);
   elements.push_back(d);
   return true;
 }
+
+bool DeclarationContext::add(std::shared_ptr<Decl> d, std::function<int(const DeclarationContext&)> loc) {
+  for (auto element: elements) {
+    if (element->getName() == d->getName() && equal(element->getType(), d->getType(), this)) {
+      return false;
+    }
+  }
+  d->location = std::make_shared<StackReference>(loc(*this));
+  elements.push_back(d);
+  return true;
+}
+
 
 bool DeclarationContext::hasLocal(std::shared_ptr<Decl> d) {
   if (!d) return false;
@@ -236,7 +253,7 @@ std::shared_ptr<Type> DeclarationContext::getFundamentalType(std::shared_ptr<Typ
   }
 }
 
-int DeclarationContext::getSize() {
+int DeclarationContext::getSize() const {
   int size = 0;
   for (auto decl: elements) {
     if (std::dynamic_pointer_cast<VarDecl>(decl) || std::dynamic_pointer_cast<LetDecl>(decl))

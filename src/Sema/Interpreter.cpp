@@ -42,66 +42,76 @@ bool Interpreter::visitIdentifierExpr(std::shared_ptr<IdentifierExpr> e) {
 }
 
 bool Interpreter::visitUnaryExpr(std::shared_ptr<UnaryExpr> s) {
+  // function pre-call
+  traverse(s->expr);
+  stack.push(stack.getBase());
+  stack.setBase(std::make_shared<StackReference>(stack.size()-1));
+
   if (s->op->decl && s->op->decl->func) {
-    traverse(s->expr);
     s->op->decl->func(stack);
-    stack.move(-1);
-    stack.push(stack.popTemp());
   } else {
-    traverse(s->expr);
     traverse(s->op->decl->stmt);
-    stack.move(-1);
-    stack.push(stack.popTemp());
   }
+
+  // function post-call
+  stack.setBase(std::dynamic_pointer_cast<StackReference>(stack.pop()));
+  stack.offset(-1);
+  stack.push(stack.getResult());
   return false;
 }
 
 bool Interpreter::visitBinaryExpr(std::shared_ptr<BinaryExpr> s) {
+  // function pre-call
+  traverse(s->right);
+  traverse(s->left);
+  stack.push(stack.getBase());
+  stack.setBase(std::make_shared<StackReference>(stack.size()-1));
+
   if (s->op->decl && s->op->decl->func) {
-    traverse(s->left);
-    traverse(s->right);
     s->op->decl->func(stack);
-    stack.move(-2);
-    stack.push(stack.popTemp());
   } else {
-    traverse(s->left);
-    traverse(s->right);
     traverse(s->op->decl->stmt);
-    stack.move(-2);
-    stack.push(stack.popTemp());
   }
+
+  // function post-call
+  stack.setBase(std::dynamic_pointer_cast<StackReference>(stack.pop()));
+  stack.offset(-2);
+  stack.push(stack.getResult());
   return false;
 }
 
 bool Interpreter::visitFunctionCall(std::shared_ptr<FunctionCall> s) {
+  // function pre-call
+  if (s->arguments) traverse(s->arguments->reverse());
+  stack.push(stack.getBase());
+  stack.setBase(std::make_shared<StackReference>(stack.size()-1));
+
   if (s->decl && s->decl->func) {
-    traverse(s->arguments);
     s->decl->func(stack);
-    stack.move(-s->arguments->size());
-    stack.push(stack.popTemp());
-  } else if (s->decl){
-    if (s->arguments) traverse(s->arguments);
-    traverse(s->decl->stmt);
-    if (s->arguments) stack.move(-s->arguments->size());
-    stack.push(stack.popTemp());
   } else {
-    throw std::string("error: can't compute missing function");
+    traverse(s->decl->stmt);
   }
+
+  // function post-call
+  stack.setBase(std::dynamic_pointer_cast<StackReference>(stack.pop()));
+  if (s->arguments) stack.offset(-s->arguments->size());
+  stack.push(stack.getResult());
   return false;
 }
 
 bool Interpreter::visitReturnStmt(std::shared_ptr<ReturnStmt> s) {
   traverse(s->expr);
   auto ret = stack.pop();
-  stack.pushTemp(ret);
+  stack.setResult(ret);
   return false;
 };
 
 bool Interpreter::visitExprStmt(std::shared_ptr<ExprStmt> s) {
   traverse(s->expr);
   if (*s->expr->type != *Parser::makeType("Void")) {
-    std::cout << stack.top()->type << ": " << stack.pop() << std::endl;
+    std::cout << stack.top()->type << ": " << stack.top() << std::endl;
   }
+  stack.pop();
   return false;
 };
 

@@ -372,8 +372,10 @@ ostream& operator<<(ostream& os, Expr* x) {
   } else if (dynamic_cast<StackReference*>(x)) {
     auto t = dynamic_cast<StackReference*>(x);
     os  << "*" << t->location ;
+  } else if (x == nullptr) {
+    os << "nullptr";
   } else {
-    os << "expr";
+    os << "unknown expr";
   }
 
   return os;

@@ -41,7 +41,7 @@ std::shared_ptr<FuncDecl> Parser::parseUndefFuncDecl() {
   expectToken(Token::kw_func, "func");
   auto name = expectToken({Token::identifier, Token::operator_id}, "identifier");
   expectToken(Token::l_paren, "left parenthesis");
-  auto param = parseParamDeclList();
+  auto param = acceptToken(Token::r_paren) ? nullptr : parseParamDeclList();
   expectToken(Token::r_paren, "right parenthesis");  if (!consumeOperator("->")) throw report(token(), "error: expected ->");
   auto type = parseType();
   return std::make_shared<FuncDecl>(name, param, type, nullptr);
