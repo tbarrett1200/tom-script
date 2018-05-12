@@ -22,6 +22,7 @@ std::shared_ptr<Decl> Parser::makeTypeDecl(std::string text) {
   if (!type) throw std::string("parse error");
   return type;
 }
+
 std::shared_ptr<Decl> Parser::makeFuncDecl(std::string text) {
   const std::stringstream sstream{text};
   auto source = SourceCode{sstream, "factory"};
@@ -30,6 +31,7 @@ std::shared_ptr<Decl> Parser::makeFuncDecl(std::string text) {
   if (!type) throw std::string("parse error");
   return type;
 }
+
 
 std::shared_ptr<TypeDecl> Parser::parseTypeDecl() {
   expectToken(Token::kw_typedef, "typedef");

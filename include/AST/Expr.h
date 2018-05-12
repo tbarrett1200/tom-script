@@ -3,13 +3,13 @@
 
 #include "AST/Matchable.h"
 #include "AST/AmbiguousType.h"
+#include "Parse/Operator.h"
 #include "Parse/Token.h"
 
 #include <memory>
 #include <stack>
 
 class Decl;
-class StackReference;
 
 class Expr : virtual public Matchable {
 public:
@@ -25,6 +25,7 @@ public:
     return dynamic_cast<T*>(this);
   }
 
+  virtual bool isLeftValue() const = 0;
   virtual Expr::Kind getKind() const = 0;
 };
 
@@ -64,6 +65,7 @@ public:
   /* Returns a vector of children for easy traversal */
   std::vector<std::shared_ptr<Matchable>> getChildren() const;
   Expr::Kind getKind() const;
+  bool isLeftValue() const;
   LabeledExpr(std::shared_ptr<ExprLabel> l, std::shared_ptr<Expr> e);
 };
 
@@ -76,6 +78,7 @@ public:
   Expr::Kind getKind() const;
   std::string getString() const;
   StringExpr(std::string s);
+  bool isLeftValue() const;
   StringExpr(Token t);
 };
 
@@ -87,6 +90,7 @@ public:
   Expr::Kind getKind() const;
   int getInt();
   IntegerExpr(int i);
+  bool isLeftValue() const;
   IntegerExpr(Token t);
 };
 
@@ -100,6 +104,7 @@ public:
   Expr::Kind getKind() const;
   bool getBool();
   BoolExpr(bool b);
+  bool isLeftValue() const;
   BoolExpr(Token t);
 };
 
@@ -112,6 +117,7 @@ public:
   Expr::Kind getKind() const;
   double getDouble();
   DoubleExpr(double i);
+  bool isLeftValue() const;
   DoubleExpr(Token t);
 
 };
@@ -124,6 +130,7 @@ public:
   /* Returns a vector of children for easy traversal */
   std::string getLexeme() const;
   Expr::Kind getKind() const;
+  bool isLeftValue() const;
   IdentifierExpr(Token t);
 };
 
@@ -137,6 +144,7 @@ public:
   std::vector<std::shared_ptr<Matchable>> getChildren() const;
   Expr::Kind getKind() const;
   int size() const;
+  bool isLeftValue() const;
   std::shared_ptr<Expr> operator[] (int x);
   static std::shared_ptr<TupleExpr> make(std::vector<std::shared_ptr<Expr>>);
   static std::shared_ptr<TupleExpr> make(std::shared_ptr<ExprList>);
@@ -156,11 +164,13 @@ public:
   Token token;
   std::shared_ptr<class FuncDecl> decl;
   std::shared_ptr<TypeList> paramType;
+  PrecedenceGroup group;
 
   /* Returns a vector of children for easy traversal */
   std::string getLexeme() const;
   Expr::Kind getKind() const;
-  OperatorExpr(Token t);
+  OperatorExpr(Token t, PrecedenceGroup g);
+  bool isLeftValue() const;
 };
 
 /**
@@ -177,6 +187,7 @@ public:
   /* Returns a vector of children for easy traversal */
   std::vector<std::shared_ptr<Matchable>> getChildren() const;
   Expr::Kind getKind() const;
+  bool isLeftValue() const;
   UnaryExpr(std::shared_ptr<OperatorExpr> o, std::shared_ptr<Expr> e);
 };
 
@@ -194,6 +205,7 @@ public:
   std::shared_ptr<Expr> right;
 
   Expr::Kind getKind() const;
+  bool isLeftValue() const;
   std::vector<std::shared_ptr<Matchable>> getChildren() const;
   BinaryExpr(std::shared_ptr<Expr> l, std::shared_ptr<OperatorExpr> o, std::shared_ptr<Expr> r);
 };
@@ -206,16 +218,19 @@ public:
 
   FunctionCall(std::shared_ptr<IdentifierExpr> n, std::shared_ptr<ExprList> a);
   std::vector<std::shared_ptr<Matchable>> getChildren() const;
+  bool isLeftValue() const;
   Expr::Kind getKind() const;
 };
 
-class StackReference: public Expr, public Terminal {
+class StackPointer: public Expr, public Terminal {
 public:
   int location;
-  StackReference(int l);
+  StackPointer(int l);
   std::string getLexeme() const;
+  bool isLeftValue() const;
   Expr::Kind getKind() const;
 };
+
 
 std::ostream& operator<<(std::ostream& os, Expr* x);
 std::ostream& operator<<(std::ostream& os, ExprList* x);

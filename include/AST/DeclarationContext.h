@@ -14,6 +14,7 @@ class Expr;
 class Type;
 class TypeList;
 class AmbiguousDecl;
+class ComputedAddress;
 
 /**
  * A container class for scoped declarations. Each DeclarationContext  has its
@@ -42,7 +43,7 @@ public:
    * returns true if added and false if the declaration already exists.
    */
   bool add(std::shared_ptr<Decl> d);
-  bool add(std::shared_ptr<Decl> d, std::function<int(const DeclarationContext&)> loc);
+  bool add(std::shared_ptr<Decl> d, std::function<ComputedAddress(const DeclarationContext&)> loc);
 
   /** returns true if the given declaration is defined at any scope */
   bool has(std::shared_ptr<Decl> d);

@@ -119,7 +119,7 @@ public:
 class ReturnStmt : public Stmt, public NonTerminal {
 public:
   std::shared_ptr<Expr> expr;
-  std::shared_ptr<StackReference> location;
+  std::shared_ptr<StackPointer> location;
 
   // Constructors
   ReturnStmt(std::shared_ptr<Expr> d);

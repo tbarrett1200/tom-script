@@ -42,7 +42,7 @@ shared_ptr<OperatorExpr> Parser::parseOperatorExpr(int precedence) {
   Token tok = token();
   if (OperatorTable::level(precedence).contains(tok.lexeme)) {
     consume();
-    return make_shared<OperatorExpr>(tok);
+    return make_shared<OperatorExpr>(tok, OperatorTable::level(precedence));
   } else throw report(token(), "error: expected operator");
 }
 

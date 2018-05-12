@@ -4,13 +4,12 @@
 #include "Parse/Token.h"
 #include "AST/Matchable.h"
 #include "AST/DeclarationContext.h"
-
+#include "Sema/MemoryLoc.h"
 #include <vector>
 
 class CompoundStmt;
 class FunctionType;
 class RuntimeStack;
-class StackReference;
 
 class Decl : virtual public Matchable {
 
@@ -24,7 +23,7 @@ public:
   virtual std::string getName() const = 0;
 
   std::function<void(RuntimeStack&)> func = nullptr;
-  std::shared_ptr<StackReference> location;
+  ComputedAddress location;
 
   template<typename T> T* as() {
     return dynamic_cast<T*>(this);
@@ -165,6 +164,7 @@ public:
   std::shared_ptr<Type> returnType;
   std::shared_ptr<FunctionType> type;
   std::shared_ptr<CompoundStmt> stmt;
+
 
   FuncDecl(Token n, std::shared_ptr<ParamDeclList> t, std::shared_ptr<Type>, std::shared_ptr<CompoundStmt> s);
   Decl::Kind getKind() const;

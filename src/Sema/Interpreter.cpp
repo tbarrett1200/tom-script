@@ -37,6 +37,7 @@ bool Interpreter::visitTupleExpr(std::shared_ptr<TupleExpr> e) {
 }
 
 bool Interpreter::visitIdentifierExpr(std::shared_ptr<IdentifierExpr> e) {
+  std::cout << e->decl->location << std::endl;
   stack.push(stack.get(e->decl->location));
   return false;
 }
@@ -44,8 +45,8 @@ bool Interpreter::visitIdentifierExpr(std::shared_ptr<IdentifierExpr> e) {
 bool Interpreter::visitUnaryExpr(std::shared_ptr<UnaryExpr> s) {
   // function pre-call
   traverse(s->expr);
-  stack.push(stack.getBase());
-  stack.setBase(std::make_shared<StackReference>(stack.size()-1));
+  stack.push(std::make_shared<StackPointer>(*stack.getBase()));
+  stack.setBase(stack.size()-1);
 
   if (s->op->decl && s->op->decl->func) {
     s->op->decl->func(stack);
@@ -54,8 +55,8 @@ bool Interpreter::visitUnaryExpr(std::shared_ptr<UnaryExpr> s) {
   }
 
   // function post-call
-  stack.setBase(std::dynamic_pointer_cast<StackReference>(stack.pop()));
-  stack.offset(-1);
+  stack.setBase(std::dynamic_pointer_cast<StackPointer>(stack.pop())->location);
+  stack.offset(1);
   stack.push(stack.getResult());
   return false;
 }
@@ -64,8 +65,8 @@ bool Interpreter::visitBinaryExpr(std::shared_ptr<BinaryExpr> s) {
   // function pre-call
   traverse(s->right);
   traverse(s->left);
-  stack.push(stack.getBase());
-  stack.setBase(std::make_shared<StackReference>(stack.size()-1));
+  stack.push(std::make_shared<StackPointer>(*stack.getBase()));
+  stack.setBase(stack.size()-1);
 
   if (s->op->decl && s->op->decl->func) {
     s->op->decl->func(stack);
@@ -74,8 +75,8 @@ bool Interpreter::visitBinaryExpr(std::shared_ptr<BinaryExpr> s) {
   }
 
   // function post-call
-  stack.setBase(std::dynamic_pointer_cast<StackReference>(stack.pop()));
-  stack.offset(-2);
+  stack.setBase(std::dynamic_pointer_cast<StackPointer>(stack.pop())->location);
+  stack.offset(2);
   stack.push(stack.getResult());
   return false;
 }
@@ -83,8 +84,8 @@ bool Interpreter::visitBinaryExpr(std::shared_ptr<BinaryExpr> s) {
 bool Interpreter::visitFunctionCall(std::shared_ptr<FunctionCall> s) {
   // function pre-call
   if (s->arguments) traverse(s->arguments->reverse());
-  stack.push(stack.getBase());
-  stack.setBase(std::make_shared<StackReference>(stack.size()-1));
+  stack.push(std::make_shared<StackPointer>(*stack.getBase()));
+  stack.setBase(stack.size()-1);
 
   if (s->decl && s->decl->func) {
     s->decl->func(stack);
@@ -93,9 +94,8 @@ bool Interpreter::visitFunctionCall(std::shared_ptr<FunctionCall> s) {
   }
 
   // function post-call
-  stack.setBase(std::dynamic_pointer_cast<StackReference>(stack.pop()));
-  if (s->arguments) stack.offset(-s->arguments->size());
-  stack.push(stack.getResult());
+  stack.setBase(std::dynamic_pointer_cast<StackPointer>(stack.top())->location);
+  if (s->arguments) stack.offset(s->arguments->size());
   return false;
 }
 
@@ -134,6 +134,21 @@ bool Interpreter::visitConditionalStmtList(std::shared_ptr<ConditionalStmtList> 
   }
   return false;
 };
+
+bool Interpreter::visitWhileLoop(std::shared_ptr<WhileLoop> s) {
+  if (s->condition) {
+    while(true) {
+      traverse(s->condition);
+      if (stack.top()->as<BoolExpr>()->getLexeme() == "true") {
+        stack.pop();
+        traverse(s->stmt);
+      } else {
+        break;
+      }
+    }
+  }
+  return false;
+}
 
 bool Interpreter::visitVarDecl(std::shared_ptr<VarDecl> s) {
   traverse(s->expr);

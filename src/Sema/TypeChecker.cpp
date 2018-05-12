@@ -80,6 +80,11 @@ bool TypeChecker::visitOperatorExpr(std::shared_ptr<OperatorExpr> e) {
 }
 
 bool TypeChecker::visitUnaryExpr(std::shared_ptr<UnaryExpr> e) {
+  if (e->op->group.assignment && !e->expr->isLeftValue()) {
+    std::stringstream ss;
+    ss << "error: "  << "r-value reference in assignment" << std::endl;
+    throw ss.str();
+  }
   traverseExpr(e->expr);
   e->op->paramType = std::make_shared<TypeList>(std::vector<std::shared_ptr<Type>>{e->expr->type});
   traverseExpr(e->op);
@@ -88,6 +93,11 @@ bool TypeChecker::visitUnaryExpr(std::shared_ptr<UnaryExpr> e) {
 }
 
 bool TypeChecker::visitBinaryExpr(std::shared_ptr<BinaryExpr> e) {
+  if (e->op->group.assignment && !e->left->isLeftValue()) {
+    std::stringstream ss;
+    ss << "error: "  << "r-value reference in assignment" << std::endl;
+    throw ss.str();
+  }
   traverseExpr(e->left);
   traverseExpr(e->right);
   e->op->paramType = std::make_shared<TypeList>(std::vector<std::shared_ptr<Type>>{e->left->type, e->right->type});
@@ -194,7 +204,7 @@ bool TypeChecker::visitReturnStmt(std::shared_ptr<ReturnStmt> s) {
 bool TypeChecker::visitParamDecl(std::shared_ptr<ParamDecl> d) {
   auto var = std::make_shared<VarDecl>(d->secondary->token, d->type, nullptr);
   context->add(var, [](const DeclarationContext& c){
-    return -c.getSize()-1;
+    return ComputedAddress::param(c.getSize());
   });
   return false;
 }

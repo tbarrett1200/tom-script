@@ -24,6 +24,7 @@ class Interpreter : public ASTWalker {
   bool visitReturnStmt(std::shared_ptr<ReturnStmt> s);
   bool visitExprStmt(std::shared_ptr<ExprStmt> s);
   bool visitConditionalStmtList(std::shared_ptr<ConditionalStmtList> s);
+  bool visitWhileLoop(std::shared_ptr<WhileLoop> s);
   bool visitVarDecl(std::shared_ptr<VarDecl> s);
   bool visitLetDecl(std::shared_ptr<LetDecl> s);
   bool visitFuncDecl(std::shared_ptr<FuncDecl> s);

@@ -83,6 +83,7 @@ std::string ExprLabel::getLexeme() const {
   return name.lexeme;
 }
 
+
 ExprLabel::ExprLabel(Token n): name{n} {};
 
 //=--------------------------------------------------------------------------=//
@@ -96,6 +97,9 @@ std::vector<std::shared_ptr<Matchable>> LabeledExpr::getChildren() const {
 
 Expr::Kind LabeledExpr::getKind() const { return Kind::LabeledExpr; }
 
+bool LabeledExpr::isLeftValue() const {
+  return false;
+}
 
 LabeledExpr::LabeledExpr(shared_ptr<ExprLabel> l, shared_ptr<Expr> e): label{move(l)}, expr{move(e)} {
   if (!label) {
@@ -116,6 +120,9 @@ std::string StringExpr::getLexeme() const {
 
 Expr::Kind StringExpr::getKind() const { return Kind::StringExpr; }
 
+bool StringExpr::isLeftValue() const {
+  return false;
+}
 
 std::string StringExpr::getString() const { return token.lexeme.substr(1,token.lexeme.size()-2); }
 
@@ -146,6 +153,10 @@ int IntegerExpr::getInt() {
   return std::stoi(token.lexeme);
 }
 
+bool IntegerExpr::isLeftValue() const {
+  return false;
+}
+
 IntegerExpr::IntegerExpr(int i) : token{to_string(i), Token::integer_literal, 0, 0, 0} {
   type = {Parser::makeType("Int")};
 }
@@ -170,6 +181,10 @@ Expr::Kind  BoolExpr::getKind() const { return Kind::BoolExpr; }
 
 bool  BoolExpr::getBool() {
   return token.lexeme == "true";
+}
+
+bool BoolExpr::isLeftValue() const {
+  return false;
 }
 
 BoolExpr::BoolExpr(bool b) {
@@ -201,6 +216,10 @@ std::string DoubleExpr::getLexeme() const {
 
 Expr::Kind DoubleExpr::getKind() const { return Kind::DoubleExpr; }
 
+bool DoubleExpr::isLeftValue() const {
+  return false;
+}
+
 double DoubleExpr::getDouble() {
   return std::stod(token.lexeme);
 }
@@ -229,6 +248,9 @@ std::string IdentifierExpr::getLexeme() const {
 
 Expr::Kind IdentifierExpr::getKind() const { return Kind::IdentifierExpr; }
 
+bool IdentifierExpr::isLeftValue() const {
+  return true;
+}
 
 IdentifierExpr::IdentifierExpr(Token t) : token{t} {}
 
@@ -241,6 +263,10 @@ std::vector<std::shared_ptr<Matchable>> TupleExpr::getChildren() const {
 }
 
 Expr::Kind TupleExpr::getKind() const { return Kind::TupleExpr; }
+
+bool TupleExpr::isLeftValue() const {
+  return false;
+}
 
 int TupleExpr::size() const { return list->size(); }
 std::shared_ptr<Expr> TupleExpr::operator[] (int x) {
@@ -268,8 +294,11 @@ std::string OperatorExpr::getLexeme() const {
 
 Expr::Kind OperatorExpr::getKind() const { return Kind::OperatorExpr; }
 
+bool OperatorExpr::isLeftValue() const {
+  return false;
+}
 
-OperatorExpr::OperatorExpr(Token t) : token{t} {
+OperatorExpr::OperatorExpr(Token t, PrecedenceGroup g) : token{t}, group{g} {
   if (t.isNot(Token::operator_id)) {
     throw std::domain_error("OperatorExpr requires a token of type operator_id");
   }
@@ -285,7 +314,9 @@ std::vector<std::shared_ptr<Matchable>> UnaryExpr::getChildren() const {
 
 Expr::Kind UnaryExpr::getKind() const { return Kind::UnaryExpr; }
 
-
+bool UnaryExpr::isLeftValue() const {
+  return false;
+}
 
 UnaryExpr::UnaryExpr(shared_ptr<OperatorExpr> o, shared_ptr<Expr> e) : op{move(o)}, expr{move(e)} {
   if (!op) {
@@ -303,6 +334,10 @@ Expr::Kind BinaryExpr::getKind() const { return Kind::BinaryExpr; }
 
 std::vector<std::shared_ptr<Matchable>> BinaryExpr::getChildren() const {
   return {left, op, right};
+}
+
+bool BinaryExpr::isLeftValue() const {
+  return false;
 }
 
 BinaryExpr::BinaryExpr(shared_ptr<Expr> l, shared_ptr<OperatorExpr> o, shared_ptr<Expr> r)
@@ -328,17 +363,23 @@ std::vector<std::shared_ptr<Matchable>> FunctionCall::getChildren() const {
   return {name, arguments};
 }
 
+bool FunctionCall::isLeftValue() const {
+  return false;
+}
+
 Expr::Kind FunctionCall::getKind() const { return Kind::FunctionCall; }
 
 //=--------------------------------------------------------------------------=//
-// StackReference
+// StackPointer
 //=--------------------------------------------------------------------------=//
 
-StackReference::StackReference(int l) : location{l} {}
-std::string StackReference::getLexeme() const { return "*"; }
-Expr::Kind StackReference::getKind() const { return Kind::StackReference; }
+StackPointer::StackPointer(int l) : location{l} {}
+std::string StackPointer::getLexeme() const { return "*"; }
+Expr::Kind StackPointer::getKind() const { return Kind::StackPointer; }
 
-
+bool StackPointer::isLeftValue() const {
+  return false;
+}
 
 
 ostream& operator<<(ostream& os, Expr* x) {
@@ -369,8 +410,8 @@ ostream& operator<<(ostream& os, Expr* x) {
   } else if (dynamic_cast<FunctionCall*>(x)) {
     auto t = dynamic_cast<FunctionCall*>(x);
     os  << t->name << "(args)";
-  } else if (dynamic_cast<StackReference*>(x)) {
-    auto t = dynamic_cast<StackReference*>(x);
+  } else if (dynamic_cast<StackPointer*>(x)) {
+    auto t = dynamic_cast<StackPointer*>(x);
     os  << "*" << t->location ;
   } else if (x == nullptr) {
     os << "nullptr";

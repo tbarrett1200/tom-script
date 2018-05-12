@@ -1,37 +1,10 @@
 #include "AST/Expr.h"
 #include "Sema/RuntimeStack.h"
+#include <memory>
 
 RuntimeStack::RuntimeStack() {
-  base_pointer = std::make_shared<StackReference>(0);
-  push(base_pointer);
-}
-
-void RuntimeStack::setResult(std::shared_ptr<Expr> e) {
-  func_result = e;
-}
-
-std::shared_ptr<Expr> RuntimeStack::getResult() const {
-  return func_result;
-}
-
-/* pushes the given expression to the stack */
-void RuntimeStack::push(std::shared_ptr<Expr> e) {
-  memory.push_back(e);
-}
-
-std::shared_ptr<StackReference> RuntimeStack::getBase() const {
-  return base_pointer;
-}
-void RuntimeStack::setBase(std::shared_ptr<StackReference> e) {
-  base_pointer = e;
-}
-
-/* returns expression on top of the stack, or null if stack is empty */
-std::shared_ptr<Expr> RuntimeStack::pop() {
-  if (memory.size() == 0) return nullptr;
-  auto back = memory.back();
-  memory.pop_back();
-  return back;
+  base_pointer = 0;
+  push(std::make_shared<StackPointer>(0));
 }
 
 /* returns the number of expressions on the stack */
@@ -39,44 +12,94 @@ int RuntimeStack::size() const {
   return memory.size();
 }
 
-/* offsets the stack pointer by a given*/
-void RuntimeStack::offset(int offset) {
-  if (offset>0) {
-    for (int i = 0; i < offset; i++) {
-      memory.push_back(nullptr);
-    }
-  } else if (offset<0) {
-    for (int i = 0; i < -offset; i++) {
-      memory.pop_back();
-    }
+/*
+ * Stores the given value as the operation result
+ *
+ * Params:
+ * std::shared_ptr<Expr> e - the value to store
+ */
+void RuntimeStack::setResult(std::shared_ptr<Expr> e) {
+  func_result = e;
+}
+
+/*
+ * Retrieves the given value as the operation result
+ *
+ * Returns: the result of the most recent operation
+ */
+std::shared_ptr<Expr> RuntimeStack::getResult() const {
+  return func_result;
+}
+
+int* RuntimeStack::getBase() {
+  return &base_pointer;
+}
+
+void RuntimeStack::setBase(int e) {
+  base_pointer = e;
+}
+
+void RuntimeStack::offset(int i) {
+  for(int j=0; j<i; j++) {
+    memory.pop_back();
   }
 }
 
-std::shared_ptr<Expr> RuntimeStack::RuntimeStack::top() const {
+/*
+ * Computes a memory address and returns the value stored at that address
+ *
+ * Param:
+ * ComputedAddress a - the memory address to compute
+ */
+std::shared_ptr<Expr> RuntimeStack::get(ComputedAddress a) {
+  return memory[a.get(*this)];
+}
+
+/*
+ * Computes a memory address and stores the given value in that location
+ *
+ * Param:
+ * ComputedAddress a - the memory address to compute
+ * std::shared_ptr<Expr> e - the value to store
+ */
+void RuntimeStack::set(ComputedAddress a, std::shared_ptr<Expr> e) {
+  memory[a.get(*this)] = e;
+}
+
+/*
+ * returns the value stored at the given memory address
+ *
+ * Param:
+ * int a - the memory address
+ */
+std::shared_ptr<Expr> RuntimeStack::get(int a) const {
+  return memory[a];
+}
+
+/*
+ * stores a given value in the given memory address
+ *
+ * Param:
+ * int a - the memory address
+ * std::shared_ptr<Expr> e - the value to store
+ */
+void RuntimeStack::set(int a, std::shared_ptr<Expr> e) {
+  memory[a] = e;
+}
+
+
+/* pushes the given expression to the stack */
+void RuntimeStack::push(std::shared_ptr<Expr> e) {
+  memory.push_back(e);
+}
+
+std::shared_ptr<Expr> RuntimeStack::top() const {
   return memory.back();
 }
-
-std::shared_ptr<Expr> RuntimeStack::top(int i) const {
-  return memory[memory.size()-1-i];
-}
-
-std::shared_ptr<Expr> RuntimeStack::param(int i) const {
-  return memory[base_pointer->location-i];
-}
-
-std::shared_ptr<Expr> RuntimeStack::at(int i) const {
-  return memory[i];
-}
-
-
-std::shared_ptr<Expr> RuntimeStack::get(std::shared_ptr<StackReference> o) const {
-  return memory[base_pointer->location+o->location];
-}
-
-std::shared_ptr<Expr> RuntimeStack::get(int i) const {
-  return memory[base_pointer->location+i];
-}
-
-void RuntimeStack::set(std::shared_ptr<StackReference> o, std::shared_ptr<Expr> e) {
-  memory[o->location] = e;
+/* returns expression on top of the stack, or null if stack is empty */
+std::shared_ptr<Expr> RuntimeStack::pop() {
+  if (memory.size() == 0) return nullptr;
+  auto back = memory.back();
+  memory.pop_back();
+  return back;
 }
