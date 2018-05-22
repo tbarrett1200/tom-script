@@ -37,7 +37,6 @@ bool Interpreter::visitTupleExpr(std::shared_ptr<TupleExpr> e) {
 }
 
 bool Interpreter::visitIdentifierExpr(std::shared_ptr<IdentifierExpr> e) {
-  std::cout << e->decl->location << std::endl;
   stack.push(stack.get(e->decl->location));
   return false;
 }
@@ -55,16 +54,23 @@ bool Interpreter::visitUnaryExpr(std::shared_ptr<UnaryExpr> s) {
   }
 
   // function post-call
-  stack.setBase(std::dynamic_pointer_cast<StackPointer>(stack.pop())->location);
+  stack.setBase(std::dynamic_pointer_cast<StackPointer>(stack.top())->location);
   stack.offset(1);
   stack.push(stack.getResult());
   return false;
 }
 
 bool Interpreter::visitBinaryExpr(std::shared_ptr<BinaryExpr> s) {
-  // function pre-call
   traverse(s->right);
+
+  if (s->op->group.assignment) {
+    stack.set(std::dynamic_pointer_cast<IdentifierExpr>(s->left)->decl->location, stack.top());
+    return false;
+  }
+
+  // function pre-call
   traverse(s->left);
+
   stack.push(std::make_shared<StackPointer>(*stack.getBase()));
   stack.setBase(stack.size()-1);
 
@@ -94,8 +100,9 @@ bool Interpreter::visitFunctionCall(std::shared_ptr<FunctionCall> s) {
   }
 
   // function post-call
-  stack.setBase(std::dynamic_pointer_cast<StackPointer>(stack.top())->location);
+  stack.setBase(std::dynamic_pointer_cast<StackPointer>(stack.pop())->location);
   if (s->arguments) stack.offset(s->arguments->size());
+  stack.push(stack.getResult());
   return false;
 }
 

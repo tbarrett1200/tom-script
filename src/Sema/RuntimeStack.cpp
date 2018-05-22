@@ -96,6 +96,7 @@ void RuntimeStack::push(std::shared_ptr<Expr> e) {
 std::shared_ptr<Expr> RuntimeStack::top() const {
   return memory.back();
 }
+
 /* returns expression on top of the stack, or null if stack is empty */
 std::shared_ptr<Expr> RuntimeStack::pop() {
   if (memory.size() == 0) return nullptr;

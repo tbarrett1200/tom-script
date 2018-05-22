@@ -93,13 +93,24 @@ bool TypeChecker::visitUnaryExpr(std::shared_ptr<UnaryExpr> e) {
 }
 
 bool TypeChecker::visitBinaryExpr(std::shared_ptr<BinaryExpr> e) {
-  if (e->op->group.assignment && !e->left->isLeftValue()) {
-    std::stringstream ss;
-    ss << "error: "  << "r-value reference in assignment" << std::endl;
-    throw ss.str();
-  }
   traverseExpr(e->left);
   traverseExpr(e->right);
+
+  if (e->op->group.assignment) {
+    if (!e->left->isLeftValue()) {
+      std::stringstream ss;
+      ss << "error: "  << "r-value reference in assignment" << std::endl;
+      throw ss.str();
+    }
+    if (*e->left->type != *e->right->type) {
+      std::stringstream ss;
+      ss << "error: "  << "assignment types do not match" << std::endl;
+      throw ss.str();
+    }
+    e->type = Parser::makeType("Void");
+    return false;
+  }
+
   e->op->paramType = std::make_shared<TypeList>(std::vector<std::shared_ptr<Type>>{e->left->type, e->right->type});
   traverseExpr(e->op);
   e->type = e->op->type->as<FunctionType>()->returns;
@@ -204,7 +215,7 @@ bool TypeChecker::visitReturnStmt(std::shared_ptr<ReturnStmt> s) {
 bool TypeChecker::visitParamDecl(std::shared_ptr<ParamDecl> d) {
   auto var = std::make_shared<VarDecl>(d->secondary->token, d->type, nullptr);
   context->add(var, [](const DeclarationContext& c){
-    return ComputedAddress::param(c.getSize());
+    return ComputedAddress::param(c.getSize()+1);
   });
   return false;
 }
