@@ -19,8 +19,10 @@ public:
   bool visitTupleExpr(std::shared_ptr<TupleExpr> e);
   bool visitIdentifierExpr(std::shared_ptr<IdentifierExpr> e);
   bool visitOperatorExpr(std::shared_ptr<OperatorExpr> e);
+  bool visitAccessorExpr(std::shared_ptr<AccessorExpr> e);
   bool visitUnaryExpr(std::shared_ptr<UnaryExpr> e);
   bool visitBinaryExpr(std::shared_ptr<BinaryExpr> e);
+  bool visitListExpr(std::shared_ptr<ListExpr> e);
   bool visitFunctionCall(std::shared_ptr<FunctionCall> e);
   bool visitCompoundStmt(std::shared_ptr<CompoundStmt> s);
   bool visitTypeAlias(std::shared_ptr<TypeAlias> d);

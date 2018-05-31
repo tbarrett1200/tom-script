@@ -46,12 +46,21 @@ shared_ptr<OperatorExpr> Parser::parseOperatorExpr(int precedence) {
   } else throw report(token(), "error: expected operator");
 }
 
-shared_ptr<Expr> Parser::parseIdentifierOrFunctionCall() {
+shared_ptr<Expr> Parser::parseIdentifierOrFunctionCallOrAccessor() {
   auto id = parseIdentifier();
-  if (!acceptToken(Token::l_paren)) return id;
-  auto tuple = parseFunctionParameters();
-  return make_shared<FunctionCall>(move(id), move(tuple));
+  if (acceptToken(Token::l_square)) {
+    expectToken(Token::l_square, "[");
+    auto index = parseIntegerExpr();
+    expectToken(Token::r_square, "]");
+    return std::make_shared<AccessorExpr>(id, index);
+  } else if (acceptToken(Token::l_paren)) {
+    auto tuple = parseFunctionParameters();
+    return make_shared<FunctionCall>(move(id), move(tuple));
+  } else {
+    return id;
+  }
 }
+
 
 shared_ptr<IdentifierExpr> Parser::parseIdentifier() {
   auto token = expectToken({Token::identifier, Token::operator_id}, "identifier");
@@ -92,9 +101,11 @@ shared_ptr<FunctionCall> Parser::parseFunctionCall() {
 shared_ptr<Expr> Parser::parseValueExpr() {
   switch (token().getType()) {
   case Token::identifier:
-    return parseIdentifierOrFunctionCall();
+    return parseIdentifierOrFunctionCallOrAccessor();
   case Token::integer_literal:
     return parseIntegerExpr();
+  case Token::l_square:
+    return parseListExpr();
   case Token::double_literal:
     return parseDoubleExpr();
   case Token::string_literal:
@@ -104,6 +115,7 @@ shared_ptr<Expr> Parser::parseValueExpr() {
   default: throw report(token(), "error: expected value, but got " + token().lexeme);
   }
 }
+
 
 shared_ptr<Expr> Parser::parseUnaryExpr() {
   if (!OperatorTable::level(1).contains(token().lexeme)) {
@@ -181,6 +193,13 @@ shared_ptr<IntegerExpr> Parser::parseIntegerExpr() {
 shared_ptr<DoubleExpr> Parser::parseDoubleExpr() {
   auto token = expectToken(Token::double_literal, "double literal");
   return make_shared<DoubleExpr>(token);
+}
+
+shared_ptr<ListExpr> Parser::parseListExpr() {
+  auto l_square = expectToken(Token::l_square, "[");
+  auto contents = parseExprList();
+  auto r_square = expectToken(Token::r_square, "]");
+  return std::make_shared<ListExpr>(contents);
 }
 
 shared_ptr<StringExpr> Parser::parseStringExpr() {

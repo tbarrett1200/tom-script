@@ -40,7 +40,7 @@ public:
   std::vector<std::shared_ptr<Expr>> vector() const;
   std::shared_ptr<ExprList> reverse() const;
   int size() const;
-  std::shared_ptr<Expr> operator[] (int x);
+  std::shared_ptr<Expr>& operator[] (int x);
   std::shared_ptr<TypeList> getTypeList() const;
   template <typename T> bool has();
   ExprList(std::shared_ptr<Expr> e, std::shared_ptr<ExprList> l);
@@ -122,15 +122,17 @@ public:
 
 };
 
-class ListExpr: public Expr {
-private:
-  std::vector<std::shared_ptr<Expr>> data;
-
+class ListExpr: public Expr, public NonTerminal {
 public:
+  std::shared_ptr<ExprList> data;
+
+  std::vector<std::shared_ptr<Matchable>> getChildren() const;
   Expr::Kind getKind() const;
   bool isLeftValue() const;
-  ListExpr(std::vector<std::shared_ptr<Expr>> d);
+  ListExpr(std::shared_ptr<ExprList> d);
 };
+
+
 
 class IdentifierExpr: public Expr, public Terminal  {
 public:
@@ -143,6 +145,18 @@ public:
   bool isLeftValue() const;
   IdentifierExpr(Token t);
 };
+
+class AccessorExpr: public Expr, public NonTerminal {
+public:
+  std::shared_ptr<IdentifierExpr> id;
+  std::shared_ptr<IntegerExpr> index;
+
+  std::vector<std::shared_ptr<Matchable>> getChildren() const;
+  Expr::Kind getKind() const;
+  bool isLeftValue() const;
+  AccessorExpr(std::shared_ptr<IdentifierExpr> id, std::shared_ptr<IntegerExpr> index);
+};
+
 
 class TupleExpr: public Expr, public NonTerminal  {
 private:

@@ -76,9 +76,10 @@ public:
   shared_ptr<DoubleExpr> parseDoubleExpr();
   shared_ptr<StringExpr> parseStringExpr();
   shared_ptr<ExprLabel> parseExprLabel();
+  shared_ptr<ListExpr> parseListExpr();
   shared_ptr<LabeledExpr> parseLabeledExpr();
   shared_ptr<Expr> parseLabeledExprOrExpr();
-  shared_ptr<Expr> parseIdentifierOrFunctionCall();
+  shared_ptr<Expr> parseIdentifierOrFunctionCallOrAccessor();
   shared_ptr<ExprList> parseExprList();
   shared_ptr<IdentifierExpr> parseIdentifier();
   shared_ptr<Expr> parseTupleExpr();

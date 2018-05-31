@@ -19,7 +19,6 @@ int main(int argc, char const *argv[]) {
     if (!parser.token().is(Token::eof)) {
       try {
         auto stmt = parser.parseStmt();
-        std::cout << stmt.get() << std::endl;
         try {
           semantic.traverse(stmt);
           interpreter.traverse(stmt);

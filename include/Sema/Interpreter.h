@@ -17,9 +17,11 @@ class Interpreter : public ASTWalker {
   bool visitDoubleExpr(std::shared_ptr<DoubleExpr> e);
   bool visitBoolExpr(std::shared_ptr<BoolExpr> e);
   bool visitTupleExpr(std::shared_ptr<TupleExpr> e);
+  bool visitListExpr(std::shared_ptr<ListExpr> e);
   bool visitIdentifierExpr(std::shared_ptr<IdentifierExpr> e);
   bool visitUnaryExpr(std::shared_ptr<UnaryExpr> s);
   bool visitBinaryExpr(std::shared_ptr<BinaryExpr> s);
+  bool visitAccessorExpr(std::shared_ptr<AccessorExpr> s);
   bool visitFunctionCall(std::shared_ptr<FunctionCall> s);
   bool visitReturnStmt(std::shared_ptr<ReturnStmt> s);
   bool visitExprStmt(std::shared_ptr<ExprStmt> s);

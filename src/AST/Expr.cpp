@@ -51,11 +51,12 @@ std::shared_ptr<TypeList> ExprList::getTypeList() const {
   return std::make_shared<TypeList>(element->type, list ? list->getTypeList() : nullptr);
 }
 
-std::shared_ptr<Expr> ExprList::operator[] (int x) {
+std::shared_ptr<Expr>& ExprList::operator[] (int x) {
   if (x == 0) return element;
   else if (!list || x < 0) throw std::logic_error("out of bounds ExprList[]");
   else return (*list)[x-1];
 }
+
 
 template <typename T> bool ExprList::has() {
   if (list == nullptr) return true;
@@ -286,6 +287,9 @@ TupleExpr::TupleExpr(shared_ptr<ExprList> l) : list{move(l)} {}
 //=--------------------------------------------------------------------------=//
 // ListExpr
 //=--------------------------------------------------------------------------=//
+std::vector<std::shared_ptr<Matchable>> ListExpr::getChildren() const {
+  return {data};
+}
 
 Expr::Kind ListExpr::getKind() const {
   return Kind::ListExpr;
@@ -293,7 +297,25 @@ Expr::Kind ListExpr::getKind() const {
 bool ListExpr::isLeftValue() const {
   return false;
 }
-ListExpr::ListExpr(std::vector<std::shared_ptr<Expr>> d): data{d} {}
+ListExpr::ListExpr(std::shared_ptr<ExprList> d): data{d} {}
+
+//=--------------------------------------------------------------------------=//
+// AccessorExpr
+//=--------------------------------------------------------------------------=//
+
+std::vector<std::shared_ptr<Matchable>> AccessorExpr::getChildren() const {
+  return {id, index};
+}
+
+Expr::Kind AccessorExpr::getKind() const {
+  return Expr::Kind::AccessorExpr;
+}
+
+bool AccessorExpr::isLeftValue() const {
+  return true;
+}
+
+AccessorExpr::AccessorExpr(std::shared_ptr<IdentifierExpr> a, std::shared_ptr<IntegerExpr> b): id{a}, index{b} {}
 
 //=--------------------------------------------------------------------------=//
 // OperatorExpr
@@ -425,6 +447,9 @@ ostream& operator<<(ostream& os, Expr* x) {
   } else if (dynamic_cast<StackPointer*>(x)) {
     auto t = dynamic_cast<StackPointer*>(x);
     os  << "*" << t->location ;
+  } else if (dynamic_cast<ListExpr*>(x)) {
+    auto t = dynamic_cast<ListExpr*>(x);
+    os  << "[" << t->data << "]";
   } else if (x == nullptr) {
     os << "nullptr";
   } else {

@@ -20,6 +20,21 @@ bool Interpreter::visitBoolExpr(std::shared_ptr<BoolExpr> e) {
   return false;
 }
 
+bool Interpreter::visitListExpr(std::shared_ptr<ListExpr> e) {
+  stack.push(e);
+  return false;
+}
+
+bool Interpreter::visitAccessorExpr(std::shared_ptr<AccessorExpr> e) {
+  auto list = std::dynamic_pointer_cast<ListExpr>(stack.get(e->id->decl->location));
+  if (e->index->getInt() >= list->data->size()) {
+    throw std::string("runtime error: index out of bounds\n");
+  } else {
+    stack.push((*list->data)[e->index->getInt()]);
+  }
+  return false;
+}
+
 bool Interpreter::visitTupleExpr(std::shared_ptr<TupleExpr> e) {
   if (e->list) {
     traverse(e->list);
@@ -64,7 +79,17 @@ bool Interpreter::visitBinaryExpr(std::shared_ptr<BinaryExpr> s) {
   traverse(s->right);
 
   if (s->op->group.assignment) {
-    stack.set(std::dynamic_pointer_cast<IdentifierExpr>(s->left)->decl->location, stack.top());
+    if (!s->left->isLeftValue()) {
+      throw std::string("error: can not assign to a r-value\n");
+    } else if (std::dynamic_pointer_cast<IdentifierExpr>(s->left)) {
+      stack.set(std::dynamic_pointer_cast<IdentifierExpr>(s->left)->decl->location, stack.top());
+    } else if (std::dynamic_pointer_cast<AccessorExpr>(s->left)) {
+      auto accessor = std::dynamic_pointer_cast<AccessorExpr>(s->left);
+      auto list = std::dynamic_pointer_cast<ListExpr>(stack.get(accessor->id->decl->location));
+      (*list->data)[accessor->index->getInt()] = stack.top();
+    } else {
+      throw std::string("error: this type of l-value is not yet implemented\n");
+    }
     return false;
   }
 

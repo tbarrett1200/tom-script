@@ -4,7 +4,6 @@
 #include "AST/AmbiguousDecl.h"
 #include "Parse/Parser.h"
 
-
 bool TypeChecker::visitStringExpr(std::shared_ptr<StringExpr> e) {
   e->type = Parser::makeType("String");
   return false;
@@ -28,6 +27,20 @@ bool TypeChecker::visitBoolExpr(std::shared_ptr<BoolExpr> e) {
 bool TypeChecker::visitTupleExpr(std::shared_ptr<TupleExpr> e) {
   traverse(e->list);
   e->type = std::make_shared<TupleType>(e->list->getTypeList());
+  return false;
+}
+
+bool TypeChecker::visitListExpr(std::shared_ptr<ListExpr> e) {
+  traverse(e->data);
+  auto firstElementType = (*e->data)[0]->type;
+  e->type = std::make_shared<ListType>(firstElementType);
+  for (int i = 0; i < e->data->size(); i++) {
+    if (*firstElementType != (*(*e->data)[i]->type)) {
+      std::stringstream ss;
+      ss << "error: list must have homogenous type " << (*e->data)[i]->type << " vs " << firstElementType << std::endl;
+      throw ss.str();
+    }
+  }
   return false;
 }
 
@@ -114,6 +127,17 @@ bool TypeChecker::visitBinaryExpr(std::shared_ptr<BinaryExpr> e) {
   e->op->paramType = std::make_shared<TypeList>(std::vector<std::shared_ptr<Type>>{e->left->type, e->right->type});
   traverseExpr(e->op);
   e->type = e->op->type->as<FunctionType>()->returns;
+  return false;
+}
+
+bool TypeChecker::visitAccessorExpr(std::shared_ptr<AccessorExpr> e) {
+  traverse(e->id);
+  e->type = e->id->type;
+  if (std::dynamic_pointer_cast<ListType>(e->type)) {
+    e->type = std::dynamic_pointer_cast<ListType>(e->type)->type;
+  } else {
+    throw std::string("error: can only access list elements\n");
+  }
   return false;
 }
 
