@@ -284,6 +284,18 @@ std::shared_ptr<TupleExpr> TupleExpr::make(std::shared_ptr<ExprList> l) {
 TupleExpr::TupleExpr(shared_ptr<ExprList> l) : list{move(l)} {}
 
 //=--------------------------------------------------------------------------=//
+// ListExpr
+//=--------------------------------------------------------------------------=//
+
+Expr::Kind ListExpr::getKind() const {
+  return Kind::ListExpr;
+}
+bool ListExpr::isLeftValue() const {
+  return false;
+}
+ListExpr::ListExpr(std::vector<std::shared_ptr<Expr>> d): data{d} {}
+
+//=--------------------------------------------------------------------------=//
 // OperatorExpr
 //=--------------------------------------------------------------------------=//
 

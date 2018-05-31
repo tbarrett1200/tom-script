@@ -146,7 +146,7 @@ bool Interpreter::visitWhileLoop(std::shared_ptr<WhileLoop> s) {
   if (s->condition) {
     while(true) {
       traverse(s->condition);
-      if (stack.top()->as<BoolExpr>()->getLexeme() == "true") {
+      if (stack.top()->as<BoolExpr>()->getBool()) {
         stack.pop();
         traverse(s->stmt);
       } else {

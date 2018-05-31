@@ -9,7 +9,6 @@
 #include "Sema/TypeChecker.h"
 #include "Sema/Interpreter.h"
 
-
 int main(int argc, char const *argv[]) {
   std::cout << "tom-script (0.1) Enter ':help' for help and ':quit' to quit" << std::endl;
   auto source = SourceCode{};
@@ -20,6 +19,7 @@ int main(int argc, char const *argv[]) {
     if (!parser.token().is(Token::eof)) {
       try {
         auto stmt = parser.parseStmt();
+        std::cout << stmt.get() << std::endl;
         try {
           semantic.traverse(stmt);
           interpreter.traverse(stmt);

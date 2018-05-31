@@ -122,6 +122,16 @@ public:
 
 };
 
+class ListExpr: public Expr {
+private:
+  std::vector<std::shared_ptr<Expr>> data;
+
+public:
+  Expr::Kind getKind() const;
+  bool isLeftValue() const;
+  ListExpr(std::vector<std::shared_ptr<Expr>> d);
+};
+
 class IdentifierExpr: public Expr, public Terminal  {
 public:
   Token token;
