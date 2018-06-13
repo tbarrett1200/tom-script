@@ -1,9 +1,0 @@
-var a = 4.0;
-var b = 4;
-var c = "4.0";
-
-func foo() -> String {
-  return "Hello\n";
-}
-
-printf("%s", foo());
