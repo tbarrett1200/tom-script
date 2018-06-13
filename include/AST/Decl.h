@@ -22,7 +22,6 @@ public:
     #undef DECL
   };
 
-  SourceLocation start;
 
   virtual Decl::Kind getKind() const = 0;
   virtual std::string getName() const = 0;

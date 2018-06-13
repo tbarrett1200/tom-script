@@ -7,6 +7,7 @@
 #include "AST/Matchable.h"
 #include "Parse/Token.h"
 #include "Basic/SourceCode.h"
+#include "Sema/Protocol.h"
 
 class DeclarationContext;
 
@@ -20,6 +21,7 @@ public:
 
   template<typename T> const T* as() const;
   virtual Type::Kind getKind() const = 0;
+
 
 };
 

@@ -48,7 +48,7 @@ int ExprList::size() const {
 }
 
 std::shared_ptr<TypeList> ExprList::getTypeList() const {
-  return std::make_shared<TypeList>(element->type, list ? list->getTypeList() : nullptr);
+  return std::make_shared<TypeList>(element->getType(), list ? list->getTypeList() : nullptr);
 }
 
 std::shared_ptr<Expr>& ExprList::operator[] (int x) {
@@ -127,14 +127,11 @@ bool StringExpr::isLeftValue() const {
 
 std::string StringExpr::getString() const { return token.lexeme.substr(1,token.lexeme.size()-2); }
 
-StringExpr::StringExpr(std::string s) : token{"\"" + s + "\"", Token::string_literal, 0, 0, 0} {
-  type = {Parser::makeType("String")};
-}
+StringExpr::StringExpr(std::string s) : token{"\"" + s + "\"", Token::string_literal, 0, 0, 0} {}
 
 
 StringExpr::StringExpr(Token t) : token{t} {
   if (t.isNot(Token::string_literal)) {
-    type = {Parser::makeType("String")};
     throw std::domain_error("StringExpr requires a token of type string_literal");
   }
 }
@@ -158,12 +155,9 @@ bool IntegerExpr::isLeftValue() const {
   return false;
 }
 
-IntegerExpr::IntegerExpr(int i) : token{to_string(i), Token::integer_literal, 0, 0, 0} {
-  type = {Parser::makeType("Int")};
-}
+IntegerExpr::IntegerExpr(int i) : token{to_string(i), Token::integer_literal, 0, 0, 0} {}
 
 IntegerExpr::IntegerExpr(Token t) : token{t} {
-  type = {Parser::makeType("Int")};
   if (t.isNot(Token::integer_literal)) {
     throw std::domain_error("IntegerExpr requires a token of type integer_literal");
   }
@@ -189,7 +183,6 @@ bool BoolExpr::isLeftValue() const {
 }
 
 BoolExpr::BoolExpr(bool b) {
-  type = {Parser::makeType("Bool")};
 
   if (b) {
     token = Token{"true", Token::kw_true, 0, 0, 0};
@@ -199,7 +192,6 @@ BoolExpr::BoolExpr(bool b) {
 }
 
 BoolExpr::BoolExpr(Token t) : token{t} {
-  type = {Parser::makeType("Bool")};
   if (!(t.isAny({Token::kw_true, Token::kw_false}))) {
     throw std::domain_error("BoolExpr requires a boolean literal");
   }
@@ -227,11 +219,9 @@ double DoubleExpr::getDouble() {
 
 
 DoubleExpr::DoubleExpr(double i) : token{to_string(i), Token::double_literal, 0, 0, 0} {
-  type = {Parser::makeType("Double")};
 }
 
 DoubleExpr::DoubleExpr(Token t) : token{t} {
-  type = {Parser::makeType("Double")};
   if (t.isNot(Token::double_literal)) {
     throw std::domain_error("DoubleExpr requires a token of type double_literal");
   }

@@ -31,6 +31,7 @@ public:
   bool visitParamDecl(std::shared_ptr<ParamDecl> d);
   bool visitLetDecl(std::shared_ptr<LetDecl> d);
   bool visitVarDecl(std::shared_ptr<VarDecl> d);
+
 };
 
 #endif

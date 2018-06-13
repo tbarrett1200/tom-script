@@ -6,29 +6,39 @@
 #include "Parse/Operator.h"
 #include "Parse/Token.h"
 #include "Basic/SourceCode.h"
+#include "Sema/TypeAnnotatable.h"
 
 #include <memory>
 #include <stack>
 
 class Decl;
 
-class Expr : virtual public Matchable {
+class Expr : public TypeAnnotatable, virtual public Matchable {
+private:
+  std::shared_ptr<Type> type;
+
 public:
   enum class Kind {
     #define EXPR(SELF, PARENT) SELF,
     #include "AST/Expr.def"
     #undef EXPR
   };
-  SourceLocation start;
-
-  std::shared_ptr<Type> type;
   template<typename T> T* as() {
     return dynamic_cast<T*>(this);
   }
-
   virtual bool isLeftValue() const = 0;
   virtual Expr::Kind getKind() const = 0;
 
+  /* implements the TypeAnnotatable interface */
+  void setType(std::shared_ptr<Type> t) {
+    type = t;
+  };
+  std::shared_ptr<Type> getType() const {
+    return type;
+  };
+  bool isTypeSet() const {
+    return type != nullptr;
+  };
 };
 
 class ExprList : public NonTerminal {

@@ -5,40 +5,41 @@
 #include "Parse/Parser.h"
 #include "Basic/CompilerException.h"
 
+
 bool TypeChecker::visitStringExpr(std::shared_ptr<StringExpr> e) {
-  e->type = Parser::makeType("String");
+  e->setType(Parser::makeType("String"));
   return false;
 }
 
 bool TypeChecker::visitIntegerExpr(std::shared_ptr<IntegerExpr> e) {
-  e->type = Parser::makeType("Int");
+  e->setType(Parser::makeType("Int"));
   return false;
 }
 
 bool TypeChecker::visitDoubleExpr(std::shared_ptr<DoubleExpr> e) {
-  e->type = Parser::makeType("Double");
+  e->setType(Parser::makeType("Double"));
   return false;
 }
 
 bool TypeChecker::visitBoolExpr(std::shared_ptr<BoolExpr> e) {
-  e->type = Parser::makeType("Bool");
+  e->setType(Parser::makeType("Bool"));
   return false;
 }
 
 bool TypeChecker::visitTupleExpr(std::shared_ptr<TupleExpr> e) {
   traverse(e->list);
-  e->type = std::make_shared<TupleType>(e->list->getTypeList());
+  e->setType(std::make_shared<TupleType>(e->list->getTypeList()));
   return false;
 }
 
 bool TypeChecker::visitListExpr(std::shared_ptr<ListExpr> e) {
   traverse(e->data);
-  auto firstElementType = (*e->data)[0]->type;
-  e->type = std::make_shared<ListType>(firstElementType);
+  auto firstElementType = (*e->data)[0]->getType();
+  e->setType(std::make_shared<ListType>(firstElementType));
   for (int i = 0; i < e->data->size(); i++) {
-    if (*firstElementType != (*(*e->data)[i]->type)) {
+    if (*firstElementType != (*(*e->data)[i]->getType())) {
       std::stringstream ss;
-      ss << "error: list must have homogenous type " << (*e->data)[i]->type << " vs " << firstElementType ;
+      ss << "error: list must have homogenous type " << (*e->data)[i]->getType() << " vs " << firstElementType ;
       throw CompilerException(e->getLocation(), ss.str());
     }
   }
@@ -47,7 +48,7 @@ bool TypeChecker::visitListExpr(std::shared_ptr<ListExpr> e) {
 
 bool TypeChecker::visitLabeledExpr(std::shared_ptr<LabeledExpr> e) {
   traverse(e->expr);
-  e->type = std::make_shared<LabeledType>(std::make_shared<TypeLabel>(e->label->name), e->expr->type);
+  e->setType(std::make_shared<LabeledType>(std::make_shared<TypeLabel>(e->label->name), e->expr->getType()));
   return false;
 }
 
@@ -60,7 +61,7 @@ bool TypeChecker::visitIdentifierExpr(std::shared_ptr<IdentifierExpr> e) {
     throw CompilerException(e->getLocation(), "error: " + e->getLexeme() + " is ambiguous");
 
   } else {
-    e->type = decls.get()->getType();
+    e->setType(decls.get()->getType());
     e->decl = decls.get();
   }
 
@@ -83,7 +84,7 @@ bool TypeChecker::visitOperatorExpr(std::shared_ptr<OperatorExpr> e) {
     ss << "error: "  << e->getLexeme() << " is ambiguous" ;
     throw CompilerException(e->getLocation(), ss.str());
   } else {
-    e->type = decls.get()->getType();
+    e->setType(decls.get()->getType());
     e->decl = std::dynamic_pointer_cast<FuncDecl>(decls.get());
   }
 
@@ -97,9 +98,9 @@ bool TypeChecker::visitUnaryExpr(std::shared_ptr<UnaryExpr> e) {
     throw CompilerException(e->getLocation(), ss.str());
   }
   traverseExpr(e->expr);
-  e->op->paramType = std::make_shared<TypeList>(std::vector<std::shared_ptr<Type>>{e->expr->type});
+  e->op->paramType = std::make_shared<TypeList>(std::vector<std::shared_ptr<Type>>{e->expr->getType()});
   traverseExpr(e->op);
-  e->type = e->op->type->as<FunctionType>()->returns;
+  e->setType(e->op->getType()->as<FunctionType>()->returns);
   return false;
 }
 
@@ -113,26 +114,26 @@ bool TypeChecker::visitBinaryExpr(std::shared_ptr<BinaryExpr> e) {
       ss << "error: "  << "r-value reference in assignment" ;
       throw CompilerException(e->getLocation(), ss.str());
     }
-    if (*e->left->type != *e->right->type) {
+    if (*e->left->getType() != *e->right->getType()) {
       std::stringstream ss;
       ss << "error: "  << "assignment types do not match" ;
       throw CompilerException(e->getLocation(), ss.str());
     }
-    e->type = Parser::makeType("Void");
+    e->setType(Parser::makeType("Void"));
     return false;
   }
 
-  e->op->paramType = std::make_shared<TypeList>(std::vector<std::shared_ptr<Type>>{e->left->type, e->right->type});
+  e->op->paramType = std::make_shared<TypeList>(std::vector<std::shared_ptr<Type>>{e->left->getType(), e->right->getType()});
   traverseExpr(e->op);
-  e->type = e->op->type->as<FunctionType>()->returns;
+  e->setType(e->op->getType()->as<FunctionType>()->returns);
   return false;
 }
 
 bool TypeChecker::visitAccessorExpr(std::shared_ptr<AccessorExpr> e) {
   traverse(e->id);
-  e->type = e->id->type;
-  if (std::dynamic_pointer_cast<ListType>(e->type)) {
-    e->type = std::dynamic_pointer_cast<ListType>(e->type)->type;
+  e->setType(e->id->getType());
+  if (std::dynamic_pointer_cast<ListType>(e->getType())) {
+    e->setType(std::dynamic_pointer_cast<ListType>(e->getType())->type);
   } else {
     throw CompilerException(e->getLocation(), "error: can only access list elements\n");
   }
@@ -158,7 +159,7 @@ bool TypeChecker::visitFunctionCall(std::shared_ptr<FunctionCall> e) {
     ss << "error: "  << e->name->getLexeme() << " is ambiguous" ;
     throw CompilerException(e->getLocation(), ss.str());
   } else {
-    e->type = decls.get()->getType()->as<FunctionType>()->returns;
+    e->setType(decls.get()->getType()->as<FunctionType>()->returns);
     e->decl = std::dynamic_pointer_cast<FuncDecl>(decls.get());
   }
   return false;
@@ -224,9 +225,9 @@ bool TypeChecker::visitReturnStmt(std::shared_ptr<ReturnStmt> s) {
     throw CompilerException(s->getLocation(), ss.str());
   } else {
     traverseExpr(s->expr);
-    if (*s->expr->type != *returns) {
+    if (*s->expr->getType() != *returns) {
       std::stringstream ss;
-      ss << "error: you're returning the wrong type dipshit " << this->returns << " vs " << s->expr->type ;
+      ss << "error: you're returning the wrong type dipshit " << this->returns << " vs " << s->expr->getType() ;
       throw CompilerException(s->getLocation(), ss.str());
     }
   }
@@ -245,7 +246,7 @@ bool TypeChecker::visitParamDecl(std::shared_ptr<ParamDecl> d) {
 bool TypeChecker::visitLetDecl(std::shared_ptr<LetDecl> d) {
   d->setContext(context);
   traverseExpr(d->expr);
-  d->type = d->expr->type;
+  d->type = d->expr->getType();
   if (context->hasLocal(d)) {
     std::stringstream ss;
     ss << "error: redeclaration of " << *d ;
@@ -257,7 +258,7 @@ bool TypeChecker::visitLetDecl(std::shared_ptr<LetDecl> d) {
 bool TypeChecker::visitVarDecl(std::shared_ptr<VarDecl> d) {
   d->setContext(context);
   traverseExpr(d->expr);
-  d->type = d->expr->type;
+  d->type = d->expr->getType();
   if (context->hasLocal(d)) {
     std::stringstream ss;
     ss << "error: redeclaration of " << *d ;

@@ -46,7 +46,7 @@ bool Interpreter::visitTupleExpr(std::shared_ptr<TupleExpr> e) {
     }
     std::reverse(elements.begin(), elements.end());
     auto tuple = TupleExpr::make(elements);
-    tuple->type = e->type;
+    tuple->setType(e->getType());
     stack.push(tuple);
     return false;
   }
@@ -142,8 +142,8 @@ bool Interpreter::visitReturnStmt(std::shared_ptr<ReturnStmt> s) {
 
 bool Interpreter::visitExprStmt(std::shared_ptr<ExprStmt> s) {
   traverse(s->expr);
-  if (*s->expr->type != *Parser::makeType("Void")) {
-    std::cout << stack.top()->type << ": " << stack.top() << std::endl;
+  if (*s->expr->getType() != *Parser::makeType("Void")) {
+    std::cout << stack.top()->getType() << ": " << stack.top() << std::endl;
   }
   stack.pop();
   return false;

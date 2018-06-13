@@ -19,8 +19,6 @@ public:
     #undef STMT
   };
 
-  SourceLocation start;
-
   virtual bool returns() const = 0;
   virtual Stmt::Kind getKind() const = 0;
 };
