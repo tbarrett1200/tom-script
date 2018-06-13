@@ -4,6 +4,7 @@
 #import "AST/Matchable.h"
 #import "AST/Expr.h"
 #import "AST/Decl.h"
+#include "Basic/SourceCode.h"
 
 #import <memory>
 
@@ -17,6 +18,9 @@ public:
     #include "AST/Stmt.def"
     #undef STMT
   };
+
+  SourceLocation start;
+
   virtual bool returns() const = 0;
   virtual Stmt::Kind getKind() const = 0;
 };

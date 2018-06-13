@@ -1,6 +1,7 @@
 #include "Parse/Parser.h"
 #include "AST/Decl.h"
 #include "AST/Type.h"
+#include "Basic/CompilerException.h"
 
 #include <memory>
 
@@ -10,7 +11,7 @@ std::shared_ptr<Decl> Parser::makeDecl(std::string text) {
   auto source = SourceCode{sstream, "factory"};
   auto parser = Parser{&source};
   auto type = parser.parseDecl();
-  if (!type) throw std::string("parse error");
+  if (!type) throw CompilerException(type->getLocation(), "parse error");
   return type;
 }
 
@@ -19,7 +20,7 @@ std::shared_ptr<Decl> Parser::makeTypeDecl(std::string text) {
   auto source = SourceCode{sstream, "factory"};
   auto parser = Parser{&source};
   auto type = parser.parseTypeDecl();
-  if (!type) throw std::string("parse error");
+  if (!type) throw CompilerException(type->getLocation(), "parse error");
   return type;
 }
 
@@ -28,7 +29,7 @@ std::shared_ptr<Decl> Parser::makeFuncDecl(std::string text) {
   auto source = SourceCode{sstream, "factory"};
   auto parser = Parser{&source};
   auto type = parser.parseUndefFuncDecl();
-  if (!type) throw std::string("parse error");
+  if (!type) throw CompilerException(type->getLocation(), "parse error");
   return type;
 }
 
@@ -44,7 +45,7 @@ std::shared_ptr<FuncDecl> Parser::parseUndefFuncDecl() {
   auto name = expectToken({Token::identifier, Token::operator_id}, "identifier");
   expectToken(Token::l_paren, "left parenthesis");
   auto param = acceptToken(Token::r_paren) ? nullptr : parseParamDeclList();
-  expectToken(Token::r_paren, "right parenthesis");  if (!consumeOperator("->")) throw report(token(), "error: expected ->");
+  expectToken(Token::r_paren, "right parenthesis");  if (!consumeOperator("->")) throw CompilerException(token().getLocation(),  "error: expected ->");
   auto type = parseType();
   return std::make_shared<FuncDecl>(name, param, type, nullptr);
 }
@@ -55,13 +56,13 @@ std::shared_ptr<Decl> Parser::parseDecl() {
   case Token::kw_let: return parseLetDecl();
   case Token::kw_func: return parseFuncDecl();
   case Token::kw_typealias: return parseTypeAlias();
-  default: throw report(token(), "error: unable to parse decl");
+  default: throw CompilerException(token().getLocation(),  "error: unable to parse decl");
   }
 }
 std::shared_ptr<TypeAlias> Parser::parseTypeAlias() {
   expectToken(Token::kw_typealias, "typedecl");
   auto name = expectToken(Token::identifier, "identifier");
-  if (!consumeOperator("=")) throw report(token(), "expected '='");
+  if (!consumeOperator("=")) throw CompilerException(token().getLocation(),  "expected '='");
   auto type = parseType();
   return std::make_shared<TypeAlias>(name, move(type));
 }
@@ -72,7 +73,7 @@ std::shared_ptr<VarDecl> Parser::parseVarDecl() {
   std::shared_ptr<Type> type = consumeToken(Token::colon)? parseType(): nullptr;
   std::shared_ptr<Expr> expr = consumeOperator("=")? parseExpr(): nullptr;
   if (type || expr) return std::make_shared<VarDecl>(name, move(type), move(expr));
-  else throw report(token(), "expected type or expression");
+  else throw CompilerException(token().getLocation(),  "expected type or expression");
 }
 
 std::shared_ptr<LetDecl> Parser::parseLetDecl() {
@@ -82,7 +83,7 @@ std::shared_ptr<LetDecl> Parser::parseLetDecl() {
   if (consumeOperator("=")) {
     auto expr = parseExpr();
     return std::make_shared<LetDecl>(name, move(type), move(expr));
-  } else throw report(token(), "constants must be initialized at declaration");
+  } else throw CompilerException(token().getLocation(),  "constants must be initialized at declaration");
 }
 
 std::shared_ptr<ParamDecl> Parser::parseParamDecl() {
@@ -105,7 +106,7 @@ std::shared_ptr<FuncDecl> Parser::parseFuncDecl() {
   expectToken(Token::l_paren, "left parenthesis");
   auto param = acceptToken(Token::r_paren) ? nullptr : parseParamDeclList();
   expectToken(Token::r_paren, "right parenthesis");
-  if (!consumeOperator("->")) throw report(token(), "error: expected ->");
+  if (!consumeOperator("->")) throw CompilerException(token().getLocation(),  "error: expected ->");
   auto type = parseType();
   auto stmt = parseCompoundStmt();
   return std::make_shared<FuncDecl>(name, param, type, stmt);

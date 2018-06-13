@@ -5,6 +5,8 @@
 #include "AST/Matchable.h"
 #include "AST/DeclarationContext.h"
 #include "Sema/MemoryLoc.h"
+#include "Basic/SourceCode.h"
+
 #include <vector>
 
 class CompoundStmt;
@@ -19,6 +21,9 @@ public:
     #include "AST/Decl.def"
     #undef DECL
   };
+
+  SourceLocation start;
+
   virtual Decl::Kind getKind() const = 0;
   virtual std::string getName() const = 0;
 

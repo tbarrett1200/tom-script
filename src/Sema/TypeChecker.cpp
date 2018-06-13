@@ -3,6 +3,7 @@
 #include "AST/Type.h"
 #include "AST/AmbiguousDecl.h"
 #include "Parse/Parser.h"
+#include "Basic/CompilerException.h"
 
 bool TypeChecker::visitStringExpr(std::shared_ptr<StringExpr> e) {
   e->type = Parser::makeType("String");
@@ -37,8 +38,8 @@ bool TypeChecker::visitListExpr(std::shared_ptr<ListExpr> e) {
   for (int i = 0; i < e->data->size(); i++) {
     if (*firstElementType != (*(*e->data)[i]->type)) {
       std::stringstream ss;
-      ss << "error: list must have homogenous type " << (*e->data)[i]->type << " vs " << firstElementType << std::endl;
-      throw ss.str();
+      ss << "error: list must have homogenous type " << (*e->data)[i]->type << " vs " << firstElementType ;
+      throw CompilerException(e->getLocation(), ss.str());
     }
   }
   return false;
@@ -54,13 +55,10 @@ bool TypeChecker::visitIdentifierExpr(std::shared_ptr<IdentifierExpr> e) {
   AmbiguousDecl decls = context->filter(e);
 
   if (decls.isEmpty()) {
-    std::stringstream ss;
-    ss << "error: "  << e->getLexeme() << " has not been declared" << std::endl;
-    throw ss.str();
+    throw CompilerException(e->getLocation(), "error: " + e->getLexeme() + " has not been declared");
   } else if (decls.isAmbiguous()) {
-    std::stringstream ss;
-    ss << "error: "  << e->getLexeme() << " is ambiguous" << std::endl;
-    throw ss.str();
+    throw CompilerException(e->getLocation(), "error: " + e->getLexeme() + " is ambiguous");
+
   } else {
     e->type = decls.get()->getType();
     e->decl = decls.get();
@@ -78,12 +76,12 @@ bool TypeChecker::visitOperatorExpr(std::shared_ptr<OperatorExpr> e) {
 
   if (decls.isEmpty()) {
     std::stringstream ss;
-    ss << "error: "  << e->getLexeme() << e->paramType << " has not been declared" << std::endl;
-    throw ss.str();
+    ss << "error: "  << e->getLexeme() << e->paramType << " has not been declared" ;
+    throw CompilerException(e->getLocation(), ss.str());
   } else if (decls.isAmbiguous()) {
     std::stringstream ss;
-    ss << "error: "  << e->getLexeme() << " is ambiguous" << std::endl;
-    throw ss.str();
+    ss << "error: "  << e->getLexeme() << " is ambiguous" ;
+    throw CompilerException(e->getLocation(), ss.str());
   } else {
     e->type = decls.get()->getType();
     e->decl = std::dynamic_pointer_cast<FuncDecl>(decls.get());
@@ -95,8 +93,8 @@ bool TypeChecker::visitOperatorExpr(std::shared_ptr<OperatorExpr> e) {
 bool TypeChecker::visitUnaryExpr(std::shared_ptr<UnaryExpr> e) {
   if (e->op->group.assignment && !e->expr->isLeftValue()) {
     std::stringstream ss;
-    ss << "error: "  << "r-value reference in assignment" << std::endl;
-    throw ss.str();
+    ss << "error: "  << "r-value reference in assignment" ;
+    throw CompilerException(e->getLocation(), ss.str());
   }
   traverseExpr(e->expr);
   e->op->paramType = std::make_shared<TypeList>(std::vector<std::shared_ptr<Type>>{e->expr->type});
@@ -112,13 +110,13 @@ bool TypeChecker::visitBinaryExpr(std::shared_ptr<BinaryExpr> e) {
   if (e->op->group.assignment) {
     if (!e->left->isLeftValue()) {
       std::stringstream ss;
-      ss << "error: "  << "r-value reference in assignment" << std::endl;
-      throw ss.str();
+      ss << "error: "  << "r-value reference in assignment" ;
+      throw CompilerException(e->getLocation(), ss.str());
     }
     if (*e->left->type != *e->right->type) {
       std::stringstream ss;
-      ss << "error: "  << "assignment types do not match" << std::endl;
-      throw ss.str();
+      ss << "error: "  << "assignment types do not match" ;
+      throw CompilerException(e->getLocation(), ss.str());
     }
     e->type = Parser::makeType("Void");
     return false;
@@ -136,7 +134,7 @@ bool TypeChecker::visitAccessorExpr(std::shared_ptr<AccessorExpr> e) {
   if (std::dynamic_pointer_cast<ListType>(e->type)) {
     e->type = std::dynamic_pointer_cast<ListType>(e->type)->type;
   } else {
-    throw std::string("error: can only access list elements\n");
+    throw CompilerException(e->getLocation(), "error: can only access list elements\n");
   }
   return false;
 }
@@ -153,12 +151,12 @@ bool TypeChecker::visitFunctionCall(std::shared_ptr<FunctionCall> e) {
 
   if (decls.isEmpty()) {
     std::stringstream ss;
-    ss << "error: "  << e->name->getLexeme() << " has not been declared" << std::endl;
-    throw ss.str();
+    ss << "error: "  << e->name->getLexeme() << " has not been declared" ;
+    throw CompilerException(e->getLocation(), ss.str());
   } else if (decls.isAmbiguous()) {
     std::stringstream ss;
-    ss << "error: "  << e->name->getLexeme() << " is ambiguous" << std::endl;
-    throw ss.str();
+    ss << "error: "  << e->name->getLexeme() << " is ambiguous" ;
+    throw CompilerException(e->getLocation(), ss.str());
   } else {
     e->type = decls.get()->getType()->as<FunctionType>()->returns;
     e->decl = std::dynamic_pointer_cast<FuncDecl>(decls.get());
@@ -179,8 +177,8 @@ bool TypeChecker::visitTypeAlias(std::shared_ptr<TypeAlias> d) {
   d->setContext(context);
   if (context->hasLocal(d)) {
     std::stringstream ss;
-    ss << "error: redeclaration of " << *d << std::endl;
-    throw ss;
+    ss << "error: redeclaration of " << *d ;
+    throw CompilerException(d->getLocation(), ss.str());
   } else {
     context->add(d);
   }
@@ -191,8 +189,8 @@ bool TypeChecker::visitFuncDecl(std::shared_ptr<FuncDecl> d) {
   // checks for redeclaration
   if (context->hasLocal(d)) {
     std::stringstream ss;
-    ss << "error: redeclaration of " << *d << std::endl;
-    throw ss.str();
+    ss << "error: redeclaration of " << *d ;
+    throw CompilerException(d->getLocation(), ss.str());
   }
   // sets context for deeper checking
   context->add(d);
@@ -208,7 +206,7 @@ bool TypeChecker::visitFuncDecl(std::shared_ptr<FuncDecl> d) {
     returns = d->type->returns;
     traverseCompoundStmt(d->stmt);
     returns = nullptr;
-    if (*d->returnType != *Parser::makeType("Void") && !d->stmt->returns()) throw std::string("error: doesn't return\n");
+    if (*d->returnType != *Parser::makeType("Void") && !d->stmt->returns()) throw CompilerException(d->getLocation(), "error: doesn't return\n");
   }
 
   context = context->getParent();
@@ -218,18 +216,18 @@ bool TypeChecker::visitFuncDecl(std::shared_ptr<FuncDecl> d) {
 bool TypeChecker::visitReturnStmt(std::shared_ptr<ReturnStmt> s) {
   if (!returns) {
     std::stringstream ss;
-    ss << "error: you can't return here dipshit " << std::endl;
-    throw ss.str();
+    ss << "error: you can't return here dipshit " ;
+    throw CompilerException(s->getLocation(), ss.str());
   } else if (returns && *returns != *Parser::makeType("Void") && !s->expr){
     std::stringstream ss;
-    ss << "error: you gotta return something dipshit " << std::endl;
-    throw ss.str();
+    ss << "error: you gotta return something dipshit " ;
+    throw CompilerException(s->getLocation(), ss.str());
   } else {
     traverseExpr(s->expr);
     if (*s->expr->type != *returns) {
       std::stringstream ss;
-      ss << "error: you're returning the wrong type dipshit " << this->returns << " vs " << s->expr->type << std::endl;
-      throw ss.str();
+      ss << "error: you're returning the wrong type dipshit " << this->returns << " vs " << s->expr->type ;
+      throw CompilerException(s->getLocation(), ss.str());
     }
   }
   return false;
@@ -250,8 +248,8 @@ bool TypeChecker::visitLetDecl(std::shared_ptr<LetDecl> d) {
   d->type = d->expr->type;
   if (context->hasLocal(d)) {
     std::stringstream ss;
-    ss << "error: redeclaration of " << *d << std::endl;
-    throw ss.str();
+    ss << "error: redeclaration of " << *d ;
+    throw CompilerException(d->getLocation(), ss.str());
   } else context->add(d);
   return false;
 }
@@ -262,8 +260,8 @@ bool TypeChecker::visitVarDecl(std::shared_ptr<VarDecl> d) {
   d->type = d->expr->type;
   if (context->hasLocal(d)) {
     std::stringstream ss;
-    ss << "error: redeclaration of " << *d << std::endl;
-    throw ss.str();
+    ss << "error: redeclaration of " << *d ;
+    throw CompilerException(d->getLocation(), ss.str());
   } else context->add(d);
   return false;
 }

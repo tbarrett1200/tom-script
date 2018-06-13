@@ -1,4 +1,6 @@
 #include "Sema/Interpreter.h"
+#include "Basic/CompilerException.h"
+#include "Basic/SourceCode.h"
 
 bool Interpreter::visitStringExpr(std::shared_ptr<StringExpr> e) {
   stack.push(e);
@@ -28,7 +30,7 @@ bool Interpreter::visitListExpr(std::shared_ptr<ListExpr> e) {
 bool Interpreter::visitAccessorExpr(std::shared_ptr<AccessorExpr> e) {
   auto list = std::dynamic_pointer_cast<ListExpr>(stack.get(e->id->decl->location));
   if (e->index->getInt() >= list->data->size()) {
-    throw std::string("runtime error: index out of bounds\n");
+    throw CompilerException(SourceManager::currentFile(), e->getLocation(), CompilerExceptionCategory::Error, "runtime error: index out of bounds");
   } else {
     stack.push((*list->data)[e->index->getInt()]);
   }
@@ -80,7 +82,7 @@ bool Interpreter::visitBinaryExpr(std::shared_ptr<BinaryExpr> s) {
 
   if (s->op->group.assignment) {
     if (!s->left->isLeftValue()) {
-      throw std::string("error: can not assign to a r-value\n");
+      throw CompilerException(s->getLocation(), "error: can not assign to a r-value\n");
     } else if (std::dynamic_pointer_cast<IdentifierExpr>(s->left)) {
       stack.set(std::dynamic_pointer_cast<IdentifierExpr>(s->left)->decl->location, stack.top());
     } else if (std::dynamic_pointer_cast<AccessorExpr>(s->left)) {
@@ -88,7 +90,7 @@ bool Interpreter::visitBinaryExpr(std::shared_ptr<BinaryExpr> s) {
       auto list = std::dynamic_pointer_cast<ListExpr>(stack.get(accessor->id->decl->location));
       (*list->data)[accessor->index->getInt()] = stack.top();
     } else {
-      throw std::string("error: this type of l-value is not yet implemented\n");
+      throw CompilerException(s->getLocation(), "error: this type of l-value is not yet implemented\n");
     }
     return false;
   }

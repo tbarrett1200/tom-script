@@ -31,6 +31,10 @@ bool Token::isNot(int t) {
   return type != t;
 }
 
+SourceLocation Token::getLocation() const {
+  return SourceLocation(row, col);
+}
+
 bool Token::isAny(std::vector<int> types) {
   for(auto t: types) {
     if (type == t) {

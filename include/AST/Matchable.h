@@ -5,16 +5,21 @@
 #include <algorithm>
 #include <initializer_list>
 #include <string>
+#include "Basic/SourceCode.h"
 
 class Matchable {
 public:
   virtual bool matches(const Matchable& m, bool exact = true) const = 0;
   virtual bool isTerminal() const = 0;
   virtual bool isNonTerminal() const = 0;
+  virtual SourceLocation getLocation() const = 0;
   virtual std::vector<std::string> getFlattenedTokens() const = 0;
 };
 
 class Terminal : virtual public Matchable {
+protected:
+  SourceLocation location;
+
 public:
   virtual std::string getLexeme() const = 0;
   virtual bool isTerminal() const { return true; }
@@ -23,6 +28,9 @@ public:
     if (m.isTerminal()) {
       return getLexeme() == dynamic_cast<const Terminal&>(m).getLexeme();
     } else return false;
+  }
+  SourceLocation getLocation() const {
+    return location;
   }
   std::vector<std::string> getFlattenedTokens() const {
     return {this->getLexeme()};
@@ -43,6 +51,9 @@ public:
       }
     }
     return list;
+  }
+  SourceLocation getLocation() const {
+    return this->getChildren()[0]->getLocation();
   }
   bool matches(const Matchable& m, bool exact = true) const {
     if (m.isNonTerminal()) {

@@ -8,6 +8,15 @@
 #include <string>
 #include <stdexcept>
 
+struct SourceLocation {
+  int row, col;
+  SourceLocation() : row{0}, col{0} {};
+  SourceLocation(int r, int c) : row{r}, col{c} {};
+};
+
+std::ostream& operator<<(std::ostream &os, SourceLocation cat);
+
+
 // Stores the source code of a single file and provides common access requests
 // to the file.
 class SourceCode {
@@ -22,7 +31,6 @@ private:
   bool commandLine;
 
 public:
-
   SourceCode(const std::istream &file, std::string name) : path{name}, commandLine{false}{
     //reads the contents of a file into a string
     std::stringstream buffer;
@@ -98,6 +106,12 @@ public:
     }
   }
 
+};
+
+class SourceManager {
+public:
+  static SourceCode* currentSource;
+  static std::string currentFile();
 };
 
 #endif

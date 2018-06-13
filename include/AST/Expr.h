@@ -5,6 +5,7 @@
 #include "AST/AmbiguousType.h"
 #include "Parse/Operator.h"
 #include "Parse/Token.h"
+#include "Basic/SourceCode.h"
 
 #include <memory>
 #include <stack>
@@ -18,15 +19,16 @@ public:
     #include "AST/Expr.def"
     #undef EXPR
   };
+  SourceLocation start;
 
   std::shared_ptr<Type> type;
-
   template<typename T> T* as() {
     return dynamic_cast<T*>(this);
   }
 
   virtual bool isLeftValue() const = 0;
   virtual Expr::Kind getKind() const = 0;
+
 };
 
 class ExprList : public NonTerminal {

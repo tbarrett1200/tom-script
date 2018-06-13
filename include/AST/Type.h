@@ -6,6 +6,7 @@
 
 #include "AST/Matchable.h"
 #include "Parse/Token.h"
+#include "Basic/SourceCode.h"
 
 class DeclarationContext;
 
@@ -16,8 +17,10 @@ public:
     #include "AST/Type.def"
     #undef TYPE
   };
+
   template<typename T> const T* as() const;
   virtual Type::Kind getKind() const = 0;
+
 };
 
 class TypeLabel : public Terminal {

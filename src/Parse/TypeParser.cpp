@@ -1,5 +1,6 @@
 #include "Parse/Parser.h"
 #include "AST/Type.h"
+#include "Basic/CompilerException.h"
 
 #include <memory>
 
@@ -22,7 +23,7 @@ shared_ptr<Type> Parser::parseType() {
     case Token::l_paren: return parseTupleOrFunctionType();
     case Token::identifier: return parseTypeIdentifier();
     case Token::l_square: return parseListOrMapType();
-    default: throw report(token(), "error: unable to parse type");
+    default: throw CompilerException(token().getLocation(),  "error: unable to parse type");
   }
 }
 
@@ -69,7 +70,7 @@ shared_ptr<FunctionType> Parser::parseFunctionType() {
     throw report(label, "error: function type parameter elements may not be labeled");
   }
 
-  if (!consumeOperator("->")) throw report(token(), "error: expected ->");
+  if (!consumeOperator("->")) throw CompilerException(token().getLocation(),  "error: expected ->");
   auto type = parseType();
   return make_shared<FunctionType>(move(list), move(type));
 }

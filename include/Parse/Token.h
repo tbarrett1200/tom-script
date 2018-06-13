@@ -2,6 +2,7 @@
 #define TOKEN_H
 
 #include <string>
+#include "Basic/SourceCode.h"
 
 class Token {
 public:
@@ -20,6 +21,7 @@ public:
   int getType();
   bool is(int type);
   bool isNot(int type);
+  SourceLocation getLocation() const;
   bool isAny(std::vector<int> types);
   friend std::ostream& operator<<(std::ostream& os, const Token& t);
 };

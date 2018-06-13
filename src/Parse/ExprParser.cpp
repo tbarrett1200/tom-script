@@ -1,5 +1,6 @@
 #include "AST/Expr.h"
 #include "Parse/Parser.h"
+#include "Basic/CompilerException.h"
 
 #include <functional>
 #include <stdexcept>
@@ -43,7 +44,7 @@ shared_ptr<OperatorExpr> Parser::parseOperatorExpr(int precedence) {
   if (OperatorTable::level(precedence).contains(tok.lexeme)) {
     consume();
     return make_shared<OperatorExpr>(tok, OperatorTable::level(precedence));
-  } else throw report(token(), "error: expected operator");
+  } else throw CompilerException(token().getLocation(),  "error: expected operator");
 }
 
 shared_ptr<Expr> Parser::parseIdentifierOrFunctionCallOrAccessor() {
@@ -77,7 +78,7 @@ shared_ptr<ExprList> Parser::parseFunctionParameters() {
 
 shared_ptr<Expr> Parser::parseTupleExpr() {
   expectToken(Token::l_paren, "left parenthesis");
-  if (acceptToken(Token::colon)) throw report(token(), "error: expected labeled tuple member");
+  if (acceptToken(Token::colon)) throw CompilerException(token().getLocation(),  "error: expected labeled tuple member");
   auto list = parseExprList();
   expectToken(Token::r_paren, "right parenthesis");
   if (list && list->size() == 1) {
@@ -112,7 +113,10 @@ shared_ptr<Expr> Parser::parseValueExpr() {
     return parseStringExpr();
   case Token::l_paren:
     return parseTupleExpr();
-  default: throw report(token(), "error: expected value, but got " + token().lexeme);
+  default: throw CompilerException(SourceManager::currentFile(),
+                                   token().getLocation(),
+                                   CompilerExceptionCategory::Error,
+                                   "expected value but got " + token().lexeme);
   }
 }
 
