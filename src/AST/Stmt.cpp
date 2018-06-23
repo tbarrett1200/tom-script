@@ -31,7 +31,7 @@ bool StmtList::returns() const {
   else return list->returns();
 }
 
-std::vector<std::shared_ptr<Matchable>> StmtList::getChildren() const {
+std::vector<std::shared_ptr<TreeElement>> StmtList::getChildren() const {
   if (!list) return {element};
       else {
     auto children = list->getChildren();
@@ -58,7 +58,7 @@ bool CompoundStmt::returns() const {
   return list ? list->returns() : false;
 }
 
-std::vector<std::shared_ptr<Matchable>> CompoundStmt::getChildren() const {
+std::vector<std::shared_ptr<TreeElement>> CompoundStmt::getChildren() const {
   return {list};
 }
 
@@ -81,7 +81,7 @@ bool ConditionalStmt::isElseStmt() const {
   return !condition;
 }
 
-std::vector<std::shared_ptr<Matchable>> ConditionalStmt::getChildren() const {
+std::vector<std::shared_ptr<TreeElement>> ConditionalStmt::getChildren() const {
   if (!condition) { return {stmt}; }
   else return {condition, stmt};
 }
@@ -120,7 +120,7 @@ bool ConditionalStmtList::returns() const {
 
 Stmt::Kind ConditionalStmtList::getKind() const { return Kind::ConditionalStmtList; }
 
-std::vector<std::shared_ptr<Matchable>> ConditionalStmtList::getChildren() const {
+std::vector<std::shared_ptr<TreeElement>> ConditionalStmtList::getChildren() const {
   if (!list) return {element};
   else {
     auto children = list->getChildren();
@@ -154,7 +154,7 @@ bool WhileLoop::returns() const {
 
 Stmt::Kind WhileLoop::getKind() const { return Kind::WhileLoop;}
 
-std::vector<std::shared_ptr<Matchable>> WhileLoop::getChildren() const {
+std::vector<std::shared_ptr<TreeElement>> WhileLoop::getChildren() const {
   return {condition, stmt};
 }
 
@@ -172,7 +172,7 @@ bool ReturnStmt::returns() const {
 
 Stmt::Kind ReturnStmt::getKind() const { return Kind::ReturnStmt;}
 
-std::vector<std::shared_ptr<Matchable>> ReturnStmt::getChildren() const {
+std::vector<std::shared_ptr<TreeElement>> ReturnStmt::getChildren() const {
   if (expr) return {expr};
   else return {};
 }
@@ -191,7 +191,7 @@ bool ExprStmt::returns() const {
 
 Stmt::Kind ExprStmt::getKind() const { return Kind::ExprStmt;}
 
-std::vector<std::shared_ptr<Matchable>> ExprStmt::getChildren() const {
+std::vector<std::shared_ptr<TreeElement>> ExprStmt::getChildren() const {
   return {expr};
 }
 
@@ -206,7 +206,7 @@ DeclStmt::DeclStmt(std::shared_ptr<Decl> d): decl{d} {
 
 Stmt::Kind DeclStmt::getKind() const { return Kind::DeclStmt;}
 
-std::vector<std::shared_ptr<Matchable>> DeclStmt::getChildren() const {
+std::vector<std::shared_ptr<TreeElement>> DeclStmt::getChildren() const {
   return {decl};
 }
 

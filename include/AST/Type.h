@@ -4,14 +4,13 @@
 #include <iostream>
 #include <list>
 
-#include "AST/Matchable.h"
+#include "AST/TreeElement.h"
 #include "Parse/Token.h"
 #include "Basic/SourceCode.h"
-#include "Sema/Protocol.h"
 
 class DeclarationContext;
 
-class Type : virtual public Matchable {
+class Type : public TreeElement {
 public:
   enum class Kind {
     #define TYPE(SELF, PARENT) SELF,
@@ -21,22 +20,24 @@ public:
 
   template<typename T> const T* as() const;
   virtual Type::Kind getKind() const = 0;
-
+  SourceLocation getLocation() const {
+    return {0, 0};
+  }
 
 };
 
-class TypeLabel : public Terminal {
+class TypeLabel : public TreeElement {
 public:
   Token token;
 
   // Constructors
   TypeLabel(Token n) : token{n} {}
 
-  // Matchable Overrides
+  // TreeElement Overrides
   std::string getLexeme() const { return token.lexeme; }
 };
 
-class TypeList : public NonTerminal {
+class TypeList : public TreeElement  {
 public:
   std::shared_ptr<Type> element;
   std::shared_ptr<TypeList> list;
@@ -45,8 +46,8 @@ public:
   TypeList(std::vector<std::shared_ptr<Type>> l);
   TypeList(std::shared_ptr<Type> e, std::shared_ptr<TypeList> l);
 
-  // Matchable Overrides
-  std::vector<std::shared_ptr<Matchable>> getChildren() const;
+  // TreeElement Overrides
+  std::vector<std::shared_ptr<TreeElement>> getChildren() const;
 
   // Utility Methods
   int size() const;
@@ -60,7 +61,7 @@ public:
 };
 
 
-class LabeledType : public Type, public NonTerminal {
+class LabeledType : public Type {
 public:
   std::shared_ptr<TypeLabel> label;
   std::shared_ptr<Type> type;
@@ -71,12 +72,12 @@ public:
   // Type Overrides
   Type::Kind getKind() const;
 
-  // Matchable Overrides
-  std::vector<std::shared_ptr<Matchable>> getChildren() const;
+  // TreeElement Overrides
+  std::vector<std::shared_ptr<TreeElement>> getChildren() const;
 };
 
 
-class TypeIdentifier : public Type, public Terminal {
+class TypeIdentifier : public Type {
 public:
   Token token;
 
@@ -86,12 +87,12 @@ public:
   // Type Overrides
   Type::Kind getKind() const { return Kind::TypeIdentifier; }
 
-  // Matchable Overrides
+  // TreeElement Overrides
   std::string getLexeme() const { return token.lexeme; }
 };
 
 
-class TupleType : public Type, public NonTerminal {
+class TupleType : public Type {
 public:
   std::shared_ptr<TypeList> list;
 
@@ -104,11 +105,11 @@ public:
   // Type Overrides
   Type::Kind getKind() const { return Kind::TupleType; }
 
-  // Matchable Overrides
-  std::vector<std::shared_ptr<Matchable>> getChildren() const { return {list}; }
+  // TreeElement Overrides
+  std::vector<std::shared_ptr<TreeElement>> getChildren() const { return {list}; }
 };
 
-class FunctionType : public Type, public NonTerminal {
+class FunctionType : public Type {
 public:
   std::shared_ptr<TypeList> params;
   std::shared_ptr<Type> returns;
@@ -119,13 +120,13 @@ public:
   // Type Overridess
   Type::Kind getKind() const { return Kind::FunctionType; }
 
-  // Matchable Overrides
-  std::vector<std::shared_ptr<Matchable>> getChildren() const {
+  // TreeElement Overrides
+  std::vector<std::shared_ptr<TreeElement>> getChildren() const {
     return {params, returns};
   }
 };
 
-class ListType : public Type, public NonTerminal {
+class ListType : public Type {
 public:
   std::shared_ptr<Type> type;
 
@@ -135,13 +136,13 @@ public:
   // Type Overrides
   Type::Kind getKind() const { return Kind::ListType; }
 
-  // Matchable Overrides
-  std::vector<std::shared_ptr<Matchable>> getChildren() const {
+  // TreeElement Overrides
+  std::vector<std::shared_ptr<TreeElement>> getChildren() const {
     return {type};
   }
 };
 
-class MapType : public Type, public NonTerminal {
+class MapType : public Type {
 public:
   std::shared_ptr<Type> keyType;
   std::shared_ptr<Type> valType;
@@ -152,8 +153,8 @@ public:
   // Type Overrides
   Type::Kind getKind() const { return Kind::MapType; }
 
-  // Matchable Overrides
-  std::vector<std::shared_ptr<Matchable>> getChildren() const {
+  // TreeElement Overrides
+  std::vector<std::shared_ptr<TreeElement>> getChildren() const {
     return {keyType, valType};
   }
 };

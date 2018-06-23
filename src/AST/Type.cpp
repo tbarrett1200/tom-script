@@ -31,7 +31,7 @@ TypeList::TypeList(std::vector<std::shared_ptr<Type>> l) {
 TypeList::TypeList(std::shared_ptr<Type> e, std::shared_ptr<TypeList> l)
 : element{move(e)}, list{move(l)} {}
 
-std::vector<std::shared_ptr<Matchable>> TypeList::getChildren() const {
+std::vector<std::shared_ptr<TreeElement>> TypeList::getChildren() const {
   if (!list) return {element};
   else {
     auto children = list->getChildren();
@@ -60,7 +60,7 @@ LabeledType::LabeledType(std::shared_ptr<TypeLabel> p, std::shared_ptr<Type> t)
 
 Type::Kind LabeledType::getKind() const { return Kind::LabeledType; }
 
-std::vector<std::shared_ptr<Matchable>> LabeledType::getChildren() const {
+std::vector<std::shared_ptr<TreeElement>> LabeledType::getChildren() const {
   return {label, type};
 }
 

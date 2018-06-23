@@ -3,7 +3,7 @@
 #include "AST/Expr.h"
 #include "AST/Stmt.h"
 #include "AST/Decl.h"
-#include "AST/Matchable.h"
+#include "AST/TreeElement.h"
 #include "AST/Decl.h"
 
 #include <sstream>
@@ -44,7 +44,7 @@ std::string DeclName::getLexeme() const {
 std::shared_ptr<Expr> TypeDecl::getExpr() const { return nullptr; };
 void setExpr(std::shared_ptr<Expr> e) {};
 
-std::vector<std::shared_ptr<Matchable>> TypeDecl::getChildren() const { return {name}; }
+std::vector<std::shared_ptr<TreeElement>> TypeDecl::getChildren() const { return {name}; }
 Decl::Kind TypeDecl::getKind() const {return Kind::TypeDecl; }
 std::string TypeDecl::getName() const { return name->token.lexeme; }
 std::shared_ptr<Type> TypeDecl::getType() const { return nullptr; }
@@ -56,7 +56,7 @@ TypeDecl::TypeDecl(Token n) : name{std::make_shared<DeclName>(n)} {}
 // TypeAlias
 //=--------------------------------------------------------------------------=//
 
-std::vector<std::shared_ptr<Matchable>> TypeAlias::getChildren() const {
+std::vector<std::shared_ptr<TreeElement>> TypeAlias::getChildren() const {
   return {name, type};
 }
 std::shared_ptr<Expr> TypeAlias::getExpr() const { return nullptr; };
@@ -74,7 +74,7 @@ TypeAlias::TypeAlias(Token n, std::shared_ptr<Type> t)
 //=--------------------------------------------------------------------------=//
 
 /* Returns a vector of children for easy traversal */
-std::vector<std::shared_ptr<Matchable>> VarDecl::getChildren() const {
+std::vector<std::shared_ptr<TreeElement>> VarDecl::getChildren() const {
   return {name, type, expr};
 }
 
@@ -101,7 +101,7 @@ VarDecl::VarDecl(Token n, std::shared_ptr<Type> t, std::shared_ptr<Expr> e)
 // LetDecl
 //=--------------------------------------------------------------------------=//
 
-std::vector<std::shared_ptr<Matchable>> LetDecl::getChildren() const {
+std::vector<std::shared_ptr<TreeElement>> LetDecl::getChildren() const {
   return {name, type, expr};
 }
 
@@ -142,7 +142,7 @@ std::shared_ptr<Type> ParamDecl::getType() const {
   else return std::make_shared<LabeledType>(std::make_shared<TypeLabel>(primary->token), type);
 }
 
-std::vector<std::shared_ptr<Matchable>> ParamDecl::getChildren() const {
+std::vector<std::shared_ptr<TreeElement>> ParamDecl::getChildren() const {
   return { primary, secondary, type };
 }
 
@@ -163,7 +163,7 @@ void ParamDecl::setContext(DeclarationContext* c) { context = c; }
     return std::make_shared<TypeList>(element->getType(), list ? list->getTypeList(): nullptr);
   }
 
-  std::vector<std::shared_ptr<Matchable>> ParamDeclList::getChildren() const {
+  std::vector<std::shared_ptr<TreeElement>> ParamDeclList::getChildren() const {
     return { element, list };
   }
   void ParamDeclList::setContext(DeclarationContext* c) {
@@ -175,7 +175,7 @@ void ParamDecl::setContext(DeclarationContext* c) { context = c; }
 // FuncDecl
 //=--------------------------------------------------------------------------=//
 
-std::vector<std::shared_ptr<Matchable>> FuncDecl::getChildren() const {
+std::vector<std::shared_ptr<TreeElement>> FuncDecl::getChildren() const {
   if (!stmt) return {name, type};
   else return {name, type, stmt};
 }

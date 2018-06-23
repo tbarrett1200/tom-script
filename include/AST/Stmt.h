@@ -1,7 +1,7 @@
 #ifndef AST_STMT_H
 #define AST_STMT_H
 
-#import "AST/Matchable.h"
+#import "AST/TreeElement.h"
 #import "AST/Expr.h"
 #import "AST/Decl.h"
 #include "Basic/SourceCode.h"
@@ -11,7 +11,7 @@
 class ReturnStmt;
 class ConditionalStmtList;
 
-class Stmt : virtual public Matchable {
+class Stmt : virtual public TreeElement {
 public:
   enum class Kind {
     #define STMT(SELF, PARENT) SELF,
@@ -19,12 +19,15 @@ public:
     #undef STMT
   };
 
+  SourceLocation getLocation() const {
+    return {0, 0};
+  }
   virtual bool returns() const = 0;
   virtual Stmt::Kind getKind() const = 0;
 };
 
 
-class StmtList : public NonTerminal {
+class StmtList : public TreeElement {
 public:
   std::shared_ptr<Stmt> element;
   std::shared_ptr<StmtList> list;
@@ -33,8 +36,8 @@ public:
   StmtList(std::shared_ptr<Stmt> e, std::shared_ptr<StmtList> l);
   StmtList(std::vector<std::shared_ptr<Stmt>> l);
 
-  // Matchable
-  std::vector<std::shared_ptr<Matchable>> getChildren() const;
+  // TreeElement
+  std::vector<std::shared_ptr<TreeElement>> getChildren() const;
 
   // Utility Methods
   template <typename T> bool has() const;
@@ -42,7 +45,7 @@ public:
   int size() const;
 };
 
-class CompoundStmt : public Stmt, public NonTerminal {
+class CompoundStmt : public Stmt {
 public:
   std::shared_ptr<StmtList> list;
   std::shared_ptr<DeclarationContext> context = std::make_shared<DeclarationContext>();
@@ -50,15 +53,15 @@ public:
   // Constructors
   CompoundStmt(std::shared_ptr<StmtList> l);
 
-  // Matchable
-  std::vector<std::shared_ptr<Matchable>> getChildren() const;
+  // TreeElement
+  std::vector<std::shared_ptr<TreeElement>> getChildren() const;
 
   // Utility Methods
   Stmt::Kind getKind() const;
   bool returns() const;
 };
 
-class ConditionalStmt : public Stmt, public NonTerminal {
+class ConditionalStmt : public Stmt {
 public:
   std::shared_ptr<Expr> condition;
   std::shared_ptr<CompoundStmt> stmt;
@@ -69,8 +72,8 @@ public:
   // Stmt Overrides
   Stmt::Kind getKind() const;
 
-  // Matchable
-  std::vector<std::shared_ptr<Matchable>> getChildren() const;
+  // TreeElement
+  std::vector<std::shared_ptr<TreeElement>> getChildren() const;
 
   // Utility Methods
   bool returns() const;
@@ -78,7 +81,7 @@ public:
 };
 
 
-class ConditionalStmtList : public Stmt, public NonTerminal {
+class ConditionalStmtList : public Stmt {
 public:
   std::shared_ptr<ConditionalStmt> element;
   std::shared_ptr<ConditionalStmtList> list;
@@ -90,8 +93,8 @@ public:
   // Stmt Overrides
   Stmt::Kind getKind() const;
 
-  // Matchable
-  std::vector<std::shared_ptr<Matchable>> getChildren() const;
+  // TreeElement
+  std::vector<std::shared_ptr<TreeElement>> getChildren() const;
 
   // Utility Methods
   bool hasElseStmt() const;
@@ -99,7 +102,7 @@ public:
   int size() const;
 };
 
-class WhileLoop : public Stmt, public NonTerminal {
+class WhileLoop : public Stmt {
 public:
   std::shared_ptr<Expr> condition;
   std::shared_ptr<CompoundStmt> stmt;
@@ -110,15 +113,15 @@ public:
   // Stmt Overrides
   Stmt::Kind getKind() const;
 
-  // Matchable
-  std::vector<std::shared_ptr<Matchable>> getChildren() const;
+  // TreeElement
+  std::vector<std::shared_ptr<TreeElement>> getChildren() const;
 
   // Utility Methods
   bool returns() const;
 };
 
 
-class ReturnStmt : public Stmt, public NonTerminal {
+class ReturnStmt : public Stmt{
 public:
   std::shared_ptr<Expr> expr;
   std::shared_ptr<StackPointer> location;
@@ -129,15 +132,15 @@ public:
   // Stmt Overrides
   Stmt::Kind getKind() const;
 
-  // Matchable
-  std::vector<std::shared_ptr<Matchable>> getChildren() const;
+  // TreeElement
+  std::vector<std::shared_ptr<TreeElement>> getChildren() const;
 
   // Utility Methods
   bool returns() const;
 };
 
 
-class ExprStmt : public Stmt, public NonTerminal {
+class ExprStmt : public Stmt {
 public:
   std::shared_ptr<Expr> expr;
 
@@ -147,15 +150,15 @@ public:
   // Stmt Overrides
   Stmt::Kind getKind() const;
 
-  // Matchable
-  std::vector<std::shared_ptr<Matchable>> getChildren() const;
+  // TreeElement
+  std::vector<std::shared_ptr<TreeElement>> getChildren() const;
 
   // Utility Methods
   bool returns() const;
 };
 
 
-class DeclStmt : public Stmt, public NonTerminal {
+class DeclStmt : public Stmt {
 public:
   std::shared_ptr<Decl> decl;
 
@@ -165,8 +168,8 @@ public:
   // Stmt Overrides
   Stmt::Kind getKind() const;
 
-  // Matchable
-  std::vector<std::shared_ptr<Matchable>> getChildren() const;
+  // TreeElement
+  std::vector<std::shared_ptr<TreeElement>> getChildren() const;
 
   // Utility Methods
   bool returns() const;

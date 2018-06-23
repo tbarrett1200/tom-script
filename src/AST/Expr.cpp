@@ -17,7 +17,7 @@
 //=--------------------------------------------------------------------------=//
 
 /* Returns a vector of children for easy traversal */
-std::vector<std::shared_ptr<Matchable>> ExprList::getChildren() const {
+std::vector<std::shared_ptr<TreeElement>> ExprList::getChildren() const {
   if (!list) return {element};
   else {
     auto children = list->getChildren();
@@ -92,7 +92,7 @@ ExprLabel::ExprLabel(Token n): name{n} {};
 //=--------------------------------------------------------------------------=//
 
 /* Returns a vector of children for easy traversal */
-std::vector<std::shared_ptr<Matchable>> LabeledExpr::getChildren() const {
+std::vector<std::shared_ptr<TreeElement>> LabeledExpr::getChildren() const {
   return {label, expr};
 }
 
@@ -249,7 +249,7 @@ IdentifierExpr::IdentifierExpr(Token t) : token{t} {}
 // TupleExpr
 //=--------------------------------------------------------------------------=//
 
-std::vector<std::shared_ptr<Matchable>> TupleExpr::getChildren() const {
+std::vector<std::shared_ptr<TreeElement>> TupleExpr::getChildren() const {
   return {list};
 }
 
@@ -277,7 +277,7 @@ TupleExpr::TupleExpr(shared_ptr<ExprList> l) : list{move(l)} {}
 //=--------------------------------------------------------------------------=//
 // ListExpr
 //=--------------------------------------------------------------------------=//
-std::vector<std::shared_ptr<Matchable>> ListExpr::getChildren() const {
+std::vector<std::shared_ptr<TreeElement>> ListExpr::getChildren() const {
   return {data};
 }
 
@@ -293,7 +293,7 @@ ListExpr::ListExpr(std::shared_ptr<ExprList> d): data{d} {}
 // AccessorExpr
 //=--------------------------------------------------------------------------=//
 
-std::vector<std::shared_ptr<Matchable>> AccessorExpr::getChildren() const {
+std::vector<std::shared_ptr<TreeElement>> AccessorExpr::getChildren() const {
   return {id, index};
 }
 
@@ -332,7 +332,7 @@ OperatorExpr::OperatorExpr(Token t, PrecedenceGroup g) : token{t}, group{g} {
 // UnaryExpr
 //=--------------------------------------------------------------------------=//
 /* Returns a vector of children for easy traversal */
-std::vector<std::shared_ptr<Matchable>> UnaryExpr::getChildren() const {
+std::vector<std::shared_ptr<TreeElement>> UnaryExpr::getChildren() const {
   return {op, expr};
 }
 
@@ -356,7 +356,7 @@ UnaryExpr::UnaryExpr(shared_ptr<OperatorExpr> o, shared_ptr<Expr> e) : op{move(o
 //=--------------------------------------------------------------------------=//
 Expr::Kind BinaryExpr::getKind() const { return Kind::BinaryExpr; }
 
-std::vector<std::shared_ptr<Matchable>> BinaryExpr::getChildren() const {
+std::vector<std::shared_ptr<TreeElement>> BinaryExpr::getChildren() const {
   return {left, op, right};
 }
 
@@ -383,7 +383,7 @@ BinaryExpr::BinaryExpr(shared_ptr<Expr> l, shared_ptr<OperatorExpr> o, shared_pt
 FunctionCall::FunctionCall(shared_ptr<IdentifierExpr> n, shared_ptr<ExprList> a) : name{n}, arguments{a} {}
 
 /* Returns a vector of children for easy traversal */
-std::vector<std::shared_ptr<Matchable>> FunctionCall::getChildren() const {
+std::vector<std::shared_ptr<TreeElement>> FunctionCall::getChildren() const {
   return {name, arguments};
 }
 

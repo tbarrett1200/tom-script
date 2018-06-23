@@ -12,13 +12,13 @@
 class ASTWalker {
 public:
 
-  void traverse(std::shared_ptr<Matchable> m) {
+  void traverse(std::shared_ptr<TreeElement> m) {
     if (std::dynamic_pointer_cast<Decl>(m)) traverseDecl(std::dynamic_pointer_cast<Decl>(m));
     else if (std::dynamic_pointer_cast<Expr>(m)) traverseExpr(std::dynamic_pointer_cast<Expr>(m));
     else if (std::dynamic_pointer_cast<Stmt>(m)) traverseStmt(std::dynamic_pointer_cast<Stmt>(m));
     else if (std::dynamic_pointer_cast<Type>(m)) traverseType(std::dynamic_pointer_cast<Type>(m));
-    else if (std::dynamic_pointer_cast<NonTerminal>(m)){
-      for(auto child: std::dynamic_pointer_cast<NonTerminal>(m)->getChildren()) {
+    else {
+      for(auto child: m->getChildren()) {
         traverse(child);
       }
     }
@@ -56,9 +56,8 @@ public:
   #define DECL(SELF, SUPER) \
   void traverse##SELF(std::shared_ptr<SELF> x) { \
     if (walkUpFrom##SELF(x)) \
-      if (std::dynamic_pointer_cast<NonTerminal>(x)) \
-        for(auto child: std::dynamic_pointer_cast<NonTerminal>(x)->getChildren()) \
-          traverse(child); \
+      for(auto child: x->getChildren()) \
+        traverse(child); \
   }
   #include "AST/Decl.def"
   #undef DECL
@@ -66,9 +65,8 @@ public:
   #define EXPR(SELF, SUPER)               \
   void traverse##SELF(std::shared_ptr<SELF> x) {          \
     if (walkUpFrom##SELF(x)) \
-      if (std::dynamic_pointer_cast<NonTerminal>(x)) \
-        for(auto child: std::dynamic_pointer_cast<NonTerminal>(x)->getChildren()) \
-          traverse(child); \
+      for(auto child: x->getChildren()) \
+        traverse(child); \
   }
   #include "AST/Expr.def"
   #undef EXPR
@@ -76,8 +74,7 @@ public:
   #define STMT(SELF, SUPER)               \
   void traverse##SELF(std::shared_ptr<SELF> x) {          \
     if (walkUpFrom##SELF(x)) \
-      if (std::dynamic_pointer_cast<NonTerminal>(x)) \
-        for(auto child: std::dynamic_pointer_cast<NonTerminal>(x)->getChildren()) \
+        for(auto child: x->getChildren()) \
           traverse(child); \
   }
   #include "AST/Stmt.def"
@@ -86,8 +83,7 @@ public:
   #define TYPE(SELF, SUPER)               \
   void traverse##SELF(std::shared_ptr<SELF> x) {          \
     if (walkUpFrom##SELF(x)) \
-      if (std::dynamic_pointer_cast<NonTerminal>(x)) \
-        for(auto child: std::dynamic_pointer_cast<NonTerminal>(x)->getChildren()) \
+      for(auto child: x->getChildren()) \
           traverse(child); \
   }
   #include "AST/Type.def"

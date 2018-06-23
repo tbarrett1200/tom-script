@@ -1,7 +1,7 @@
 #ifndef AST_EXPR_H
 #define AST_EXPR_H
 
-#include "AST/Matchable.h"
+#include "AST/TreeElement.h"
 #include "AST/AmbiguousType.h"
 #include "Parse/Operator.h"
 #include "Parse/Token.h"
@@ -13,7 +13,7 @@
 
 class Decl;
 
-class Expr : public TypeAnnotatable, virtual public Matchable {
+class Expr : public TypeAnnotatable, public TreeElement {
 private:
   std::shared_ptr<Type> type;
 
@@ -29,6 +29,10 @@ public:
   virtual bool isLeftValue() const = 0;
   virtual Expr::Kind getKind() const = 0;
 
+  SourceLocation getLocation() const {
+    return {0, 0};
+  }
+  
   /* implements the TypeAnnotatable interface */
   void setType(std::shared_ptr<Type> t) {
     type = t;
@@ -41,14 +45,14 @@ public:
   };
 };
 
-class ExprList : public NonTerminal {
+class ExprList : public TreeElement  {
 public:
   /* member variables */
   std::shared_ptr<Expr> element;
   std::shared_ptr<ExprList> list;
 
   /* Returns a vector of children for easy traversal */
-  std::vector<std::shared_ptr<Matchable>> getChildren() const;
+  std::vector<std::shared_ptr<TreeElement>> getChildren() const;
   std::vector<std::shared_ptr<Expr>> vector() const;
   std::shared_ptr<ExprList> reverse() const;
   int size() const;
@@ -60,7 +64,7 @@ public:
 };
 
 
-class ExprLabel: public Terminal  {
+class ExprLabel  : public TreeElement   {
 public:
   Token name;
 
@@ -69,19 +73,19 @@ public:
   ExprLabel(Token n);
 };
 
-class LabeledExpr : public Expr, public NonTerminal  {
+class LabeledExpr : public Expr {
 public:
   std::shared_ptr<ExprLabel> label;
   std::shared_ptr<Expr> expr;
 
   /* Returns a vector of children for easy traversal */
-  std::vector<std::shared_ptr<Matchable>> getChildren() const;
+  std::vector<std::shared_ptr<TreeElement>> getChildren() const;
   Expr::Kind getKind() const;
   bool isLeftValue() const;
   LabeledExpr(std::shared_ptr<ExprLabel> l, std::shared_ptr<Expr> e);
 };
 
-class StringExpr: public Expr, public Terminal  {
+class StringExpr: public Expr {
 public:
   Token token;
 
@@ -94,7 +98,7 @@ public:
   StringExpr(Token t);
 };
 
-class IntegerExpr: public Expr, public Terminal  {
+class IntegerExpr: public Expr  {
 public:
   Token token;
   /* Returns a vector of children for easy traversal */
@@ -107,7 +111,7 @@ public:
 };
 
 
-class BoolExpr: public Expr, public Terminal  {
+class BoolExpr: public Expr {
 public:
   Token token;
 
@@ -120,7 +124,7 @@ public:
   BoolExpr(Token t);
 };
 
-class DoubleExpr: public Expr, public Terminal  {
+class DoubleExpr: public Expr {
 public:
   Token token;
 
@@ -134,11 +138,11 @@ public:
 
 };
 
-class ListExpr: public Expr, public NonTerminal {
+class ListExpr: public Expr {
 public:
   std::shared_ptr<ExprList> data;
 
-  std::vector<std::shared_ptr<Matchable>> getChildren() const;
+  std::vector<std::shared_ptr<TreeElement>> getChildren() const;
   Expr::Kind getKind() const;
   bool isLeftValue() const;
   ListExpr(std::shared_ptr<ExprList> d);
@@ -146,7 +150,7 @@ public:
 
 
 
-class IdentifierExpr: public Expr, public Terminal  {
+class IdentifierExpr: public Expr {
 public:
   Token token;
   std::shared_ptr<Decl> decl;
@@ -158,26 +162,26 @@ public:
   IdentifierExpr(Token t);
 };
 
-class AccessorExpr: public Expr, public NonTerminal {
+class AccessorExpr: public Expr {
 public:
   std::shared_ptr<IdentifierExpr> id;
   std::shared_ptr<IntegerExpr> index;
 
-  std::vector<std::shared_ptr<Matchable>> getChildren() const;
+  std::vector<std::shared_ptr<TreeElement>> getChildren() const;
   Expr::Kind getKind() const;
   bool isLeftValue() const;
   AccessorExpr(std::shared_ptr<IdentifierExpr> id, std::shared_ptr<IntegerExpr> index);
 };
 
 
-class TupleExpr: public Expr, public NonTerminal  {
+class TupleExpr: public Expr {
 private:
 
 public:
   std::shared_ptr<ExprList> list;
 
   /* Returns a vector of children for easy traversal */
-  std::vector<std::shared_ptr<Matchable>> getChildren() const;
+  std::vector<std::shared_ptr<TreeElement>> getChildren() const;
   Expr::Kind getKind() const;
   int size() const;
   bool isLeftValue() const;
@@ -195,7 +199,7 @@ public:
  *
  * <UnaryExpr> ::= <OperatorExpr> <Expr>
  */
-class OperatorExpr: public Expr, public Terminal {
+class OperatorExpr: public Expr {
 public:
   Token token;
   std::shared_ptr<class FuncDecl> decl;
@@ -215,13 +219,13 @@ public:
  *
  * <UnaryExpr> ::= <OperatorExpr> <Expr>
  */
-class UnaryExpr: public Expr, public NonTerminal  {
+class UnaryExpr: public Expr {
 public:
   std::shared_ptr<OperatorExpr> op;
   std::shared_ptr<Expr> expr;
 
   /* Returns a vector of children for easy traversal */
-  std::vector<std::shared_ptr<Matchable>> getChildren() const;
+  std::vector<std::shared_ptr<TreeElement>> getChildren() const;
   Expr::Kind getKind() const;
   bool isLeftValue() const;
   UnaryExpr(std::shared_ptr<OperatorExpr> o, std::shared_ptr<Expr> e);
@@ -234,7 +238,7 @@ public:
  *
  * <BinaryExpr> ::= <Expr> <OperatorExpr> <Expr>
  */
-class BinaryExpr: public Expr, public NonTerminal  {
+class BinaryExpr: public Expr {
 public:
   std::shared_ptr<Expr> left;
   std::shared_ptr<OperatorExpr> op;
@@ -242,23 +246,23 @@ public:
 
   Expr::Kind getKind() const;
   bool isLeftValue() const;
-  std::vector<std::shared_ptr<Matchable>> getChildren() const;
+  std::vector<std::shared_ptr<TreeElement>> getChildren() const;
   BinaryExpr(std::shared_ptr<Expr> l, std::shared_ptr<OperatorExpr> o, std::shared_ptr<Expr> r);
 };
 
-class FunctionCall: public Expr, public NonTerminal {
+class FunctionCall: public Expr {
 public:
   std::shared_ptr<IdentifierExpr> name;
   std::shared_ptr<ExprList> arguments;
   std::shared_ptr<class FuncDecl> decl;
 
   FunctionCall(std::shared_ptr<IdentifierExpr> n, std::shared_ptr<ExprList> a);
-  std::vector<std::shared_ptr<Matchable>> getChildren() const;
+  std::vector<std::shared_ptr<TreeElement>> getChildren() const;
   bool isLeftValue() const;
   Expr::Kind getKind() const;
 };
 
-class StackPointer: public Expr, public Terminal {
+class StackPointer: public Expr {
 public:
   int location;
   StackPointer(int l);
