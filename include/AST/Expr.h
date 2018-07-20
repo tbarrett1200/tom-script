@@ -1,6 +1,7 @@
 #ifndef AST_EXPR_H
 #define AST_EXPR_H
 
+#include "AST/ASTVisitor.h"
 #include "AST/TreeElement.h"
 #include "AST/AmbiguousType.h"
 #include "Parse/Operator.h"
@@ -33,6 +34,10 @@ public:
     return {0, 0};
   }
 
+  virtual void accept(ASTVisitor& t) const {
+     t.visit(*this);
+  }
+
   /* implements the TypeAnnotatable interface */
   void setType(std::shared_ptr<Type> t) {
     type = t;
@@ -59,6 +64,7 @@ public:
   std::shared_ptr<Expr>& operator[] (int x);
   std::shared_ptr<TypeList> getTypeList() const;
   template <typename T> bool has();
+
   ExprList(std::shared_ptr<Expr> e, std::shared_ptr<ExprList> l);
   ExprList(std::vector<std::shared_ptr<Expr>> v);
 };
@@ -82,6 +88,11 @@ public:
   std::vector<std::shared_ptr<TreeElement>> getChildren() const;
   Expr::Kind getKind() const;
   bool isLeftValue() const;
+
+  virtual void accept(ASTVisitor& t) const {
+     t.visit(*this);
+  }
+
   LabeledExpr(std::shared_ptr<ExprLabel> l, std::shared_ptr<Expr> e);
 };
 
@@ -95,6 +106,11 @@ public:
   std::string getString() const;
   StringExpr(std::string s);
   bool isLeftValue() const;
+
+  virtual void accept(ASTVisitor& t) const {
+     t.visit(*this);
+  }
+
   StringExpr(Token t);
 };
 
@@ -107,6 +123,11 @@ public:
   int getInt() const;
   IntegerExpr(int i);
   bool isLeftValue() const;
+
+  virtual void accept(ASTVisitor& t) const {
+     t.visit(*this);
+  }
+
   IntegerExpr(Token t);
 };
 
@@ -121,6 +142,11 @@ public:
   bool getBool();
   BoolExpr(bool b);
   bool isLeftValue() const;
+
+  virtual void accept(ASTVisitor& t) const {
+     t.visit(*this);
+  }
+
   BoolExpr(Token t);
 };
 
@@ -134,6 +160,11 @@ public:
   double getDouble() const;
   DoubleExpr(double i);
   bool isLeftValue() const;
+
+  virtual void accept(ASTVisitor& t) const {
+     t.visit(*this);
+  }
+
   DoubleExpr(Token t);
 
 };
@@ -145,6 +176,11 @@ public:
   std::vector<std::shared_ptr<TreeElement>> getChildren() const;
   Expr::Kind getKind() const;
   bool isLeftValue() const;
+
+  virtual void accept(ASTVisitor& t) const {
+     t.visit(*this);
+  }
+
   ListExpr(std::shared_ptr<ExprList> d);
 };
 
@@ -159,6 +195,11 @@ public:
   std::string getLexeme() const;
   Expr::Kind getKind() const;
   bool isLeftValue() const;
+
+  virtual void accept(ASTVisitor& t) const {
+     t.visit(*this);
+  }
+
   IdentifierExpr(Token t);
 };
 
@@ -170,6 +211,11 @@ public:
   std::vector<std::shared_ptr<TreeElement>> getChildren() const;
   Expr::Kind getKind() const;
   bool isLeftValue() const;
+
+  virtual void accept(ASTVisitor& t) const {
+     t.visit(*this);
+  }
+
   AccessorExpr(std::shared_ptr<IdentifierExpr> id, std::shared_ptr<IntegerExpr> index);
 };
 
@@ -188,6 +234,10 @@ public:
   std::shared_ptr<Expr> operator[] (int x);
   static std::shared_ptr<TupleExpr> make(std::vector<std::shared_ptr<Expr>>);
   static std::shared_ptr<TupleExpr> make(std::shared_ptr<ExprList>);
+
+  virtual void accept(ASTVisitor& t) const {
+     t.visit(*this);
+  }
 
   TupleExpr(std::shared_ptr<ExprList> l);
 
@@ -210,6 +260,11 @@ public:
   std::string getLexeme() const;
   Expr::Kind getKind() const;
   OperatorExpr(Token t, PrecedenceGroup g);
+
+  virtual void accept(ASTVisitor& t) const {
+     t.visit(*this);
+  }
+
   bool isLeftValue() const;
 };
 
@@ -228,6 +283,11 @@ public:
   std::vector<std::shared_ptr<TreeElement>> getChildren() const;
   Expr::Kind getKind() const;
   bool isLeftValue() const;
+
+  virtual void accept(ASTVisitor& t) const {
+     t.visit(*this);
+  }
+
   UnaryExpr(std::shared_ptr<OperatorExpr> o, std::shared_ptr<Expr> e);
 };
 
@@ -247,6 +307,11 @@ public:
   Expr::Kind getKind() const;
   bool isLeftValue() const;
   std::vector<std::shared_ptr<TreeElement>> getChildren() const;
+
+  virtual void accept(ASTVisitor& t) const {
+     t.visit(*this);
+  }
+
   BinaryExpr(std::shared_ptr<Expr> l, std::shared_ptr<OperatorExpr> o, std::shared_ptr<Expr> r);
 };
 
@@ -256,7 +321,9 @@ public:
   std::shared_ptr<ExprList> arguments;
   std::shared_ptr<class FuncDecl> decl;
 
-
+  virtual void accept(ASTVisitor& t) const {
+     t.visit(*this);
+  }
 
   FunctionCall(std::shared_ptr<IdentifierExpr> n, std::shared_ptr<ExprList> a);
   std::vector<std::shared_ptr<TreeElement>> getChildren() const;
@@ -270,6 +337,11 @@ public:
   StackPointer(int l);
   std::string getLexeme() const;
   bool isLeftValue() const;
+
+  virtual void accept(ASTVisitor& t) const {
+     t.visit(*this);
+  }
+
   Expr::Kind getKind() const;
 };
 

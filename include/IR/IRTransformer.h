@@ -1,30 +1,27 @@
 #ifndef IR_TRANSFORMER_H
 #define IR_TRANSFORMER_H
 
-#include "IR/ASTTransformer.h"
-#include "llvm/ADT/APFloat.h"
-#include "llvm/ADT/STLExtras.h"
-#include "llvm/IR/BasicBlock.h"
-#include "llvm/IR/Constants.h"
-#include "llvm/IR/DerivedTypes.h"
-#include "llvm/IR/Function.h"
-#include "llvm/IR/IRBuilder.h"
-#include "llvm/IR/LLVMContext.h"
-#include "llvm/IR/LegacyPassManager.h"
-#include "llvm/IR/Module.h"
-#include "llvm/IR/Type.h"
-#include "llvm/IR/Verifier.h"
-#include "llvm/Support/TargetSelect.h"
-#include "llvm/Target/TargetMachine.h"
-#include "llvm/Transforms/Scalar.h"
-#include "llvm/Transforms/Scalar/GVN.h"
+#include "AST/ASTVisitor.h"
+#include "llvm/IR/Value.h"
 
 
-class IRTransformer: public ASTTransformer<llvm::Value*> {
+class IRTransformer: public ASTVisitor, public ASTVisitorResult<llvm::Value*> {
 public:
-  llvm::Value* transformIntegerExpr(const IntegerExpr&) override;
-  llvm::Value* transformDoubleExpr(const DoubleExpr &) override;
-  llvm::Value* transformBinaryExpr(const BinaryExpr &) override;
+  void visit(const class Expr&) override;
+  void visit(const class LabeledExpr&) override;
+  void visit(const class StringExpr &) override;
+  void visit(const class IntegerExpr &) override;
+  void visit(const class DoubleExpr &) override;
+  void visit(const class ListExpr&) override;
+  void visit(const class IdentifierExpr &) override;
+  void visit(const class TupleExpr &) override;
+  void visit(const class AccessorExpr &) override;
+  void visit(const class OperatorExpr&) override;
+  void visit(const class BoolExpr &) override;
+  void visit(const class UnaryExpr &) override;
+  void visit(const class BinaryExpr &) override;
+  void visit(const class FunctionCall&) override;
+  void visit(const class StackPointer &) override;
 };
 
 #endif

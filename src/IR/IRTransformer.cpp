@@ -18,15 +18,98 @@
 
 static llvm::LLVMContext TheContext;
 
-llvm::Value* IRTransformer::transformIntegerExpr(const IntegerExpr &tree) {
-  return llvm::ConstantInt::get(TheContext, llvm::APInt(64, (uint64_t)tree.getInt()));
+/**
+ * A Visitor that generates LLVM IR from an Expression
+ *
+ */
+void IRTransformer::visit(const Expr &tree) {
+  // TODO: implement
+}
+/**
+ * A Visitor that generates LLVM IR from an Expression
+ *
+ */
+void IRTransformer::visit(const LabeledExpr &tree) {
+  // TODO: implement
+}
+/**
+ * A Visitor that generates LLVM IR from an Expression
+ *
+ */
+void IRTransformer::visit(const StringExpr &tree) {
+  // TODO: implement
+}
+/**
+ * A Visitor that generates LLVM IR from an Expression
+ *
+ */
+void IRTransformer::visit(const IntegerExpr &tree) {
+  llvm::APInt val{64, (uint64_t)tree.getInt()};
+  setResult(llvm::ConstantInt::get(TheContext, val));
+}
+/**
+ * A Visitor that generates LLVM IR from an Expression
+ *
+ */
+void IRTransformer::visit(const DoubleExpr &tree) {
+  llvm::APFloat val{tree.getDouble()};
+  setResult(llvm::ConstantFP::get(TheContext, val));
+}
+/**
+ * A Visitor that generates LLVM IR from an Expression
+ *
+ */
+void IRTransformer::visit(const ListExpr&tree) {
+  // TODO: implement
+}
+/**
+ * A Visitor that generates LLVM IR from an Expression
+ *
+ */
+void IRTransformer::visit(const IdentifierExpr &tree) {
+  // TODO: implement
 }
 
-llvm::Value* IRTransformer::transformDoubleExpr(const DoubleExpr &tree) {
-  return llvm::ConstantFP::get(TheContext, llvm::APFloat(tree.getDouble()));
+/**
+ * A Visitor that generation LLVM IR from an Expression
+ *
+ */
+void IRTransformer::visit(const TupleExpr &tree) {
+  // TODO: Implement
 }
-
-llvm::Value* IRTransformer::transformBinaryExpr(const BinaryExpr &tree) {
+/**
+ * A Visitor that generation LLVM IR from an Expression
+ *
+ */
+void  IRTransformer::visit(const AccessorExpr &tree) {
+  // TODO: Implement
+}
+/**
+ * A Visitor that generation LLVM IR from an Expression
+ *
+ */
+void  IRTransformer::visit(const OperatorExpr&tree) {
+  // TODO: Implement
+}
+/**
+ * A Visitor that generation LLVM IR from an Expression
+ *
+ */
+void IRTransformer::visit(const BoolExpr &tree) {
+  // TODO: Implement
+}
+/**
+ * A Visitor that generation LLVM IR from an Expression
+ *
+ */
+void IRTransformer::visit(const UnaryExpr &tree) {
+  // TODO: Implement
+}
+/**
+ * A Visitor that generation LLVM IR from an Expression
+ *
+ */
+void IRTransformer::visit(const BinaryExpr &tree) {
   const Type* left = tree.left->getType()->getCanonicalType();
   const Type* right = tree.left->getType()->getCanonicalType();
   if (left->isIntegerType() && right->isIntegerType()) {
@@ -34,4 +117,18 @@ llvm::Value* IRTransformer::transformBinaryExpr(const BinaryExpr &tree) {
   } else {
     throw std::logic_error("error: binary expression of this type not implemented");
   }
+}
+/**
+ * A Visitor that generation LLVM IR from an Expression
+ *
+ */
+void  IRTransformer::visit(const FunctionCall &tree) {
+  // TODO: Implement
+}
+/**
+ * A Visitor that generation LLVM IR from an Expression
+ *
+ */
+void  IRTransformer::visit(const StackPointer &tree) {
+  // TODO: Implement
 }
