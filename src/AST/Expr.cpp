@@ -147,7 +147,7 @@ std::string IntegerExpr::getLexeme() const {
 
 Expr::Kind IntegerExpr::getKind() const { return Kind::IntegerExpr; }
 
-int IntegerExpr::getInt() {
+int IntegerExpr::getInt() const {
   return std::stoi(token.lexeme);
 }
 
@@ -213,7 +213,7 @@ bool DoubleExpr::isLeftValue() const {
   return false;
 }
 
-double DoubleExpr::getDouble() {
+double DoubleExpr::getDouble() const {
   return std::stod(token.lexeme);
 }
 
@@ -412,7 +412,7 @@ ostream& operator<<(ostream& os, Expr* x) {
     os << t->getLexeme();
   } else if (dynamic_cast<FunctionCall*>(x)) {
     auto t = dynamic_cast<FunctionCall*>(x);
-    os << t->name << t->arguments;
+    os << t->name << "function call";
   } else if (dynamic_cast<TupleExpr*>(x)) {
     auto t = dynamic_cast<TupleExpr*>(x);
     os << "(" << t->list << ")";
@@ -431,9 +431,6 @@ ostream& operator<<(ostream& os, Expr* x) {
   } else if (dynamic_cast<OperatorExpr*>(x)) {
     auto t = dynamic_cast<OperatorExpr*>(x);
     os  << t->token.lexeme ;
-  } else if (dynamic_cast<FunctionCall*>(x)) {
-    auto t = dynamic_cast<FunctionCall*>(x);
-    os  << t->name << "(args)";
   } else if (dynamic_cast<StackPointer*>(x)) {
     auto t = dynamic_cast<StackPointer*>(x);
     os  << "*" << t->location ;

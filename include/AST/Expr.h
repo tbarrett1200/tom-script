@@ -32,7 +32,7 @@ public:
   SourceLocation getLocation() const {
     return {0, 0};
   }
-  
+
   /* implements the TypeAnnotatable interface */
   void setType(std::shared_ptr<Type> t) {
     type = t;
@@ -104,7 +104,7 @@ public:
   /* Returns a vector of children for easy traversal */
   std::string getLexeme() const;
   Expr::Kind getKind() const;
-  int getInt();
+  int getInt() const;
   IntegerExpr(int i);
   bool isLeftValue() const;
   IntegerExpr(Token t);
@@ -131,7 +131,7 @@ public:
   /* Returns a vector of children for easy traversal */
   std::string getLexeme() const;
   Expr::Kind getKind() const;
-  double getDouble();
+  double getDouble() const;
   DoubleExpr(double i);
   bool isLeftValue() const;
   DoubleExpr(Token t);
@@ -256,6 +256,8 @@ public:
   std::shared_ptr<ExprList> arguments;
   std::shared_ptr<class FuncDecl> decl;
 
+
+
   FunctionCall(std::shared_ptr<IdentifierExpr> n, std::shared_ptr<ExprList> a);
   std::vector<std::shared_ptr<TreeElement>> getChildren() const;
   bool isLeftValue() const;
@@ -270,7 +272,6 @@ public:
   bool isLeftValue() const;
   Expr::Kind getKind() const;
 };
-
 
 std::ostream& operator<<(std::ostream& os, Expr* x);
 std::ostream& operator<<(std::ostream& os, ExprList* x);

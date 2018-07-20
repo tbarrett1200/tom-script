@@ -10,6 +10,16 @@ template<typename T> const T* Type::as() const {
   return dynamic_cast<const T*>(this);
 }
 
+const Type* Type::getCanonicalType() const {
+  return this;
+}
+
+bool Type::isIntegerType() const {
+  const Type* canonical = getCanonicalType();
+  if (getKind() == Kind::TypeIdentifier) {
+    return canonical->as<TypeIdentifier>()->getName() == "Integer";
+  } else return false;
+}
 
 //----------------------------------------------------------------------------//
 // TypeList
@@ -68,6 +78,10 @@ std::vector<std::shared_ptr<TreeElement>> LabeledType::getChildren() const {
 //----------------------------------------------------------------------------//
 // TypeIdentifier
 //----------------------------------------------------------------------------//
+
+std::string TypeIdentifier::getName() const {
+  return token.lexeme;
+}
 
 
 std::shared_ptr<TupleType> TupleType::make(std::shared_ptr<TypeList> l) {

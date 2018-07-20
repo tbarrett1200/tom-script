@@ -1,12 +1,13 @@
 #ifndef AST_STMT_H
 #define AST_STMT_H
 
-#import "AST/TreeElement.h"
-#import "AST/Expr.h"
-#import "AST/Decl.h"
+
+#include "AST/TreeElement.h"
+#include "AST/Expr.h"
+#include "AST/Decl.h"
 #include "Basic/SourceCode.h"
 
-#import <memory>
+#include <memory>
 
 class ReturnStmt;
 class ConditionalStmtList;

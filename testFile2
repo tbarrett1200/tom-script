@@ -1,2 +1,7 @@
-let a = [1, 2, 3]
-print(a[0])
+func factorial(n: Int) -> Int {
+  if n < 1 {
+    return 1
+  } else {
+    return n * factorial (n-1)
+  }
+}

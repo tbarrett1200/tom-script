@@ -13,7 +13,8 @@ class ASTWalker {
 public:
 
   void traverse(std::shared_ptr<TreeElement> m) {
-    if (std::dynamic_pointer_cast<Decl>(m)) traverseDecl(std::dynamic_pointer_cast<Decl>(m));
+    if (!m) return;
+    else if (std::dynamic_pointer_cast<Decl>(m)) traverseDecl(std::dynamic_pointer_cast<Decl>(m));
     else if (std::dynamic_pointer_cast<Expr>(m)) traverseExpr(std::dynamic_pointer_cast<Expr>(m));
     else if (std::dynamic_pointer_cast<Stmt>(m)) traverseStmt(std::dynamic_pointer_cast<Stmt>(m));
     else if (std::dynamic_pointer_cast<Type>(m)) traverseType(std::dynamic_pointer_cast<Type>(m));

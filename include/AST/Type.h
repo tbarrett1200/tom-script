@@ -23,7 +23,21 @@ public:
   SourceLocation getLocation() const {
     return {0, 0};
   }
+  /**
+   * Returns the underlying type - stripped of possible type aliasing.
+   * A fundamental type - one that does not alias another type or contain
+   * any non-fundamental types - returns itself.
+   *
+   * TODO: Currently - all types returns this. This should be updated
+   */
+  const Type* getCanonicalType() const;
 
+  /**
+   * Returns whether or not this type is a builtin 'Integer' type. This is done
+   * by checking the 'Kind' of the canonical type. A built in integer will
+   * have a 'TypeIdentifier' kind and the name 'Integer'.
+   */
+  bool isIntegerType() const;
 };
 
 class TypeLabel : public TreeElement {
@@ -87,6 +101,11 @@ public:
   // Type Overrides
   Type::Kind getKind() const { return Kind::TypeIdentifier; }
 
+  /**
+   * Returns the name of the type identifier.
+   * e.g. Integer
+   */
+  std::string getName() const;
   // TreeElement Overrides
   std::string getLexeme() const { return token.lexeme; }
 };
