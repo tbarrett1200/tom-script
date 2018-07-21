@@ -3,10 +3,23 @@
 
 #include "AST/ASTVisitor.h"
 #include "llvm/IR/Value.h"
+#include "llvm/IR/IRBuilder.h"
 
 
 class IRTransformer: public ASTVisitor, public ASTVisitorResult<llvm::Value*> {
+private:
+  llvm::IRBuilder<>* TheBuilder;
+  llvm::LLVMContext *TheContext;
 public:
+
+  void setContext(llvm::LLVMContext *aContext) {
+    TheContext = aContext;
+  }
+
+  void setBuilder(llvm::IRBuilder<> *aBuilder) {
+    TheBuilder = aBuilder;
+  }
+
   void visit(const class Expr&) override;
   void visit(const class LabeledExpr&) override;
   void visit(const class StringExpr &) override;

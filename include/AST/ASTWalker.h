@@ -17,7 +17,6 @@ public:
     else if (std::dynamic_pointer_cast<Decl>(m)) traverseDecl(std::dynamic_pointer_cast<Decl>(m));
     else if (std::dynamic_pointer_cast<Expr>(m)) traverseExpr(std::dynamic_pointer_cast<Expr>(m));
     else if (std::dynamic_pointer_cast<Stmt>(m)) traverseStmt(std::dynamic_pointer_cast<Stmt>(m));
-    else if (std::dynamic_pointer_cast<Type>(m)) traverseType(std::dynamic_pointer_cast<Type>(m));
     else {
       for(auto child: m->getChildren()) {
         traverse(child);
@@ -44,13 +43,6 @@ public:
     #define STMT(SELF, SUPER) case Stmt::Kind::SELF: traverse##SELF(std::dynamic_pointer_cast<SELF>(s)); break;
     #include "AST/Stmt.def"
     #undef STMT
-    }
-  }
-  void traverseType(std::shared_ptr<Type> t) {
-    switch (t->getKind()) {
-    #define TYPE(SELF, SUPER) case Type::Kind::SELF: traverse##SELF(std::dynamic_pointer_cast<SELF>(t)); break;
-    #include "AST/Type.def"
-    #undef TYPE
     }
   }
 
@@ -81,16 +73,6 @@ public:
   #include "AST/Stmt.def"
   #undef STMT
 
-  #define TYPE(SELF, SUPER)               \
-  void traverse##SELF(std::shared_ptr<SELF> x) {          \
-    if (walkUpFrom##SELF(x)) \
-      for(auto child: x->getChildren()) \
-          traverse(child); \
-  }
-  #include "AST/Type.def"
-  #undef TYPE
-
-
   bool walkUpFromDecl(std::shared_ptr<Decl> d) {
     return visitDecl(d);
   }
@@ -99,9 +81,6 @@ public:
   }
   bool walkUpFromStmt(std::shared_ptr<Stmt> s) {
     return visitStmt(s);
-  }
-  bool walkUpFromType(std::shared_ptr<Type> t) {
-    return visitType(t);
   }
 
   #define DECL(SELF, SUPER)                         \
@@ -125,18 +104,10 @@ public:
   #include "AST/Stmt.def"
   #undef STMT
 
-  #define TYPE(SELF, SUPER)                         \
-  bool walkUpFrom##SELF(std::shared_ptr<SELF> x) {                  \
-    return walkUpFrom##SUPER(x) && visit##SELF(x);  \
-  }
-  #include "AST/Type.def"
-  #undef TYPE
-
 
   virtual bool visitDecl(std::shared_ptr<Decl> d) { return true; }
   virtual bool visitExpr(std::shared_ptr<Expr> e) { return true; }
   virtual bool visitStmt(std::shared_ptr<Stmt> s) { return true; }
-  virtual bool visitType(std::shared_ptr<Type> t) { return true; }
 
   #define DECL(SELF, SUPER) virtual bool visit##SELF(std::shared_ptr<SELF> x) { return true; }
   #include "AST/Decl.def"
@@ -150,9 +121,6 @@ public:
   #include "AST/Stmt.def"
   #undef STMT
 
-  #define TYPE(SELF, SUPER) virtual bool visit##SELF(std::shared_ptr<SELF> x) { return true; }
-  #include "AST/Type.def"
-  #undef TYPE
 
 };
 

@@ -57,7 +57,7 @@ TypeDecl::TypeDecl(Token n) : name{std::make_shared<DeclName>(n)} {}
 //=--------------------------------------------------------------------------=//
 
 std::vector<std::shared_ptr<TreeElement>> TypeAlias::getChildren() const {
-  return {name, type};
+  return {name};
 }
 std::shared_ptr<Expr> TypeAlias::getExpr() const { return nullptr; };
 void TypeAlias::setExpr(std::shared_ptr<Expr> e) {};
@@ -75,7 +75,7 @@ TypeAlias::TypeAlias(Token n, std::shared_ptr<Type> t)
 
 /* Returns a vector of children for easy traversal */
 std::vector<std::shared_ptr<TreeElement>> VarDecl::getChildren() const {
-  return {name, type, expr};
+  return {name, expr};
 }
 
 std::shared_ptr<Expr> VarDecl::getExpr() const { return expr; }
@@ -102,7 +102,7 @@ VarDecl::VarDecl(Token n, std::shared_ptr<Type> t, std::shared_ptr<Expr> e)
 //=--------------------------------------------------------------------------=//
 
 std::vector<std::shared_ptr<TreeElement>> LetDecl::getChildren() const {
-  return {name, type, expr};
+  return {name, expr};
 }
 
 Decl::Kind LetDecl::getKind() const { return Kind::LetDecl; }
@@ -143,7 +143,7 @@ std::shared_ptr<Type> ParamDecl::getType() const {
 }
 
 std::vector<std::shared_ptr<TreeElement>> ParamDecl::getChildren() const {
-  return { primary, secondary, type };
+  return { primary, secondary };
 }
 
 // Declaration Context Management
@@ -176,8 +176,8 @@ void ParamDecl::setContext(DeclarationContext* c) { context = c; }
 //=--------------------------------------------------------------------------=//
 
 std::vector<std::shared_ptr<TreeElement>> FuncDecl::getChildren() const {
-  if (!stmt) return {name, type};
-  else return {name, type, stmt};
+  if (!stmt) return {name};
+  else return {name, stmt};
 }
 
 Decl::Kind FuncDecl::getKind() const { return Kind::FuncDecl; }

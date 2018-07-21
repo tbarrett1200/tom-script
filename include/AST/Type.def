@@ -2,7 +2,9 @@
 #define TYPE(SELF, SUPER)
 #endif
 
+TYPE(PointerType, Type)
 TYPE(IntegerType, Type)
+TYPE(DoubleType, Type)
 TYPE(LabeledType, Type)
 TYPE(TypeIdentifier, Type)
 TYPE(TupleType, Type)

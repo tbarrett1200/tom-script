@@ -6,20 +6,41 @@
 // Type
 //----------------------------------------------------------------------------//
 
-template<typename T> const T* Type::as() const {
-  return dynamic_cast<const T*>(this);
-}
 
 const Type* Type::getCanonicalType() const {
   return this;
 }
 
 bool Type::isIntegerType() const {
-  const Type* canonical = getCanonicalType();
-  if (getKind() == Kind::TypeIdentifier) {
-    return canonical->as<TypeIdentifier>()->getName() == "Integer";
-  } else return false;
+  return getCanonicalType()->getKind() == Kind::IntegerType;
 }
+
+bool Type::isDoubleType() const {
+  return getCanonicalType()->getKind() == Kind::DoubleType;
+}
+
+
+//----------------------------------------------------------------------------//
+// IntegerType
+//----------------------------------------------------------------------------//
+
+std::shared_ptr<IntegerType> IntegerType::singleton = std::make_shared<IntegerType>();
+
+std::shared_ptr<IntegerType> IntegerType::getInstance() {
+  return IntegerType::singleton;
+}
+
+//----------------------------------------------------------------------------//
+// IntegerType
+//----------------------------------------------------------------------------//
+
+std::shared_ptr<DoubleType> DoubleType::singleton = std::make_shared<DoubleType>();
+
+
+std::shared_ptr<DoubleType> DoubleType::getInstance() {
+  return DoubleType::singleton;
+}
+
 
 //----------------------------------------------------------------------------//
 // TypeList
@@ -41,15 +62,6 @@ TypeList::TypeList(std::vector<std::shared_ptr<Type>> l) {
 TypeList::TypeList(std::shared_ptr<Type> e, std::shared_ptr<TypeList> l)
 : element{move(e)}, list{move(l)} {}
 
-std::vector<std::shared_ptr<TreeElement>> TypeList::getChildren() const {
-  if (!list) return {element};
-  else {
-    auto children = list->getChildren();
-    children.insert(children.begin(), element);
-    return children;
-  }
-}
-
 int TypeList::size() const {
   if (!list) return 1;
   else return list->size()+1;
@@ -70,11 +82,6 @@ LabeledType::LabeledType(std::shared_ptr<TypeLabel> p, std::shared_ptr<Type> t)
 
 Type::Kind LabeledType::getKind() const { return Kind::LabeledType; }
 
-std::vector<std::shared_ptr<TreeElement>> LabeledType::getChildren() const {
-  return {label, type};
-}
-
-
 //----------------------------------------------------------------------------//
 // TypeIdentifier
 //----------------------------------------------------------------------------//
@@ -89,37 +96,17 @@ std::shared_ptr<TupleType> TupleType::make(std::shared_ptr<TypeList> l) {
 }
 
 std::ostream& operator<<(std::ostream& os, Type* x) {
-  if (dynamic_cast<LabeledType*>(x)) {
-    auto t = dynamic_cast<LabeledType*>(x);
-    os << t->label << ": " << t->type;
-  } else if (dynamic_cast<TypeIdentifier*>(x)) {
-    auto t = dynamic_cast<TypeIdentifier*>(x);
-    os << t->getLexeme() ;
-  } else if (dynamic_cast<TupleType*>(x)) {
-    auto t = dynamic_cast<TupleType*>(x);
-    os << "(" << t->list << ")" ;
-  } else if (dynamic_cast<FunctionType*>(x)) {
-    auto t = dynamic_cast<FunctionType*>(x);
-    os << "(" << t->params << ") -> " << t->returns ;
-  } else if (dynamic_cast<ListType*>(x)) {
-    auto t = dynamic_cast<ListType*>(x);
-    os << "[" << t->type << "]" ;
-  } else if (dynamic_cast<MapType*>(x)) {
-    auto t = dynamic_cast<MapType*>(x);
-    os << "[" << t->keyType << ": " << t->valType << "]" ;
-  }
+  os << "Type";
   return os;
 }
 
 std::ostream& operator<<(std::ostream& os, TypeLabel* x) {
-  os << x->getLexeme();
+  os << "Type Label";
   return os;
 }
 
 std::ostream& operator<<(std::ostream& os, TypeList* x) {
-  if (!x) return os;
-  os << x->element;
-  if (x->list) os  << ", " << x->list;
+  os << "TypeList";
   return os;
 }
 
@@ -141,41 +128,9 @@ bool operator != (const Type& l, const Type& r) {
 }
 
 bool operator == (const Type& l, const Type& r) {
-  if (l.getKind() != r.getKind()) return false;
-  switch (l.getKind()) {
-    case Type::Kind::LabeledType:
-      return l.as<LabeledType>()->label->getLexeme() == r.as<LabeledType>()->label->getLexeme()
-          && *l.as<LabeledType>()->type == *r.as<LabeledType>()->type;
-    case Type::Kind::TypeIdentifier:
-      return l.as<TypeIdentifier>()->getLexeme() == r.as<TypeIdentifier>()->getLexeme();
-    case Type::Kind::TupleType:
-      if (l.as<TupleType>()->list && r.as<TupleType>()->list)
-        return *l.as<TupleType>()->list == *r.as<TupleType>()->list;
-      else if (!l.as<TupleType>()->list && !r.as<TupleType>()->list)
-        return true;
-      else return false;
-    case Type::Kind::FunctionType:
-      if (l.as<FunctionType>()->params && r.as<FunctionType>()->params)
-        return *l.as<FunctionType>()->params == *r.as<FunctionType>()->params;
-      else if (!l.as<FunctionType>()->params && !r.as<FunctionType>()->params)
-        return true;
-      else return false;
-    case Type::Kind::ListType:
-      return *l.as<ListType>()->type == *r.as<ListType>()->type;
-    case Type::Kind::MapType:
-      return *l.as<MapType>()->keyType == *r.as<MapType>()->keyType
-          && *l.as<MapType>()->valType == *r.as<MapType>()->valType;
-    default: return false;
-  }
+  return l.getCanonicalType() == r.getCanonicalType();
 }
 
 bool operator == (const TypeList& l, const TypeList& r) {
-  if (!l.element && !r.element) return true;
-  else if (!l.element || !r.element) return false;
-  else if (l.size() != r.size()) return false;
-
-  if (!(*l.element == *r.element)) return false;
-  if (l.list && r.list) return *l.list == *r.list;
-  else if (!l.list && !r.list) return true;
-  else return false;
+  return false;
 }

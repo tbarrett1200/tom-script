@@ -155,9 +155,12 @@ bool IntegerExpr::isLeftValue() const {
   return false;
 }
 
-IntegerExpr::IntegerExpr(int i) : token{to_string(i), Token::integer_literal, 0, 0, 0} {}
+IntegerExpr::IntegerExpr(int i) : token{to_string(i), Token::integer_literal, 0, 0, 0} {
+  setType(IntegerType::getInstance());
+}
 
 IntegerExpr::IntegerExpr(Token t) : token{t} {
+  setType(IntegerType::getInstance());
   if (t.isNot(Token::integer_literal)) {
     throw std::domain_error("IntegerExpr requires a token of type integer_literal");
   }
@@ -219,9 +222,11 @@ double DoubleExpr::getDouble() const {
 
 
 DoubleExpr::DoubleExpr(double i) : token{to_string(i), Token::double_literal, 0, 0, 0} {
+  setType(DoubleType::getInstance());
 }
 
 DoubleExpr::DoubleExpr(Token t) : token{t} {
+  setType(DoubleType::getInstance());
   if (t.isNot(Token::double_literal)) {
     throw std::domain_error("DoubleExpr requires a token of type double_literal");
   }
@@ -321,6 +326,8 @@ Expr::Kind OperatorExpr::getKind() const { return Kind::OperatorExpr; }
 bool OperatorExpr::isLeftValue() const {
   return false;
 }
+
+OperatorExpr::OperatorExpr(std::string s) : token{s, Token::operator_id, 0, 0, 0}, group{} {}
 
 OperatorExpr::OperatorExpr(Token t, PrecedenceGroup g) : token{t}, group{g} {
   if (t.isNot(Token::operator_id)) {

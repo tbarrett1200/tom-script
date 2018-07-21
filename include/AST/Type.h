@@ -8,21 +8,36 @@
 #include "Parse/Token.h"
 #include "Basic/SourceCode.h"
 
-class DeclarationContext;
-
-class Type : public TreeElement {
+/**
+ * A base class for all types.
+ *
+ */
+class Type {
 public:
+
+  /** All possible derivative classes of Type */
   enum class Kind {
     #define TYPE(SELF, PARENT) SELF,
     #include "AST/Type.def"
     #undef TYPE
   };
 
-  template<typename T> const T* as() const;
-  virtual Type::Kind getKind() const = 0;
-  SourceLocation getLocation() const {
-    return {0, 0};
+  /**
+   * A convenience method for easy casting from a generic Type to
+   * any of its possible derived types. Returns null if unable to cast.
+   */
+  template<typename T> const T* as() const {
+    return dynamic_cast<const T*>(this);
   }
+
+  /**
+   * Returns the kind of the derived type, which makes it easy to check the
+   * actual type at runtime. Although built-in checks such as dynamic_cast
+   * enable this without the extra type field, explicitly listing possible types
+   * allows for an exhaustive switch statement of all possible derived types.
+   */
+  virtual Type::Kind getKind() const = 0;
+
   /**
    * Returns the underlying type - stripped of possible type aliasing.
    * A fundamental type - one that does not alias another type or contain
@@ -30,28 +45,128 @@ public:
    *
    * TODO: Currently - all types returns this. This should be updated
    */
-  const Type* getCanonicalType() const;
+  virtual const Type* getCanonicalType() const;
 
   /**
    * Returns whether or not this type is a builtin 'Integer' type. This is done
    * by checking the 'Kind' of the canonical type. A built in integer will
-   * have a 'TypeIdentifier' kind and the name 'Integer'.
+   * have a 'IntegerType' kind.
    */
   bool isIntegerType() const;
+
+  /**
+   * Returns whether or not this type is a builtin 'Double' type. This is done
+   * by checking the 'Kind' of the canonical type. A built in double will
+   * have a 'DoubleType' kind.
+   */
+  bool isDoubleType() const;
 };
 
-class TypeLabel : public TreeElement {
+/**
+ * A builtin
+ *
+ */
+class IntegerType: public Type {
+  static std::shared_ptr<IntegerType> singleton;
+
+public:
+
+  IntegerType() = default;
+
+  static std::shared_ptr<IntegerType> getInstance();
+
+  /**
+   * An Integer's canonical type is always itself.
+   */
+  const Type* getCanonicalType() const override {
+    return this;
+  }
+
+  /**
+   * Returns Type::Kind::IntegerType
+   */
+  Type::Kind getKind() const override {
+    return Type::Kind::IntegerType;
+  }
+};
+
+/**
+ * A builtin
+ *
+ */
+class PointerType: public Type {
+private:
+  static PointerType *singleton;
+
+
+public:
+  PointerType() = default;
+
+  static PointerType* getInstance() {
+    if (singleton == nullptr) {
+      singleton = new PointerType();
+    }
+    return singleton;
+  }
+
+  /**
+   * An Integer's canonical type is always itself.
+   */
+  const Type* getCanonicalType() const override {
+    return this;
+  }
+
+  /**
+   * Returns Type::Kind::IntegerType
+   */
+  Type::Kind getKind() const override {
+    return Type::Kind::PointerType;
+  }
+};
+
+/**
+ * A builtin
+ *
+ */
+class DoubleType: public Type {
+private:
+  static std::shared_ptr<DoubleType> singleton;
+
+public:
+
+  DoubleType() = default;
+
+  DoubleType(const DoubleType&) = delete;
+  DoubleType(DoubleType&&) = delete;
+
+  static std::shared_ptr<DoubleType> getInstance();
+
+  /**
+   * An Integer's canonical type is always itself.
+   */
+  const Type* getCanonicalType() const override {
+    return this;
+  }
+
+  /**
+   * Returns Type::Kind::IntegerType
+   */
+  Type::Kind getKind() const override {
+    return Type::Kind::DoubleType;
+  }
+};
+
+
+class TypeLabel  {
 public:
   Token token;
 
   // Constructors
   TypeLabel(Token n) : token{n} {}
 
-  // TreeElement Overrides
-  std::string getLexeme() const { return token.lexeme; }
 };
 
-class TypeList : public TreeElement  {
+class TypeList  {
 public:
   std::shared_ptr<Type> element;
   std::shared_ptr<TypeList> list;
@@ -60,8 +175,6 @@ public:
   TypeList(std::vector<std::shared_ptr<Type>> l);
   TypeList(std::shared_ptr<Type> e, std::shared_ptr<TypeList> l);
 
-  // TreeElement Overrides
-  std::vector<std::shared_ptr<TreeElement>> getChildren() const;
 
   // Utility Methods
   int size() const;
@@ -86,8 +199,6 @@ public:
   // Type Overrides
   Type::Kind getKind() const;
 
-  // TreeElement Overrides
-  std::vector<std::shared_ptr<TreeElement>> getChildren() const;
 };
 
 
@@ -106,8 +217,7 @@ public:
    * e.g. Integer
    */
   std::string getName() const;
-  // TreeElement Overrides
-  std::string getLexeme() const { return token.lexeme; }
+
 };
 
 
@@ -124,8 +234,6 @@ public:
   // Type Overrides
   Type::Kind getKind() const { return Kind::TupleType; }
 
-  // TreeElement Overrides
-  std::vector<std::shared_ptr<TreeElement>> getChildren() const { return {list}; }
 };
 
 class FunctionType : public Type {
@@ -139,10 +247,6 @@ public:
   // Type Overridess
   Type::Kind getKind() const { return Kind::FunctionType; }
 
-  // TreeElement Overrides
-  std::vector<std::shared_ptr<TreeElement>> getChildren() const {
-    return {params, returns};
-  }
 };
 
 class ListType : public Type {
@@ -155,10 +259,6 @@ public:
   // Type Overrides
   Type::Kind getKind() const { return Kind::ListType; }
 
-  // TreeElement Overrides
-  std::vector<std::shared_ptr<TreeElement>> getChildren() const {
-    return {type};
-  }
 };
 
 class MapType : public Type {
@@ -172,18 +272,24 @@ public:
   // Type Overrides
   Type::Kind getKind() const { return Kind::MapType; }
 
-  // TreeElement Overrides
-  std::vector<std::shared_ptr<TreeElement>> getChildren() const {
-    return {keyType, valType};
+  const Type& getKeyType() const {
+    return *keyType;
   }
+
+  const Type& getValueType() const {
+    return *valType;
+  }
+
+
+
 };
 
 std::ostream& operator<<(std::ostream& os, Type* x);
 std::ostream& operator<<(std::ostream& os, TypeLabel* x);
 std::ostream& operator<<(std::ostream& os, TypeList* x);
 
-bool equal(std::shared_ptr<Type> t1, std::shared_ptr<Type> t2, DeclarationContext *c);
-bool equal(std::shared_ptr<TypeList> t1, std::shared_ptr<TypeList> t2, DeclarationContext *c);
+bool equal(std::shared_ptr<Type> t1, std::shared_ptr<Type> t2, class DeclarationContext *c);
+bool equal(std::shared_ptr<TypeList> t1, std::shared_ptr<TypeList> t2, class DeclarationContext *c);
 
 bool operator != (const Type& l, const Type& r);
 bool operator == (const Type& l, const Type& r);

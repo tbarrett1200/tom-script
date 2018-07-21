@@ -42,6 +42,7 @@ public:
   void setType(std::shared_ptr<Type> t) {
     type = t;
   };
+  
   std::shared_ptr<Type> getType() const {
     return type;
   };
@@ -261,6 +262,9 @@ public:
   Expr::Kind getKind() const;
   OperatorExpr(Token t, PrecedenceGroup g);
 
+  OperatorExpr(std::string s);
+
+
   virtual void accept(ASTVisitor& t) const {
      t.visit(*this);
   }
@@ -310,6 +314,10 @@ public:
 
   virtual void accept(ASTVisitor& t) const {
      t.visit(*this);
+  }
+
+  std::string getOperator() const {
+    return op->token.lexeme;
   }
 
   BinaryExpr(std::shared_ptr<Expr> l, std::shared_ptr<OperatorExpr> o, std::shared_ptr<Expr> r);
