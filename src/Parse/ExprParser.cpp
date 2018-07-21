@@ -26,17 +26,22 @@ shared_ptr<Expr> Parser::parseExpr(int precedence) {
   }
 }
 
-
+/**
+ * Parses a comma seperated list of expressions. The expressions are allowed
+ * to be labeled. If unable to parse, throws a CompilerException.
+ *
+ * Note that this function parses iteratively rather than recursively. This is
+ * done in an attempt to simplify the processing of lists of items. The ultimate
+ * goal is to replace the expression-list recursive definition with a vector
+ * of expressions.
+ */
 shared_ptr<ExprList> Parser::parseExprList() {
-  auto expr = parseLabeledExprOrExpr();
-  auto comma = token();
-  if (consumeToken(Token::comma)) {
-    if (acceptToken(Token::r_paren)) throw report(comma, "error: extreneous comma");
-    else {
-      auto next = parseExprList();
-      return make_shared<ExprList>(move(expr), move(next));
-    }
-  } else return make_shared<ExprList>(move(expr), nullptr);
+  std::vector<std::shared_ptr<Expr>> elements;
+  elements.push_back(parseLabeledExprOrExpr());
+  while (consumeToken(Token::comma)) {
+    elements.push_back(parseLabeledExprOrExpr());
+  }
+  return std::make_shared<ExprList>(elements);
 }
 
 shared_ptr<OperatorExpr> Parser::parseOperatorExpr(int precedence) {

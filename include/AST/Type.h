@@ -5,7 +5,7 @@
 #include <list>
 
 #include "AST/TreeElement.h"
-#include "Parse/Token.h"
+#include "Basic/Token.h"
 #include "Basic/SourceCode.h"
 
 /**

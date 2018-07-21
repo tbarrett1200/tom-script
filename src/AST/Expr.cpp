@@ -16,6 +16,7 @@
 // ExprList
 //=--------------------------------------------------------------------------=//
 
+
 /* Returns a vector of children for easy traversal */
 std::vector<std::shared_ptr<TreeElement>> ExprList::getChildren() const {
   if (!list) return {element};
@@ -74,6 +75,7 @@ ExprList::ExprList(std::vector<shared_ptr<Expr>> v) {
   v.erase(v.begin());
   list = v.size() > 0 ? std::make_shared<ExprList>(v) : nullptr;
 }
+
 
 //=--------------------------------------------------------------------------=//
 // ExprLabel

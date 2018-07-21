@@ -1,5 +1,5 @@
 #include "Parse/Parser.h"
-#include "Parse/Token.h"
+#include "Basic/Token.h"
 #include "Basic/ErrorReporter.h"
 #include "Parse/Operator.h"
 

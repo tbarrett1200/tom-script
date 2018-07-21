@@ -1,7 +1,7 @@
 #ifndef AST_DECL_H
 #define AST_DECL_H
 
-#include "Parse/Token.h"
+#include "Basic/Token.h"
 #include "AST/TreeElement.h"
 #include "AST/DeclarationContext.h"
 #include "Sema/MemoryLoc.h"

@@ -5,7 +5,7 @@
 #include "AST/TreeElement.h"
 #include "AST/AmbiguousType.h"
 #include "Parse/Operator.h"
-#include "Parse/Token.h"
+#include "Basic/Token.h"
 #include "Basic/SourceCode.h"
 #include "Sema/TypeAnnotatable.h"
 
@@ -34,6 +34,7 @@ public:
     return {0, 0};
   }
 
+
   virtual void accept(ASTVisitor& t) const {
      t.visit(*this);
   }
@@ -42,7 +43,7 @@ public:
   void setType(std::shared_ptr<Type> t) {
     type = t;
   };
-  
+
   std::shared_ptr<Type> getType() const {
     return type;
   };
@@ -52,10 +53,11 @@ public:
 };
 
 class ExprList : public TreeElement  {
+
 public:
   /* member variables */
-  std::shared_ptr<Expr> element;
-  std::shared_ptr<ExprList> list;
+   std::shared_ptr<Expr> element;
+   std::shared_ptr<ExprList> list;
 
   /* Returns a vector of children for easy traversal */
   std::vector<std::shared_ptr<TreeElement>> getChildren() const;
@@ -125,6 +127,10 @@ public:
   IntegerExpr(int i);
   bool isLeftValue() const;
 
+  std::string getText() {
+    return token.lexeme;
+  }
+
   virtual void accept(ASTVisitor& t) const {
      t.visit(*this);
   }
@@ -165,7 +171,9 @@ public:
   virtual void accept(ASTVisitor& t) const {
      t.visit(*this);
   }
-
+  std::string getText() const {
+    return token.lexeme;
+  }
   DoubleExpr(Token t);
 
 };
@@ -180,6 +188,10 @@ public:
 
   virtual void accept(ASTVisitor& t) const {
      t.visit(*this);
+  }
+
+  std::vector<std::shared_ptr<Expr>> getElements() const {
+    return data->vector();
   }
 
   ListExpr(std::shared_ptr<ExprList> d);

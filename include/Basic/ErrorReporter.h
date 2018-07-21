@@ -3,7 +3,7 @@
 
 #include <ostream>
 #include "Basic/SourceCode.h"
-#include "Parse/Token.h"
+#include "Basic/Token.h"
 
 // Reports compiler errors in a human readable format
 //

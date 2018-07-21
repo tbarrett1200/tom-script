@@ -3,7 +3,7 @@
 
 #include <string>
 
-#include "Parse/Token.h"
+#include "Basic/Token.h"
 #include "Basic/SourceCode.h"
 
 // Splits a source file into

@@ -3,7 +3,7 @@
 
 #include <deque>
 
-#include "Parse/Token.h"
+#include "Basic/Token.h"
 #include "Parse/Lexer.h"
 #include "Parse/Operator.h"
 #include "AST/Decl.h"
