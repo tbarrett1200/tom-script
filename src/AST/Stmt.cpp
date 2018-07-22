@@ -1,65 +1,26 @@
 #include "AST/Stmt.h"
 
-//----------------------------------------------------------------------------//
-// StmtList
-//----------------------------------------------------------------------------//
-
-template <typename T> bool StmtList::has() const {
-  return std::dynamic_pointer_cast<T>(element) || list ? list->has<T>() : false;
-}
-
-StmtList::StmtList(std::shared_ptr<Stmt> e, std::shared_ptr<StmtList> l)
-  : element{move(e)}, list{move(l)} {}
-
-StmtList::StmtList(std::vector<std::shared_ptr<Stmt>> l) {
-  if (l.size() == 0) {
-    throw std::runtime_error("type list must have at least one type");
-  }
-  if (l.size() == 1) {
-    element = l[0];
-    list = nullptr;
-  } else {
-    element = l[0];
-    l.erase(l.begin());
-    list = std::make_shared<StmtList>(l);
-  }
-}
-
-bool StmtList::returns() const {
-  if (element->returns()) return true;
-  else if (list == nullptr) return false;
-  else return list->returns();
-}
-
-std::vector<std::shared_ptr<TreeElement>> StmtList::getChildren() const {
-  if (!list) return {element};
-      else {
-    auto children = list->getChildren();
-    children.insert(children.begin(), element);
-    return children;
-  }
-}
-
-int StmtList::size() const {
-  if (!list) return 1;
-  else return list->size()+1;
-}
 
 //----------------------------------------------------------------------------//
 // CompoundStmt
 //----------------------------------------------------------------------------//
 
 
-CompoundStmt::CompoundStmt(std::shared_ptr<StmtList> l) : list{l} {}
+CompoundStmt::CompoundStmt(std::vector<std::shared_ptr<Stmt>>&& l) : list{std::move(l)} {}
 
 Stmt::Kind CompoundStmt::getKind() const { return Kind::CompoundStmt;}
 
 bool CompoundStmt::returns() const {
-  return list ? list->returns() : false;
+  for (auto stmt: list) {
+    if (stmt->returns()) return true;
+  }
+  return false;
 }
 
 std::vector<std::shared_ptr<TreeElement>> CompoundStmt::getChildren() const {
-  return {list};
+  std::vector<std::shared_ptr<TreeElement>> treeVector;
+  std::copy(list.begin(), list.end(), std::back_inserter(treeVector));
+  return treeVector;
 }
 
 //----------------------------------------------------------------------------//
@@ -212,10 +173,4 @@ std::vector<std::shared_ptr<TreeElement>> DeclStmt::getChildren() const {
 
 bool DeclStmt::returns() const {
   return false;
-}
-
-
-std::ostream& operator<<(std::ostream& os, Stmt* x) {
-  os << "stmt";
-  return os;
 }

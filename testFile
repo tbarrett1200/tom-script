@@ -1,4 +1,4 @@
-func factorial(_ num: Int) -> Int {
+func factorial(num: Integer) -> Integer {
   if num < 2 {
     return 1
   } else {
@@ -6,7 +6,7 @@ func factorial(_ num: Int) -> Int {
   }
 }
 
-func super_factorial(_ num: Int) -> Int {
+func super_factorial(num: Integer) -> Integer {
  if num < 2 {
   return 1
  } else {
@@ -14,7 +14,7 @@ func super_factorial(_ num: Int) -> Int {
  }
 }
 
-func pow(_ a: Int, _ b: Int) -> Int {
+func pow(a: Integer, b: Integer) -> Integer {
  if b == 0 {
   return 1
  } else if b < 2 {
@@ -24,14 +24,10 @@ func pow(_ a: Int, _ b: Int) -> Int {
  }
 }
 
-func hyper_factorial(_ num: Int) -> Int {
+func hyper_factorial(num: Integer) -> Integer {
  if num == 1 {
   return 1
  } else {
   return pow(num, num) * hyper_factorial(num-1)
  }
 }
-
-print("factorial(5) = " + factorial(5))
-print("super_factorial(5) = " + super_factorial(5))
-print("hyper_factorial(5) = " + hyper_factorial(5))

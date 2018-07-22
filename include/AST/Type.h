@@ -62,6 +62,8 @@ public:
    * have a 'DoubleType' kind.
    */
   bool isDoubleType() const;
+
+  virtual std::string toString() const = 0;
 };
 
 /**
@@ -84,6 +86,9 @@ public:
     return this;
   }
 
+  std::string toString() const override {
+    return "Integer";
+  }
   /**
    * Returns Type::Kind::IntegerType
    */
@@ -113,6 +118,9 @@ public:
     return this;
   }
 
+  std::string toString() const override {
+    return "Pointer";
+  }
   /**
    * Returns Type::Kind::IntegerType
    */
@@ -138,6 +146,9 @@ public:
 
   static std::shared_ptr<BooleanType> getInstance();
 
+  std::string toString() const override {
+    return "Boolean";
+  }
   /**
    * An Integer's canonical type is always itself.
    */
@@ -178,6 +189,10 @@ public:
     return this;
   }
 
+  std::string toString() const override {
+    return "Double";
+  }
+
   /**
    * Returns Type::Kind::IntegerType
    */
@@ -197,6 +212,10 @@ public:
   // Type Overrides
   Type::Kind getKind() const { return Kind::TypeIdentifier; }
 
+  std::string toString() const {
+    return token.lexeme;
+  }
+
   /**
    * Returns the name of the type identifier.
    * e.g. Integer
@@ -213,6 +232,16 @@ public:
   // Constructors
   TupleType(std::vector<std::shared_ptr<Type>>&& l) : elements{move(l)} {}
 
+  std::string toString() const {
+    std::string str = "(";
+    for (auto element: elements) {
+      str += element->toString() + ",";
+    }
+    str = str.substr(0, str.length()-1);
+    str += ")";
+    return str;
+  }
+
   // Type Overrides
   Type::Kind getKind() const { return Kind::TupleType; }
 
@@ -226,6 +255,16 @@ public:
   // Constructors
   FunctionType(std::vector<std::shared_ptr<Type>>&& p, std::shared_ptr<Type> r) : params{std::move(p)}, returns{r} {}
 
+  std::string toString() const {
+    std::string str = "(";
+    for (auto param: params) {
+      str += (param ? param->toString() : "<nullptr>") + ",";
+    }
+    str = str.substr(0, str.length()-1);
+    str += ") -> " + (returns ?  returns->toString(): "<nullptr>" );
+    return str;
+  }
+
   // Type Overridess
   Type::Kind getKind() const { return Kind::FunctionType; }
 
@@ -237,6 +276,10 @@ public:
 
   // Constructors
   ListType(std::shared_ptr<Type> t) : type{t} {}
+
+  std::string toString() const {
+    return "[" + type->toString() + "]";
+  }
 
   // Type Overrides
   Type::Kind getKind() const { return Kind::ListType; }
@@ -256,6 +299,10 @@ public:
 
   const Type& getKeyType() const {
     return *keyType;
+  }
+
+  std::string toString() const {
+    return "[" + keyType->toString() + ": " + valType->toString() + "]";
   }
 
   const Type& getValueType() const {

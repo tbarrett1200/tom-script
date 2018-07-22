@@ -34,10 +34,11 @@ shared_ptr<Stmt> Parser::parseStmt()  {
 shared_ptr<CompoundStmt> Parser::parseCompoundStmt()  {
   expectToken(Token::l_brace, "left brace");
   while(token().is(Token::new_line)) consume();
-  if (consumeToken(Token::r_brace)) return std::make_shared<CompoundStmt>(nullptr);
+  if (consumeToken(Token::r_brace)) return std::make_shared<CompoundStmt>(std::vector<std::shared_ptr<Stmt>>());
   auto list = parseStmtList();
+  while(token().is(Token::new_line)) consume();
   expectToken(Token::r_brace, "right brace");
-  return std::make_shared<CompoundStmt>(list);
+  return std::make_shared<CompoundStmt>(std::move(list));
 }
 
 shared_ptr<ConditionalStmt> Parser::parseConditionalStmt() {
@@ -74,15 +75,15 @@ shared_ptr<ExprStmt> Parser::parseExprStmt() {
   return std::make_shared<ExprStmt>(expr);
 }
 
-shared_ptr<StmtList> Parser::parseStmtList()  {
-  
-  auto stmt = parseStmt();
-  while(token().is(Token::new_line)) consume();
-  if (!acceptToken(Token::eof) && !acceptToken(Token::r_brace)) {
-    auto list = parseStmtList();
-    return std::make_shared<StmtList>(stmt, list);
+std::vector<std::shared_ptr<Stmt>> Parser::parseStmtList()  {
+  std::vector<std::shared_ptr<Stmt>> elements;
+  elements.push_back(parseStmt());
+  while (consumeToken(Token::new_line)) {
+    if (token().is(Token::r_brace)) break;
+    elements.push_back(parseStmt());
   }
-  return std::make_shared<StmtList>(stmt, nullptr);
+  while(consumeToken(Token::new_line));
+  return elements;
 }
 
 shared_ptr<WhileLoop> Parser::parseWhileLoop()  {

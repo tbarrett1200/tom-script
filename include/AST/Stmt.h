@@ -21,38 +21,43 @@ public:
 
   virtual ~Stmt() = default;
 
+  /**
+   * Convenience method for checking the runtime type of an Expression.
+   * Returns true if conversion to derived type is possible. Otherwise
+   * return false.
+   */
+   template<typename T> bool is() const {
+     return (dynamic_cast<T*>(this) != nullptr);
+   }
+
+   /**
+    * Convenience method for casting Expr base type to any one of its derived
+    * types. Throws a std::logic_error if conversion is not possible.
+    */
+  template<typename T> T* as() const {
+    T* casted_type = dynamic_cast<T*>(this);
+    if (casted_type != nullptr) {
+      return casted_type;
+    } else {
+      std::string error_message_prefix{"unable to cast Expr to "};
+      throw std::logic_error(error_message_prefix + typeid(T).name());
+    }
+  }
+
   SourceLocation getLocation() const {
     return {0, 0};
   }
   virtual bool returns() const = 0;
+
   virtual Stmt::Kind getKind() const = 0;
-};
-
-
-class StmtList : public TreeElement {
-public:
-  std::shared_ptr<Stmt> element;
-  std::shared_ptr<StmtList> list;
-
-  // Constructors
-  StmtList(std::shared_ptr<Stmt> e, std::shared_ptr<StmtList> l);
-  StmtList(std::vector<std::shared_ptr<Stmt>> l);
-
-  // TreeElement
-  std::vector<std::shared_ptr<TreeElement>> getChildren() const;
-
-  // Utility Methods
-  template <typename T> bool has() const;
-  bool returns() const;
-  int size() const;
 };
 
 class CompoundStmt : public Stmt {
 public:
-  std::shared_ptr<StmtList> list;
+  std::vector<std::shared_ptr<Stmt>> list;
 
   // Constructors
-  CompoundStmt(std::shared_ptr<StmtList> l);
+  CompoundStmt(std::vector<std::shared_ptr<Stmt>>&& l);
 
   // TreeElement
   std::vector<std::shared_ptr<TreeElement>> getChildren() const;
@@ -175,5 +180,7 @@ public:
   // Utility Methods
   bool returns() const;
 };
+
+std::ostream& operator<<(std::ostream& os, const Stmt& x);
 
 #endif

@@ -15,14 +15,7 @@ std::shared_ptr<Decl> Parser::makeDecl(std::string text) {
   return type;
 }
 
-std::shared_ptr<Decl> Parser::makeTypeDecl(std::string text) {
-  const std::stringstream sstream{text};
-  auto source = SourceCode{sstream, "factory"};
-  auto parser = Parser{&source};
-  auto type = parser.parseTypeDecl();
-  if (!type) throw CompilerException(type->getLocation(), "parse error");
-  return type;
-}
+
 
 std::shared_ptr<Decl> Parser::makeFuncDecl(std::string text) {
   const std::stringstream sstream{text};
@@ -34,20 +27,14 @@ std::shared_ptr<Decl> Parser::makeFuncDecl(std::string text) {
 }
 
 
-std::shared_ptr<TypeDecl> Parser::parseTypeDecl() {
-  expectToken(Token::kw_typedef, "typedef");
-  auto name = expectToken(Token::identifier, "identifier");
-  return std::make_shared<TypeDecl>(name);
-}
-
 std::shared_ptr<FuncDecl> Parser::parseUndefFuncDecl() {
   expectToken(Token::kw_func, "func");
   auto name = expectToken({Token::identifier, Token::operator_id}, "identifier");
   expectToken(Token::l_paren, "left parenthesis");
-  auto param = acceptToken(Token::r_paren) ? nullptr : parseParamDeclList();
+  auto param = acceptToken(Token::r_paren) ? std::vector<std::shared_ptr<ParamDecl>>() : parseParamDeclList();
   expectToken(Token::r_paren, "right parenthesis");  if (!consumeOperator("->")) throw CompilerException(token().getLocation(),  "error: expected ->");
   auto type = parseType();
-  return std::make_shared<FuncDecl>(name, param, type, nullptr);
+  return std::make_shared<FuncDecl>(name, std::move(param), type, nullptr);
 }
 
 std::shared_ptr<Decl> Parser::parseDecl() {
@@ -94,10 +81,13 @@ std::shared_ptr<ParamDecl> Parser::parseParamDecl() {
   return std::make_shared<ParamDecl>(name, type);
 }
 
-std::shared_ptr<ParamDeclList> Parser::parseParamDeclList() {
-  auto element = parseParamDecl();
-  auto list = consumeToken(Token::comma) ? parseParamDeclList() : nullptr;
-  return std::make_shared<ParamDeclList>(element, list);
+std::vector<std::shared_ptr<ParamDecl>> Parser::parseParamDeclList() {
+  std::vector<std::shared_ptr<ParamDecl>> elements;
+  elements.push_back(parseParamDecl());
+  while (consumeToken(Token::comma)) {
+    elements.push_back(parseParamDecl());
+  }
+  return elements;
 }
 
 std::shared_ptr<FuncDecl> Parser::parseFuncDecl() {
@@ -106,7 +96,7 @@ std::shared_ptr<FuncDecl> Parser::parseFuncDecl() {
   expectToken(Token::kw_func, "func");
   auto name = expectToken({Token::identifier, Token::operator_id}, "identifier");
   expectToken(Token::l_paren, "left parenthesis");
-  auto param = acceptToken(Token::r_paren) ? nullptr : parseParamDeclList();
+  auto param = acceptToken(Token::r_paren) ? std::vector<std::shared_ptr<ParamDecl>>() : parseParamDeclList();
   expectToken(Token::r_paren, "right parenthesis");
   if (!consumeOperator("->")) throw CompilerException(token().getLocation(),  "error: expected ->");
   auto type = parseType();
@@ -117,5 +107,5 @@ std::shared_ptr<FuncDecl> Parser::parseFuncDecl() {
   scope.pop();
   // make function available to outer scope
   scope.addType(name.lexeme, type);
-  return std::make_shared<FuncDecl>(name, param, type, stmt);
+  return std::make_shared<FuncDecl>(name, std::move(param), type, stmt);
 }

@@ -29,6 +29,7 @@ public:
   }
 
   virtual ~Decl() = default;
+  virtual std::shared_ptr<Type> getType() const = 0;
 
 
   template<typename T> T* as() {
@@ -36,28 +37,10 @@ public:
   }
 };
 
-class DeclName  : public TreeElement  {
-public:
-  Token token;
-  std::string getLexeme() const;
-  DeclName(Token n);
-};
-
-class TypeDecl : public Decl {
-public:
-  std::shared_ptr<DeclName> name;
-  std::shared_ptr<Expr> getExpr() const;
-  void setExpr(std::shared_ptr<Expr> e);
-  std::vector<std::shared_ptr<TreeElement>> getChildren() const;
-  Decl::Kind getKind() const;
-  std::string getName() const;
-
-  TypeDecl(Token n);
-};
 
 class TypeAlias : public Decl {
 public:
-  std::shared_ptr<DeclName> name;
+  Token name;
   std::shared_ptr<Type> type;
 
   std::shared_ptr<Expr> getExpr() const;
@@ -66,14 +49,16 @@ public:
   std::vector<std::shared_ptr<TreeElement>> getChildren() const;
   Decl::Kind getKind() const;
   std::string getName() const;
-
+  std::shared_ptr<Type> getType() const {
+    return type;
+  }
 
   TypeAlias(Token n, std::shared_ptr<Type> t);
 };
 
 class VarDecl : public Decl {
 public:
-  std::shared_ptr<DeclName> name;
+  Token name;
   std::shared_ptr<Type> type;
   std::shared_ptr<Expr> expr;
 
@@ -83,14 +68,16 @@ public:
   std::vector<std::shared_ptr<TreeElement>> getChildren() const;
   Decl::Kind getKind() const;
   std::string getName() const;
-
+  std::shared_ptr<Type> getType() const {
+    return type;
+  }
 
   VarDecl(Token n, std::shared_ptr<Type> t, std::shared_ptr<Expr> e);
 };
 
 class LetDecl : public Decl {
 public:
-  std::shared_ptr<DeclName> name;
+  Token name;
   std::shared_ptr<Type> type;
   std::shared_ptr<Expr> expr;
 
@@ -100,48 +87,57 @@ public:
   std::vector<std::shared_ptr<TreeElement>> getChildren() const;
   Decl::Kind getKind() const;
   std::string getName() const;
-
+  std::shared_ptr<Type> getType() const {
+    return type;
+  }
   LetDecl(Token n, std::shared_ptr<Type> t, std::shared_ptr<Expr> e);
 };
 
 
 class ParamDecl : public Decl {
-public:
-  std::shared_ptr<DeclName> name;
+private:
+  Token name;
   std::shared_ptr<Type> type;
+public:
 
-  ParamDecl(Token n, std::shared_ptr<Type> t);
+  ParamDecl(Token n, std::shared_ptr<Type> t)
+  : name{n}, type{t} {}
+
   Decl::Kind getKind() const;
   std::string getName() const;
-  std::vector<std::shared_ptr<TreeElement>> getChildren() const;
-
-
-};
-
-class ParamDeclList  : public TreeElement  {
-public:
-  std::shared_ptr<ParamDecl> element;
-  std::shared_ptr<ParamDeclList> list;
-
-  ParamDeclList(std::shared_ptr<ParamDecl> e, std::shared_ptr<ParamDeclList> l);
+  std::shared_ptr<Type> getType() const {
+    return type;
+  }
   std::vector<std::shared_ptr<TreeElement>> getChildren() const;
 
 };
 
 /// A named, explicitly typed function
 class FuncDecl : public Decl {
+private:
+  std::shared_ptr<FunctionType> fType;
+  Token fName;
+  std::vector<std::shared_ptr<ParamDecl>> fParams;
+  std::shared_ptr<Type> fReturnType;
+  std::shared_ptr<CompoundStmt> fStmt;
+
 public:
-  std::shared_ptr<DeclName> name;
-  std::shared_ptr<ParamDeclList> params;
-  std::shared_ptr<Type> returnType;
-  std::shared_ptr<FunctionType> type;
-  std::shared_ptr<CompoundStmt> stmt;
 
 
-  FuncDecl(Token n, std::shared_ptr<ParamDeclList> t, std::shared_ptr<Type>, std::shared_ptr<CompoundStmt> s);
+  FuncDecl(Token n, std::vector<std::shared_ptr<ParamDecl>>&& p, std::shared_ptr<Type> t, std::shared_ptr<CompoundStmt> s)
+  : fName{n}, fParams{p}, fReturnType{t}, fStmt{s} {
+    std::vector<std::shared_ptr<Type>> paramTypes;
+    for (auto param: fParams) {
+      paramTypes.push_back(param->getType());
+    }
+    fType = std::make_shared<FunctionType>(std::move(paramTypes), fReturnType);
+  }
+
   Decl::Kind getKind() const;
   std::string getName() const;
-
+  std::shared_ptr<Type> getType() const {
+    return fType;
+  }
   std::vector<std::shared_ptr<TreeElement>> getChildren() const;
 
 };

@@ -37,7 +37,7 @@ shared_ptr<Type> Parser::parseTypeIdentifier() {
   else {
     auto type = scope.getType(token.lexeme);
     if (type != nullptr) return type;
-    else  throw CompilerException(token.getLocation(),  "error: unrecognized type identifier");
+    else  throw CompilerException(token.getLocation(),  std::string("error: unrecognized type identifier ") + token.lexeme);
   }
 }
 

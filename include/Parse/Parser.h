@@ -56,7 +56,6 @@ public:
   static shared_ptr<Decl> makeTypeDecl(std::string);
   static shared_ptr<Decl> makeFuncDecl(std::string);
 
-  shared_ptr<TypeDecl> parseTypeDecl();
   shared_ptr<FuncDecl> parseUndefFuncDecl();
 
   shared_ptr<Decl> parseDecl();
@@ -65,7 +64,7 @@ public:
   shared_ptr<LetDecl> parseLetDecl();
   shared_ptr<FuncDecl> parseFuncDecl();
   shared_ptr<ParamDecl> parseParamDecl();
-  shared_ptr<ParamDeclList> parseParamDeclList();
+  std::vector<std::shared_ptr<ParamDecl>> parseParamDeclList();
 
   shared_ptr<Expr> parseExpr(int precedence = OperatorTable::size());
   shared_ptr<Expr> parseParenthesizedExpr();
@@ -94,7 +93,7 @@ public:
   shared_ptr<WhileLoop> parseWhileLoop();
   shared_ptr<ConditionalStmt> parseConditionalStmt();
   shared_ptr<ConditionalStmtList> parseConditionalStmtList();
-  shared_ptr<StmtList> parseStmtList();
+  std::vector<std::shared_ptr<Stmt>> parseStmtList();
   shared_ptr<DeclStmt> parseDeclStmt();
   shared_ptr<ExprStmt> parseExprStmt();
 

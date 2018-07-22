@@ -1,6 +1,5 @@
 #include "AST/Expr.h"
 #include "AST/Type.h"
-#include "Parse/Parser.h"
 #include <memory>
 
 //=--------------------------------------------------------------------------=//
@@ -26,7 +25,7 @@
 // IntegerExpr
 //=--------------------------------------------------------------------------=//
 
-IntegerExpr::IntegerExpr(int i) : token{to_string(i), Token::integer_literal, 0, 0, 0} {
+IntegerExpr::IntegerExpr(int i) : token{std::to_string(i), Token::integer_literal, 0, 0, 0} {
   setType(IntegerType::getInstance());
 }
 
@@ -72,7 +71,7 @@ double DoubleExpr::getDouble() const {
 }
 
 
-DoubleExpr::DoubleExpr(double i) : token{to_string(i), Token::double_literal, 0, 0, 0} {
+DoubleExpr::DoubleExpr(double i) : token{std::to_string(i), Token::double_literal, 0, 0, 0} {
   setType(DoubleType::getInstance());
 }
 
@@ -234,7 +233,7 @@ bool UnaryExpr::isLeftValue() const {
   return false;
 }
 
-UnaryExpr::UnaryExpr(Token o, shared_ptr<Expr> e, std::shared_ptr<Type> t) : op{move(o)}, expr{move(e)} {
+UnaryExpr::UnaryExpr(Token o, std::shared_ptr<Expr> e, std::shared_ptr<Type> t) : op{std::move(o)}, expr{std::move(e)} {
   setType(t);
 
   if (!expr) {
@@ -255,8 +254,8 @@ bool BinaryExpr::isLeftValue() const {
   return false;
 }
 
-BinaryExpr::BinaryExpr(shared_ptr<Expr> l, Token o, shared_ptr<Expr> r, std::shared_ptr<Type> t)
-: left{move(l)}, op{o}, right{move(r)} {
+BinaryExpr::BinaryExpr(std::shared_ptr<Expr> l, Token o, std::shared_ptr<Expr> r, std::shared_ptr<Type> t)
+: left{std::move(l)}, op{o}, right{std::move(r)} {
   setType(t);
   if (!left) {
     throw std::domain_error("BinaryExpr: left is required");
@@ -283,7 +282,7 @@ Expr::Kind FunctionCall::getKind() const { return Kind::FunctionCall; }
 
 
 
-ostream& operator<<(ostream& os, Expr* x) {
+std::ostream& operator<<(std::ostream& os, Expr* x) {
   if (dynamic_cast<IdentifierExpr*>(x)) {
     auto t = dynamic_cast<IdentifierExpr*>(x);
     os << t->getLexeme();

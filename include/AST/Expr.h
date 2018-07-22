@@ -283,7 +283,14 @@ public:
   virtual void accept(ASTVisitor& t) const {
      t.visit(*this);
   }
-
+  std::vector<std::shared_ptr<TreeElement>> getChildren() const {
+    std::vector<std::shared_ptr<TreeElement>> children;
+    children.push_back(name);
+    for (auto arg: arguments) {
+      children.push_back(arg);
+    }
+    return children;
+  }
   FunctionCall(std::shared_ptr<IdentifierExpr> n, std::vector<std::shared_ptr<Expr>>&& a);
   bool isLeftValue() const;
   Expr::Kind getKind() const;

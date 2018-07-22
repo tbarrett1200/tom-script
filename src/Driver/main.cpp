@@ -1,4 +1,6 @@
 
+
+ 
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -8,6 +10,7 @@
 #include "Basic/SourceCode.h"
 #include "Basic/CompilerException.h"
 #include "Parse/Parser.h"
+#include "AST/ASTXMLPrintWalker.h"
 
 int main(int argc, char const *argv[]) {
   if (argc != 2) {
@@ -19,7 +22,10 @@ int main(int argc, char const *argv[]) {
   auto parser = Parser{SourceManager::currentSource};
 
   try {
-    std::shared_ptr<StmtList> node = parser.parseStmtList();
+    std::vector<std::shared_ptr<Stmt>> node = parser.parseStmtList();
+    for (auto stmt: node) {
+      XMLPrintWalker(std::cout).traverse(stmt);
+    }
   } catch (CompilerException e) {
     std::cerr << e << std::endl;
   }
