@@ -13,7 +13,6 @@ class TypeValidationVisitor: public ASTVisitor, public ASTVisitorResult<bool> {
   void visit(const class IdentifierExpr &) override;
   void visit(const class TupleExpr &) override;
   void visit(const class AccessorExpr &) override;
-  void visit(const class OperatorExpr&) override;
   void visit(const class BoolExpr &) override;
   void visit(const class UnaryExpr &) override;
   void visit(const class BinaryExpr &) override;

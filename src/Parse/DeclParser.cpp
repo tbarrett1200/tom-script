@@ -87,11 +87,11 @@ std::shared_ptr<LetDecl> Parser::parseLetDecl() {
 }
 
 std::shared_ptr<ParamDecl> Parser::parseParamDecl() {
-  auto primary = expectToken(Token::identifier, "identifier");
-  auto secondary = acceptToken(Token::identifier) ? expectToken(Token::identifier, "identifier") : primary;
+  auto name = expectToken(Token::identifier, "identifier");
   expectToken(Token::colon, "colon");
   auto type = parseType();
-  return std::make_shared<ParamDecl>(primary, secondary, type);
+  scope.addType(name.lexeme, type);
+  return std::make_shared<ParamDecl>(name, type);
 }
 
 std::shared_ptr<ParamDeclList> Parser::parseParamDeclList() {
@@ -101,6 +101,8 @@ std::shared_ptr<ParamDeclList> Parser::parseParamDeclList() {
 }
 
 std::shared_ptr<FuncDecl> Parser::parseFuncDecl() {
+  // add function scoping
+  scope.push();
   expectToken(Token::kw_func, "func");
   auto name = expectToken({Token::identifier, Token::operator_id}, "identifier");
   expectToken(Token::l_paren, "left parenthesis");
@@ -108,6 +110,12 @@ std::shared_ptr<FuncDecl> Parser::parseFuncDecl() {
   expectToken(Token::r_paren, "right parenthesis");
   if (!consumeOperator("->")) throw CompilerException(token().getLocation(),  "error: expected ->");
   auto type = parseType();
+  // make function available for recursion
+  scope.addType(name.lexeme, type);
   auto stmt = parseCompoundStmt();
+  // remove function scoping
+  scope.pop();
+  // make function available to outer scope
+  scope.addType(name.lexeme, type);
   return std::make_shared<FuncDecl>(name, param, type, stmt);
 }

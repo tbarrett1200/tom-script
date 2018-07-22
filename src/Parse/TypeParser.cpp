@@ -1,5 +1,7 @@
 #include "Parse/Parser.h"
 #include "AST/Type.h"
+#include "Parse/Scope.h"
+
 #include "Basic/CompilerException.h"
 
 #include <memory>
@@ -27,48 +29,38 @@ shared_ptr<Type> Parser::parseType() {
   }
 }
 
-shared_ptr<TypeIdentifier> Parser::parseTypeIdentifier() {
+shared_ptr<Type> Parser::parseTypeIdentifier() {
   auto token = expectToken(Token::identifier, "type identifier");
-  return make_shared<TypeIdentifier>(token);
+  if (token.lexeme == "Integer") return IntegerType::getInstance();
+  else if (token.lexeme == "Boolean") return BooleanType::getInstance();
+  else if (token.lexeme == "Double") return DoubleType::getInstance();
+  else {
+    auto type = scope.getType(token.lexeme);
+    if (type != nullptr) return type;
+    else  throw CompilerException(token.getLocation(),  "error: unrecognized type identifier");
+  }
 }
 
-shared_ptr<TypeLabel> Parser::parseTypeLabel() {
-  auto token = expectToken(Token::identifier, "label");
-  return make_shared<TypeLabel>(token);
-}
-
-shared_ptr<LabeledType> Parser::parseLabeledType() {
-  auto label = parseTypeLabel();
-  expectToken(Token::colon, "colon");
-  auto type = parseType();
-  return make_shared<LabeledType>(move(label), move(type));
-}
-
-shared_ptr<TypeList> Parser::parseTupleTypeElementList() {
-  auto element = token(1).is(Token::colon) ? parseLabeledType() : parseType();
-  if (consumeToken(Token::comma)) {
-    auto list = parseTupleTypeElementList();
-    return make_shared<TypeList>(move(element), move(list));
-  } else return make_shared<TypeList>(move(element), nullptr);
+std::vector<std::shared_ptr<Type>> Parser::parseTupleTypeElementList() {
+  std::vector<std::shared_ptr<Type>> elements;
+  elements.push_back(parseType());
+  while (consumeToken(Token::comma)) {
+    elements.push_back(parseType());
+  }
+  return elements;
 }
 
 shared_ptr<TupleType> Parser::parseTupleType() {
   expectToken(Token::l_paren, "left parenthesis");
-  auto list = token().is(Token::r_paren)? nullptr: parseTupleTypeElementList();
+  auto list = token().is(Token::r_paren)? std::vector<std::shared_ptr<Type>>(): parseTupleTypeElementList();
   expectToken(Token::r_paren, "right parenthesis");
   return make_shared<TupleType>(move(list));
 }
 
 shared_ptr<FunctionType> Parser::parseFunctionType() {
   expectToken(Token::l_paren, "left parenthesis");
-  auto list = token().is(Token::r_paren)? nullptr: parseTupleTypeElementList();
+  auto list = token().is(Token::r_paren)? std::vector<std::shared_ptr<Type>>(): parseTupleTypeElementList();
   expectToken(Token::r_paren, "right parenthesis");
-
-  if (list && list->has<LabeledType>()) {
-    auto expr = dynamic_cast<LabeledType*>(list->element.get());
-    auto label = expr->label->token;
-    throw report(label, "error: function type parameter elements may not be labeled");
-  }
 
   if (!consumeOperator("->")) throw CompilerException(token().getLocation(),  "error: expected ->");
   auto type = parseType();
@@ -77,16 +69,9 @@ shared_ptr<FunctionType> Parser::parseFunctionType() {
 
 shared_ptr<Type> Parser::parseTupleOrFunctionType() {
   expectToken(Token::l_paren, "left parenthesis");
-  auto list = token().is(Token::r_paren)? nullptr: parseTupleTypeElementList();
+  auto list = token().is(Token::r_paren)? std::vector<std::shared_ptr<Type>>(): parseTupleTypeElementList();
   expectToken(Token::r_paren, "right parenthesis");
   if (!consumeOperator("->")) return make_shared<TupleType>(move(list));
-
-  if (list && dynamic_cast<LabeledType*>(list->element.get())) {
-    auto expr = dynamic_cast<LabeledType*>(list->element.get());
-    auto label = expr->label->token;
-    throw report(label, "warning: function type parameter elements may not be labeled");
-  }
-
   auto type = parseType();
   return make_shared<FunctionType>(move(list), move(type));
 }

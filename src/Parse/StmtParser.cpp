@@ -75,6 +75,7 @@ shared_ptr<ExprStmt> Parser::parseExprStmt() {
 }
 
 shared_ptr<StmtList> Parser::parseStmtList()  {
+  
   auto stmt = parseStmt();
   while(token().is(Token::new_line)) consume();
   if (!acceptToken(Token::eof) && !acceptToken(Token::r_brace)) {

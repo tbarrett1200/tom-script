@@ -1,5 +1,6 @@
 #include "AST/Expr.h"
 #include "Parse/Parser.h"
+#include "Parse/Scope.h"
 #include "Basic/CompilerException.h"
 
 #include <functional>
@@ -35,20 +36,20 @@ shared_ptr<Expr> Parser::parseExpr(int precedence) {
  * goal is to replace the expression-list recursive definition with a vector
  * of expressions.
  */
-shared_ptr<ExprList> Parser::parseExprList() {
+std::vector<std::shared_ptr<Expr>> Parser::parseExprList() {
   std::vector<std::shared_ptr<Expr>> elements;
-  elements.push_back(parseLabeledExprOrExpr());
+  elements.push_back(parseExpr());
   while (consumeToken(Token::comma)) {
-    elements.push_back(parseLabeledExprOrExpr());
+    elements.push_back(parseExpr());
   }
-  return std::make_shared<ExprList>(elements);
+  return elements;
 }
 
-shared_ptr<OperatorExpr> Parser::parseOperatorExpr(int precedence) {
+Token Parser::parseOperator(int precedence) {
   Token tok = token();
   if (OperatorTable::level(precedence).contains(tok.lexeme)) {
     consume();
-    return make_shared<OperatorExpr>(tok, OperatorTable::level(precedence));
+    return tok;
   } else throw CompilerException(token().getLocation(),  "error: expected operator");
 }
 
@@ -70,12 +71,17 @@ shared_ptr<Expr> Parser::parseIdentifierOrFunctionCallOrAccessor() {
 
 shared_ptr<IdentifierExpr> Parser::parseIdentifier() {
   auto token = expectToken({Token::identifier, Token::operator_id}, "identifier");
-  return make_shared<IdentifierExpr>(token);
+  auto type = scope.getType(token.lexeme);
+  if (type == nullptr) {
+    throw CompilerException(token.getLocation(), std::string("undeclared identifier ") + token.lexeme );
+  } else {
+    return std::make_shared<IdentifierExpr>(token, type);
+  }
 }
 
-shared_ptr<ExprList> Parser::parseFunctionParameters() {
+std::vector<std::shared_ptr<Expr>> Parser::parseFunctionParameters() {
   expectToken(Token::l_paren, "left parenthesis");
-  if (consumeToken(Token::r_paren)) return nullptr;
+  if (consumeToken(Token::r_paren)) return {};
   auto list = parseExprList();
   expectToken(Token::r_paren, "right parenthesis");
   return list;
@@ -84,17 +90,9 @@ shared_ptr<ExprList> Parser::parseFunctionParameters() {
 shared_ptr<Expr> Parser::parseTupleExpr() {
   expectToken(Token::l_paren, "left parenthesis");
   if (acceptToken(Token::colon)) throw CompilerException(token().getLocation(),  "error: expected labeled tuple member");
-  auto list = parseExprList();
+  std::vector<std::shared_ptr<Expr>> list = parseExprList();
   expectToken(Token::r_paren, "right parenthesis");
-  if (list && list->size() == 1) {
-    if (dynamic_cast<LabeledExpr*>(list->element.get())) {
-      auto expr = dynamic_cast<LabeledExpr*>(list->element.get());
-      auto label = expr->label->name;
-      throw report(label, "error: expressions may not be labeled");
-    } else return move(list->element);
-  } else {
-    return make_shared<TupleExpr>(move(list));
-  }
+  return make_shared<TupleExpr>(move(list));
 }
 
 shared_ptr<FunctionCall> Parser::parseFunctionCall() {
@@ -130,9 +128,9 @@ shared_ptr<Expr> Parser::parseUnaryExpr() {
   if (!OperatorTable::level(1).contains(token().lexeme)) {
     return parseValueExpr();
   } else {
-    auto op = parseOperatorExpr(1);
+    auto op = parseOperator(1);
     auto expr = parseValueExpr();
-    return make_shared<UnaryExpr>(move(op),move(expr));
+    return make_shared<UnaryExpr>(move(op),move(expr), expr->getType());
   }
 }
 
@@ -152,17 +150,17 @@ shared_ptr<Expr> Parser::parseBinaryExpr(int precedence) {
 shared_ptr<Expr> Parser::parseInfixNone(int p) {
   auto left = parseExpr(p-1);
   if (!OperatorTable::level(p).contains(token().lexeme)) return left;
-  auto op = parseOperatorExpr(p);
+  auto op = parseOperator(p);
   auto right = parseExpr(p-1);
-  return make_shared<BinaryExpr>(move(left), move(op), move(right));
+  return make_shared<BinaryExpr>(move(left), move(op), move(right), left->getType());
 }
 
 shared_ptr<Expr> Parser::parseInfixRight(int p) {
   auto left = parseExpr(p-1);
   if (!OperatorTable::level(p).contains(token().lexeme)) return left;
-  auto op = parseOperatorExpr(p);
+  auto op = parseOperator(p);
   auto right = parseExpr(p);
-  return make_shared<BinaryExpr>(move(left), move(op), move(right));
+  return make_shared<BinaryExpr>(move(left), move(op), move(right), left->getType());
 }
 
 shared_ptr<Expr> Parser::parseInfixLeft(int precedence) {
@@ -170,28 +168,11 @@ shared_ptr<Expr> Parser::parseInfixLeft(int precedence) {
   function<shared_ptr<Expr>(int,shared_ptr<Expr>)> continueParse;
   continueParse = [this, &continueParse](int precedence, shared_ptr<Expr> left) -> shared_ptr<Expr> {
     if (!OperatorTable::level(precedence).contains(token().lexeme)) return left;
-    auto op = parseOperatorExpr(precedence);
+    auto op = parseOperator(precedence);
     auto right = parseExpr(precedence-1);
-    return continueParse(precedence, make_shared<BinaryExpr>(move(left),move(op),move(right)));
+    return continueParse(precedence, make_shared<BinaryExpr>(move(left),move(op),move(right),left->getType()));
   };
   return continueParse(precedence, move(left));
-}
-
-shared_ptr<ExprLabel> Parser::parseExprLabel() {
-  auto token = expectToken(Token::identifier, "label");
-  return make_shared<ExprLabel>(token);
-}
-
-shared_ptr<LabeledExpr> Parser::parseLabeledExpr() {
-  auto label = parseExprLabel();
-  expectToken(Token::colon, "colon");
-  auto expr = parseExpr();
-  return make_shared<LabeledExpr>(move(label), move(expr));
-}
-
-shared_ptr<Expr> Parser::parseLabeledExprOrExpr() {
-  if (token().is(Token::identifier) && token(1).is(Token::colon)) return parseLabeledExpr();
-  else return parseExpr();
 }
 
 shared_ptr<IntegerExpr> Parser::parseIntegerExpr() {
@@ -206,9 +187,9 @@ shared_ptr<DoubleExpr> Parser::parseDoubleExpr() {
 
 shared_ptr<ListExpr> Parser::parseListExpr() {
   auto l_square = expectToken(Token::l_square, "[");
-  auto contents = parseExprList();
+  auto &&contents = parseExprList();
   auto r_square = expectToken(Token::r_square, "]");
-  return std::make_shared<ListExpr>(contents);
+  return std::make_shared<ListExpr>(std::move(contents));
 }
 
 shared_ptr<StringExpr> Parser::parseStringExpr() {

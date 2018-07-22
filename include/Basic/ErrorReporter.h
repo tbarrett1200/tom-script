@@ -3,6 +3,7 @@
 
 #include <ostream>
 #include "Basic/SourceCode.h"
+#include "Basic/CompilerException.h"
 #include "Basic/Token.h"
 
 // Reports compiler errors in a human readable format
@@ -24,16 +25,17 @@ public:
   // constructs an ErrorReporter object for the given file buffer.
   ErrorReporter(SourceCode *src) : source{src} {}
 
-  std::string report(int r, int c, std::string err) {
+  CompilerException report(int r, int c, std::string err) {
     std::stringstream message;
-    message << source->getPath() << ":" << r << ":"<< c << ": " << err << std::endl;
-    message << source->getLine(r);
-    message << std::string(c, ' ') << "^" << std::endl;
-    return message.str();
+    // message << source->getPath() << ":" << r << ":"<< c << ": " << err << std::endl;
+    // message << source->getLine(r);
+    // message << std::string(c, ' ') << "^" << std::endl;
+    return CompilerException({r, c}, err);
   }
 
-  std::string report(Token t, std::string err) {
-    return report(t.row, t.col, err);
+  CompilerException report(Token t, std::string err) {
+    return CompilerException(t.getLocation(), err);
+
   }
 
 };

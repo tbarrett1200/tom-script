@@ -22,6 +22,8 @@ public:
     #undef TYPE
   };
 
+  virtual ~Type() = default;
+
   /**
    * A convenience method for easy casting from a generic Type to
    * any of its possible derived types. Returns null if unable to cast.
@@ -96,18 +98,13 @@ public:
  */
 class PointerType: public Type {
 private:
-  static PointerType *singleton;
+  static std::shared_ptr<PointerType> singleton;
 
 
 public:
   PointerType() = default;
 
-  static PointerType* getInstance() {
-    if (singleton == nullptr) {
-      singleton = new PointerType();
-    }
-    return singleton;
-  }
+  static std::shared_ptr<PointerType> getInstance();
 
   /**
    * An Integer's canonical type is always itself.
@@ -123,6 +120,39 @@ public:
     return Type::Kind::PointerType;
   }
 };
+
+/**
+ * A builtin
+ *
+ */
+class BooleanType: public Type {
+private:
+  static std::shared_ptr<BooleanType> singleton;
+
+public:
+
+  BooleanType() = default;
+
+  BooleanType(const BooleanType&) = delete;
+  BooleanType(BooleanType&&) = delete;
+
+  static std::shared_ptr<BooleanType> getInstance();
+
+  /**
+   * An Integer's canonical type is always itself.
+   */
+  const Type* getCanonicalType() const override {
+    return this;
+  }
+
+  /**
+   * Returns Type::Kind::IntegerType
+   */
+  Type::Kind getKind() const override {
+    return Type::Kind::BooleanType;
+  }
+};
+
 
 /**
  * A builtin
@@ -157,51 +187,6 @@ public:
 };
 
 
-class TypeLabel  {
-public:
-  Token token;
-
-  // Constructors
-  TypeLabel(Token n) : token{n} {}
-
-};
-
-class TypeList  {
-public:
-  std::shared_ptr<Type> element;
-  std::shared_ptr<TypeList> list;
-
-  // Constructors
-  TypeList(std::vector<std::shared_ptr<Type>> l);
-  TypeList(std::shared_ptr<Type> e, std::shared_ptr<TypeList> l);
-
-
-  // Utility Methods
-  int size() const;
-  std::shared_ptr<Type> operator[] (const int);
-
-  template <typename T> bool has() const {
-    if (list == nullptr) return true;
-    else if (!dynamic_cast<T*>(element.get())) return false;
-    else return list->has<T>();
-  };
-};
-
-
-class LabeledType : public Type {
-public:
-  std::shared_ptr<TypeLabel> label;
-  std::shared_ptr<Type> type;
-
-  // Constructors
-  LabeledType(std::shared_ptr<TypeLabel> p, std::shared_ptr<Type> t);
-
-  // Type Overrides
-  Type::Kind getKind() const;
-
-};
-
-
 class TypeIdentifier : public Type {
 public:
   Token token;
@@ -223,13 +208,10 @@ public:
 
 class TupleType : public Type {
 public:
-  std::shared_ptr<TypeList> list;
+  std::vector<std::shared_ptr<Type>> elements;
 
   // Constructors
-  TupleType(std::shared_ptr<TypeList> l) : list{move(l)} {}
-
-  // Factory Methods
-  static std::shared_ptr<TupleType> make(std::shared_ptr<TypeList>);
+  TupleType(std::vector<std::shared_ptr<Type>>&& l) : elements{move(l)} {}
 
   // Type Overrides
   Type::Kind getKind() const { return Kind::TupleType; }
@@ -238,11 +220,11 @@ public:
 
 class FunctionType : public Type {
 public:
-  std::shared_ptr<TypeList> params;
+  std::vector<std::shared_ptr<Type>> params;
   std::shared_ptr<Type> returns;
 
   // Constructors
-  FunctionType(std::shared_ptr<TypeList> p, std::shared_ptr<Type> r) : params{p}, returns{r} {}
+  FunctionType(std::vector<std::shared_ptr<Type>>&& p, std::shared_ptr<Type> r) : params{std::move(p)}, returns{r} {}
 
   // Type Overridess
   Type::Kind getKind() const { return Kind::FunctionType; }
@@ -284,15 +266,6 @@ public:
 
 };
 
-std::ostream& operator<<(std::ostream& os, Type* x);
-std::ostream& operator<<(std::ostream& os, TypeLabel* x);
-std::ostream& operator<<(std::ostream& os, TypeList* x);
-
-bool equal(std::shared_ptr<Type> t1, std::shared_ptr<Type> t2, class DeclarationContext *c);
-bool equal(std::shared_ptr<TypeList> t1, std::shared_ptr<TypeList> t2, class DeclarationContext *c);
-
-bool operator != (const Type& l, const Type& r);
-bool operator == (const Type& l, const Type& r);
-bool operator == (const TypeList& l, const TypeList& r);
+bool equal(std::shared_ptr<Type> t1, std::shared_ptr<Type> t2);
 
 #endif

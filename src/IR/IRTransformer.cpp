@@ -23,13 +23,7 @@
 void IRTransformer::visit(const Expr &tree) {
   // TODO: implement
 }
-/**
- * A Visitor that generates LLVM IR from an Expression
- *
- */
-void IRTransformer::visit(const LabeledExpr &tree) {
-  // TODO: implement
-}
+
 /**
  * A Visitor that generates LLVM IR from an Expression
  *
@@ -86,9 +80,7 @@ void  IRTransformer::visit(const AccessorExpr &tree) {
  * A Visitor that generation LLVM IR from an Expression
  *
  */
-void  IRTransformer::visit(const OperatorExpr&tree) {
-  // TODO: Implement
-}
+
 /**
  * A Visitor that generation LLVM IR from an Expression
  *
@@ -152,12 +144,5 @@ void IRTransformer::visit(const BinaryExpr &tree) {
  *
  */
 void  IRTransformer::visit(const FunctionCall &tree) {
-  // TODO: Implement
-}
-/**
- * A Visitor that generation LLVM IR from an Expression
- *
- */
-void  IRTransformer::visit(const StackPointer &tree) {
   // TODO: Implement
 }

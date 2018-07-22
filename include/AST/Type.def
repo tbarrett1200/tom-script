@@ -5,7 +5,7 @@
 TYPE(PointerType, Type)
 TYPE(IntegerType, Type)
 TYPE(DoubleType, Type)
-TYPE(LabeledType, Type)
+TYPE(BooleanType, Type)
 TYPE(TypeIdentifier, Type)
 TYPE(TupleType, Type)
 TYPE(FunctionType, Type)

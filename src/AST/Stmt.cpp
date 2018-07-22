@@ -215,42 +215,7 @@ bool DeclStmt::returns() const {
 }
 
 
-ostream& operator<<(ostream& os, Stmt* x) {
-  if (dynamic_cast<IdentifierExpr*>(x)) {
-    auto t = dynamic_cast<IdentifierExpr*>(x);
-    os << t->getLexeme();
-  } else if (dynamic_cast<FunctionCall*>(x)) {
-    auto t = dynamic_cast<FunctionCall*>(x);
-    os << t->name << t->arguments;
-  } else if (dynamic_cast<TupleExpr*>(x)) {
-    auto t = dynamic_cast<TupleExpr*>(x);
-    os << "(" << t->list << ")";
-  } else if (dynamic_cast<IntegerExpr*>(x)) {
-    auto t = dynamic_cast<IntegerExpr*>(x);
-    os  << t->token.lexeme ;
-  } else if (dynamic_cast<DoubleExpr*>(x)) {
-    auto t = dynamic_cast<DoubleExpr*>(x);
-    os  << t->token.lexeme ;
-  } else if (dynamic_cast<BoolExpr*>(x)) {
-    auto t = dynamic_cast<BoolExpr*>(x);
-    os  << t->token.lexeme ;
-  } else if (dynamic_cast<StringExpr*>(x)) {
-    auto t = dynamic_cast<StringExpr*>(x);
-    os  << t->token.lexeme ;
-  } else if (dynamic_cast<OperatorExpr*>(x)) {
-    auto t = dynamic_cast<OperatorExpr*>(x);
-    os  << t->token.lexeme ;
-  } else if (dynamic_cast<FunctionCall*>(x)) {
-    auto t = dynamic_cast<FunctionCall*>(x);
-    os  << t->name << "(args)";
-  } else if (dynamic_cast<StackPointer*>(x)) {
-    auto t = dynamic_cast<StackPointer*>(x);
-    os  << "*" << t->location ;
-  } else if (x == nullptr) {
-    os << "nullptr";
-  } else {
-    os << "unknown stmt";
-  }
-
+std::ostream& operator<<(std::ostream& os, Stmt* x) {
+  os << "stmt";
   return os;
 }

@@ -1,7 +1,6 @@
 #ifndef AST_STMT_H
 #define AST_STMT_H
 
-
 #include "AST/TreeElement.h"
 #include "AST/Expr.h"
 #include "AST/Decl.h"
@@ -19,6 +18,8 @@ public:
     #include "AST/Stmt.def"
     #undef STMT
   };
+
+  virtual ~Stmt() = default;
 
   SourceLocation getLocation() const {
     return {0, 0};
@@ -49,7 +50,6 @@ public:
 class CompoundStmt : public Stmt {
 public:
   std::shared_ptr<StmtList> list;
-  std::shared_ptr<DeclarationContext> context = std::make_shared<DeclarationContext>();
 
   // Constructors
   CompoundStmt(std::shared_ptr<StmtList> l);

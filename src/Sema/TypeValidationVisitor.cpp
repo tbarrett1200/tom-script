@@ -18,31 +18,35 @@ void TypeValidationVisitor::visit(const LabeledExpr &tree) {
  *
  */
 void TypeValidationVisitor::visit(const StringExpr &tree) {
-  throw std::logic_error(
-    "string expressions not yet supported"
-  );
+//  tree.setType(StringType::getInstance());
+
 }
 /**
  *
  */
 void TypeValidationVisitor::visit(const IntegerExpr &tree) {
-  if (!tree.getType()->isIntegerType()) throw std::logic_error(
-    "integer expression does not have an integer type"
-  );
+  //tree.setType(IntegerType::getInstance());
 }
 /**
  *
  */
 void TypeValidationVisitor::visit(const DoubleExpr &tree) {
-  if(!tree.getType()->isDoubleType()) throw std::logic_error(
-    "double expression does not have an double type"
-  );
+  //tree.setType(DoubleType::getInstance());
 }
 /**
  *
  */
 void TypeValidationVisitor::visit(const ListExpr &tree) {
-  // TODO
+  // cType *common = nullptr;
+  // for (auto e: tree.getElements()) {
+  //   e->accept(*this);
+  //   if (common == nullptr) {
+  //     common = e->getType()->getCanonicalType();
+  //   } else if (common != e->getType()->getCanonicalType()) {
+  //     throw std::logic_error('list element types are inconsistent');
+  //   }
+  // }
+  // tree.setType(ListType::getInstance(common));
 }
 /**
  *
@@ -65,9 +69,7 @@ void TypeValidationVisitor::visit(const AccessorExpr &tree) {
 /**
  *
  */
-void TypeValidationVisitor::visit(const OperatorExpr &tree) {
-  // TODO
-}
+
 /**
  *
  */

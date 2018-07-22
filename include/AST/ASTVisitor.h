@@ -25,7 +25,6 @@ public:
   virtual void visit(const class IdentifierExpr &) = 0;
   virtual void visit(const class TupleExpr &) = 0;
   virtual void visit(const class AccessorExpr &) = 0;
-  virtual void visit(const class OperatorExpr&) = 0;
   virtual void visit(const class BoolExpr &) = 0;
   virtual void visit(const class UnaryExpr &) = 0;
   virtual void visit(const class BinaryExpr &) = 0;

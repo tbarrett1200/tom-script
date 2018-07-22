@@ -4,8 +4,11 @@
 #include <deque>
 
 #include "Basic/Token.h"
+#include "Basic/CompilerException.h"
+
 #include "Parse/Lexer.h"
 #include "Parse/Operator.h"
+#include "Parse/Scope.h"
 #include "AST/Decl.h"
 #include "AST/Expr.h"
 #include "AST/Type.h"
@@ -15,14 +18,17 @@ class Parser {
   SourceCode* source;
   Lexer lexer;
   std::deque<Token> tokens;
+  ScopeManager scope;
   static std::vector<int> exprStartTokens;
 
 public:
   Parser(SourceCode* source);
-
+  ScopeManager& getScopeManager() {
+    return scope;
+  }
   Token token(int index=0);
   void consume();
-  std::string report(Token, std::string);
+  CompilerException report(Token, std::string);
 
   void consumeUntil(std::vector<int> types);
 
@@ -37,10 +43,8 @@ public:
 
   static shared_ptr<Type> makeType(std::string);
   shared_ptr<Type> parseType();
-  shared_ptr<TypeIdentifier> parseTypeIdentifier();
-  shared_ptr<TypeLabel> parseTypeLabel();
-  shared_ptr<LabeledType> parseLabeledType();
-  shared_ptr<TypeList> parseTupleTypeElementList();
+  shared_ptr<Type> parseTypeIdentifier();
+  std::vector<std::shared_ptr<Type>> parseTupleTypeElementList();
   shared_ptr<TupleType> parseTupleType();
   shared_ptr<FunctionType> parseFunctionType();
   shared_ptr<Type> parseTupleOrFunctionType();
@@ -65,7 +69,7 @@ public:
 
   shared_ptr<Expr> parseExpr(int precedence = OperatorTable::size());
   shared_ptr<Expr> parseParenthesizedExpr();
-  shared_ptr<OperatorExpr> parseOperatorExpr(int precedence);
+  Token parseOperator(int precedence);
   shared_ptr<Expr> parseBinaryExpr(int precedence);
   shared_ptr<Expr> parseInfixNone(int p);
   shared_ptr<Expr> parseInfixLeft(int p);
@@ -75,16 +79,13 @@ public:
   shared_ptr<IntegerExpr> parseIntegerExpr();
   shared_ptr<DoubleExpr> parseDoubleExpr();
   shared_ptr<StringExpr> parseStringExpr();
-  shared_ptr<ExprLabel> parseExprLabel();
   shared_ptr<ListExpr> parseListExpr();
-  shared_ptr<LabeledExpr> parseLabeledExpr();
-  shared_ptr<Expr> parseLabeledExprOrExpr();
   shared_ptr<Expr> parseIdentifierOrFunctionCallOrAccessor();
-  shared_ptr<ExprList> parseExprList();
+  std::vector<std::shared_ptr<Expr>> parseExprList();
   shared_ptr<IdentifierExpr> parseIdentifier();
   shared_ptr<Expr> parseTupleExpr();
   shared_ptr<FunctionCall> parseFunctionCall();
-  shared_ptr<ExprList> parseFunctionParameters();
+  std::vector<std::shared_ptr<Expr>> parseFunctionParameters();
 
   shared_ptr<Stmt> makeStmt(std::string text);
   shared_ptr<Stmt> parseStmt();

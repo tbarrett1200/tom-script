@@ -10,12 +10,18 @@
 
 struct SourceLocation {
   int row, col;
-  SourceLocation() : row{0}, col{0} {};
+  SourceLocation() = default;
   SourceLocation(int r, int c) : row{r}, col{c} {};
 };
 
-std::ostream& operator<<(std::ostream &os, SourceLocation cat);
+struct SourceRange {
+  SourceLocation start;
+  SourceLocation end;
+  SourceRange() = default;
+  SourceRange(SourceLocation s, SourceLocation e) : start{s}, end{e} {};
+};
 
+std::ostream& operator<<(std::ostream &os, SourceLocation cat);
 
 // Stores the source code of a single file and provides common access requests
 // to the file.

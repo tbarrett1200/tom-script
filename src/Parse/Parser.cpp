@@ -1,6 +1,8 @@
 #include "Parse/Parser.h"
 #include "Basic/Token.h"
 #include "Basic/ErrorReporter.h"
+#include "Basic/CompilerException.h"
+
 #include "Parse/Operator.h"
 
 #include <assert.h>
@@ -32,7 +34,7 @@ void Parser::consumeUntil(std::vector<int> types) {
   }
 }
 
-std::string Parser::report(Token tok, std::string msg) {
+CompilerException Parser::report(Token tok, std::string msg) {
   return ErrorReporter{source}.report(tok, msg);
 }
 
