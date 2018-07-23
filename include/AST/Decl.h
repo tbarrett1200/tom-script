@@ -142,7 +142,11 @@ public:
   std::shared_ptr<Type> getType() const {
     return fType;
   }
+
   std::vector<std::shared_ptr<TreeElement>> getChildren() const;
+  const std::vector<std::shared_ptr<ParamDecl>>& getParams() const {
+    return fParams;
+  };
 
 };
 #endif

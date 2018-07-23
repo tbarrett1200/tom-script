@@ -67,6 +67,7 @@ std::shared_ptr<LetDecl> Parser::parseLetDecl() {
   expectToken(Token::kw_let, "let");
   auto name = expectToken(Token::identifier, "identifier");
   std::shared_ptr<Type> type = consumeToken(Token::colon)? parseType(): nullptr;
+  scope.addType(name.lexeme, type);
   if (consumeOperator("=")) {
     auto expr = parseExpr();
     return std::make_shared<LetDecl>(name, move(type), move(expr));

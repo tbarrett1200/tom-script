@@ -19,6 +19,8 @@
 #include "AST/Expr.h"
 #include "AST/Stmt.h"
 #include "AST/Decl.h"
+#include <vector>
+#include <map>
 
 class LLVMTransformer {
 private:
@@ -26,6 +28,7 @@ private:
   llvm::Module* fModule;
   llvm::BasicBlock *fCurrentBlock;
 
+  std::map<std::string, llvm::Value*> fNamedValues;
 public:
   LLVMTransformer(llvm::LLVMContext& context, llvm::Module* module) : fContext{context} {
     fModule = module;
@@ -35,14 +38,18 @@ public:
     if (type.params.size() == 0) {
       return llvm::FunctionType::get(transformType(*type.returns), false);
     } else {
-      throw std::logic_error("functions with parameters not yet supported");
+      std::vector<llvm::Type*> paramTypes;
+      for (auto paramType: type.params) {
+        paramTypes.push_back(transformType(*paramType));
+      }
+      return llvm::FunctionType::get(transformType(*type.returns), paramTypes, false);
     }
   }
 
   llvm::Type* transformType(const Type &type) {
-    if (type.as<IntegerType>()) {
+    if (type.isIntegerType()) {
       return llvm::Type::getInt64Ty(fContext);
-    } else if (type.as<DoubleType>()) {
+    } else if (type.isDoubleType()) {
       return llvm::Type::getDoubleTy(fContext);
     } else {
       throw std::logic_error("only integer types are currently supported");
@@ -52,11 +59,29 @@ public:
   llvm::Function* transformFunction(const FuncDecl &func) {
     llvm::FunctionType* type = transformFunctionType(*std::dynamic_pointer_cast<FunctionType>(func.getType()));
     llvm::Function* function = llvm::Function::Create(type, llvm::Function::ExternalLinkage, func.getName(), fModule);
+
+    int index = 0;
+    for (auto &arg : function->args()) {
+      ParamDecl *param = func.getParams()[index++].get();
+      arg.setName(param->getName());
+      fNamedValues[param->getName()] = &arg;
+    }
+
     fCurrentBlock = llvm::BasicBlock::Create(fContext, "entry", function);
     llvm::IRBuilder<> builder{fCurrentBlock};
     for (auto stmt: func.getBlockStmt()->list) {
       if (std::dynamic_pointer_cast<ReturnStmt>(stmt)) {
         builder.CreateRet(transformExpr(*std::dynamic_pointer_cast<ReturnStmt>(stmt)->expr));
+      } else if (std::dynamic_pointer_cast<DeclStmt>(stmt)) {
+        const DeclStmt* declStmt = dynamic_cast<const DeclStmt*>(stmt.get());
+        const Decl* decl = dynamic_cast<const Decl*>(declStmt->decl.get());
+        if (dynamic_cast<const LetDecl*>(decl)) {
+          const LetDecl *letDecl = dynamic_cast<const LetDecl*>(decl);
+          llvm::Value *v = transformExpr(*letDecl->expr);
+          fNamedValues[letDecl->getName()] = v;
+        } else {
+          throw std::logic_error("only let declarations are currently supported");
+        }
       } else {
         throw std::logic_error("only return statements are currently supported");
       }
@@ -71,8 +96,11 @@ public:
       return llvm::ConstantFP::get(transformType(*expr.getType()), (dynamic_cast<const DoubleExpr&>(expr).getDouble()));
     } else if (dynamic_cast<const BinaryExpr*>(&expr)) {
       return transformBinaryExpr(dynamic_cast<const BinaryExpr&>(expr));
-    }  else {
-      throw std::logic_error("only integer expressions currently supported");
+    } else if (dynamic_cast<const IdentifierExpr*>(&expr)) {
+      const IdentifierExpr& identifierExpr = dynamic_cast<const IdentifierExpr&>(expr);
+      return fNamedValues[identifierExpr.getLexeme()];
+    } else {
+      throw std::logic_error("only integer and double expressions currently supported ");
     }
   }
 

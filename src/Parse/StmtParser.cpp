@@ -78,11 +78,9 @@ shared_ptr<ExprStmt> Parser::parseExprStmt() {
 std::vector<std::shared_ptr<Stmt>> Parser::parseStmtList()  {
   std::vector<std::shared_ptr<Stmt>> elements;
   elements.push_back(parseStmt());
-  while (consumeToken(Token::new_line)) {
-    if (token().is(Token::r_brace)) break;
+  while (token().isNot(Token::r_brace) && token().isNot(Token::eof)) {
     elements.push_back(parseStmt());
   }
-  while(consumeToken(Token::new_line));
   return elements;
 }
 
@@ -95,6 +93,8 @@ shared_ptr<WhileLoop> Parser::parseWhileLoop()  {
 
 shared_ptr<ReturnStmt> Parser::parseReturnStmt() {
   expectToken(Token::kw_return, "return");
-  auto expr = consumeToken(Token::new_line) ? nullptr: parseExpr();
+  if (consumeToken(Token::new_line)) return std::make_shared<ReturnStmt>(nullptr);
+  auto expr = parseExpr();
+  expectToken(Token::new_line, "new line");
   return std::make_shared<ReturnStmt>(expr);
 }

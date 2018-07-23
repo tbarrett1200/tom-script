@@ -55,19 +55,32 @@ TEST(IRGenWalker, transformFunction) {
 
   SourceManager::currentSource = new SourceCode("test_001");
   Parser parser = Parser{SourceManager::currentSource};
-  std::shared_ptr<FuncDecl> function = parser.parseFuncDecl();
 
-  llvm::Function *llvmFunction = transformer.transformFunction(*function);
+  llvm::Function *llvmFunction;
+  try {
+    std::shared_ptr<FuncDecl> function = parser.parseFuncDecl();
+    llvmFunction = transformer.transformFunction(*function);
+  } catch (const std::logic_error& e) {
+    std::cout << e.what() << std::endl;
+  } catch (const CompilerException& e2) {
+    std::cout << e2.message << std::endl;
+  }
+
+  ASSERT_NE(llvmFunction, nullptr);
 
   verifyFunction(*llvmFunction);
 
   TheFPM->run(*llvmFunction);
+
+  TheModule->print(errs(), nullptr);
   auto moduleHandle = TheJIT->addModule(std::move(TheModule));
   auto testFunctionSymbol = TheJIT->findSymbol("main");
-  int (*testFunction)() = (int (*)())(intptr_t)cantFail(testFunctionSymbol.getAddress());
+  int (*testFunction)(int,int) = (int (*)(int, int))(intptr_t)cantFail(testFunctionSymbol.getAddress());
   //--------------------------------------------------------------------------//
   // test here
-  ASSERT_EQ(testFunction(), 4);
+
+  ASSERT_EQ(testFunction(1,3), 9);
+
   //--------------------------------------------------------------------------//
   TheJIT->removeModule(moduleHandle);
 }

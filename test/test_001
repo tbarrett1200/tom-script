@@ -1,3 +1,4 @@
-func main() -> Integer {
-  return 8*2-12+1-2+1
+func main(a: Integer, b: Integer) -> Integer {
+  let c: Integer = 5
+  return a+b+c
 }
