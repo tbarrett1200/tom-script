@@ -8,17 +8,6 @@
 
 using namespace std;
 
-shared_ptr<Type> Parser::makeType(std::string text) {
-  const std::stringstream sstream{text};
-  auto source = SourceCode{sstream, "factory"};
-  auto parser = Parser{&source};
-  try {
-    auto type = parser.parseType();
-    return type;
-  } catch (std::string) {
-    return nullptr;
-  }
-}
 
 shared_ptr<Type> Parser::parseType() {
   switch(token().getType()) {

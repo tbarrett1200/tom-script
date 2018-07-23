@@ -6,27 +6,6 @@
 #include <memory>
 
 
-std::shared_ptr<Decl> Parser::makeDecl(std::string text) {
-  const std::stringstream sstream{text};
-  auto source = SourceCode{sstream, "factory"};
-  auto parser = Parser{&source};
-  auto type = parser.parseDecl();
-  if (!type) throw CompilerException(type->getLocation(), "parse error");
-  return type;
-}
-
-
-
-std::shared_ptr<Decl> Parser::makeFuncDecl(std::string text) {
-  const std::stringstream sstream{text};
-  auto source = SourceCode{sstream, "factory"};
-  auto parser = Parser{&source};
-  auto type = parser.parseUndefFuncDecl();
-  if (!type) throw CompilerException(type->getLocation(), "parse error");
-  return type;
-}
-
-
 std::shared_ptr<FuncDecl> Parser::parseUndefFuncDecl() {
   expectToken(Token::kw_func, "func");
   auto name = expectToken({Token::identifier, Token::operator_id}, "identifier");

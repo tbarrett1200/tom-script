@@ -15,20 +15,21 @@
 #include "AST/Stmt.h"
 
 class Parser {
-  SourceCode* source;
-  Lexer lexer;
+  std::shared_ptr<SourceCode> source;
+  std::unique_ptr<Lexer> lexer;
   std::deque<Token> tokens;
   ScopeManager scope;
   static std::vector<int> exprStartTokens;
 
 public:
-  Parser(SourceCode* source);
+  Parser(std::shared_ptr<SourceCode> source);
+  Parser(std::string, std::string name="unknown");
+
   ScopeManager& getScopeManager() {
     return scope;
   }
   Token token(int index=0);
   void consume();
-  CompilerException report(Token, std::string);
 
   void consumeUntil(std::vector<int> types);
 
@@ -60,7 +61,6 @@ public:
    */
   bool consumeOperator(string);
 
-  static shared_ptr<Type> makeType(std::string);
   shared_ptr<Type> parseType();
   shared_ptr<Type> parseTypeIdentifier();
   std::vector<std::shared_ptr<Type>> parseTupleTypeElementList();
@@ -70,10 +70,6 @@ public:
   shared_ptr<ListType> parseListType();
   shared_ptr<MapType> parseMapType();
   shared_ptr<Type> parseListOrMapType();
-
-  static shared_ptr<Decl> makeDecl(std::string);
-  static shared_ptr<Decl> makeTypeDecl(std::string);
-  static shared_ptr<Decl> makeFuncDecl(std::string);
 
   shared_ptr<FuncDecl> parseUndefFuncDecl();
 
@@ -105,7 +101,6 @@ public:
   shared_ptr<FunctionCall> parseFunctionCall();
   std::vector<std::shared_ptr<Expr>> parseFunctionParameters();
 
-  shared_ptr<Stmt> makeStmt(std::string text);
   shared_ptr<Stmt> parseStmt();
   shared_ptr<ReturnStmt> parseReturnStmt();
   shared_ptr<CompoundStmt> parseCompoundStmt();

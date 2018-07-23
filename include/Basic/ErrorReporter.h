@@ -17,25 +17,21 @@
 // specified manually, or can be retrieved from a token.
 class ErrorReporter {
 private:
+  // the stream in which to print error messages
+  std::ostream& stream;
+
   // the file from which errors are to be reported. Supplied the lines of source
   // code for pretty printed errors.
-  SourceCode *source;
+  const SourceCode& source;
 
 public:
   // constructs an ErrorReporter object for the given file buffer.
-  ErrorReporter(SourceCode *src) : source{src} {}
+  ErrorReporter(std::ostream& stream, const SourceCode& src) : stream{stream}, source{src} {}
 
-  CompilerException report(int r, int c, std::string err) {
-    std::stringstream message;
-    // message << source->getPath() << ":" << r << ":"<< c << ": " << err << std::endl;
-    // message << source->getLine(r);
-    // message << std::string(c, ' ') << "^" << std::endl;
-    return CompilerException({r, c}, err);
-  }
-
-  CompilerException report(Token t, std::string err) {
-    return CompilerException(t.getLocation(), err);
-
+  void report(CompilerException err) {
+    stream << source.getPath() << ":" << err.loc.row << ":"<< err.loc.col << ": " << err.category << ": " << err.message << std::endl;
+    stream << source.getLine(err.loc.row) << std::endl;
+    stream << std::string(err.loc.col, ' ') << "^" << std::endl;
   }
 
 };

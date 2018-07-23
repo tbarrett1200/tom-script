@@ -12,8 +12,7 @@
 TEST(StmtParser, parseDeclStmt) {
 
   auto parse = [](std::string text) {
-    SourceManager::currentSource = new SourceCode(std::istringstream(text),"test");
-    Parser parser = Parser{SourceManager::currentSource};
+    Parser parser = Parser{text};
     return parser.parseDeclStmt();
   };
 
@@ -23,8 +22,7 @@ TEST(StmtParser, parseDeclStmt) {
 TEST(StmtParser, parseStmtList) {
 
   auto parse = [](std::string text) {
-    SourceManager::currentSource = new SourceCode(std::istringstream(text),"test");
-    Parser parser = Parser{SourceManager::currentSource};
+    Parser parser = Parser{text};
     return parser.parseStmtList();
   };
 
@@ -34,18 +32,20 @@ TEST(StmtParser, parseStmtList) {
 TEST(StmtParser, parseCompoundStmt) {
 
   auto parse = [](std::string text) {
-    SourceManager::currentSource = new SourceCode(std::istringstream(text),"test");
-    Parser parser = Parser{SourceManager::currentSource};
+    Parser parser = Parser{text};
     return parser.parseCompoundStmt();
   };
 
   EXPECT_NO_THROW(parse("{\nlet a: Integer = 5\nreturn a\n}"));
+  EXPECT_NO_THROW(parse("{\nlet a: Integer = 5\nreturn a\n}\n"));
+  EXPECT_NO_THROW(parse("{\nlet a: Integer = 5\n\nreturn a\n}\n"));
+  EXPECT_NO_THROW(parse("\n{\nlet a: Integer = 5\nreturn a\n}\n"));
+
 }
 
 TEST(StmtParser, parseReturnStmt) {
   auto parse = [](std::string text) {
-    SourceManager::currentSource = new SourceCode(std::istringstream(text),"test");
-    Parser parser = Parser{SourceManager::currentSource};
+    Parser parser = Parser{text};
     return parser.parseReturnStmt();
   };
 
@@ -53,5 +53,4 @@ TEST(StmtParser, parseReturnStmt) {
   EXPECT_ANY_THROW(parse("return 5"));
   EXPECT_NO_THROW(parse("return\n"));
   EXPECT_ANY_THROW(parse("return"));
-
 }

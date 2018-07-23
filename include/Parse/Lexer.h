@@ -9,7 +9,7 @@
 // Splits a source file into
 class Lexer {
 private:
-  SourceCode *source;
+  std::shared_ptr<SourceCode> source;
   // lcation data for the current character in the file
   int cRow; //row
   int cCol; //col
@@ -30,7 +30,7 @@ private:
   void skipSlashStarComment();
   void skipSlashSlashComment();
 public:
-  Lexer(SourceCode*);
+  Lexer(std::shared_ptr<SourceCode>);
   Token next();
   Token getEOF();
 };

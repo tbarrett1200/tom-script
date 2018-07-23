@@ -3,21 +3,8 @@
 
 #include <memory>
 
-shared_ptr<Stmt> Parser::makeStmt(std::string text)  {
-  const std::stringstream sstream{text};
-  auto source = SourceCode{sstream, "factory"};
-  auto parser = Parser{&source};
-  try {
-    auto stmt = parser.parseStmt();
-    return stmt;
-  } catch (std::string) {
-    return nullptr;
-  }
-}
 
 shared_ptr<Stmt> Parser::parseStmt()  {
-  while(token().is(Token::new_line)) consume();
-
   switch(token().getType()) {
     case Token::l_brace: return parseCompoundStmt();
     case Token::kw_if: return parseConditionalStmtList();
@@ -27,7 +14,12 @@ shared_ptr<Stmt> Parser::parseStmt()  {
     case Token::kw_let:
     case Token::kw_func:
     case Token::kw_typealias: return parseDeclStmt();
-    default: return parseExprStmt();
+    case Token::identifier:
+    case Token::integer_literal:
+    case Token::double_literal:
+    case Token::string_literal:
+    case Token::l_paren: return parseExprStmt();
+    default: throw CompilerException(token().getLocation(), "expected statement but found " + token().lexeme);
   }
 }
 
@@ -77,9 +69,14 @@ shared_ptr<ExprStmt> Parser::parseExprStmt() {
 
 std::vector<std::shared_ptr<Stmt>> Parser::parseStmtList()  {
   std::vector<std::shared_ptr<Stmt>> elements;
+  while(token().is(Token::new_line)) consume();
+  if (token().isAny({Token::r_brace, Token::eof})) return elements;
+  while(token().is(Token::new_line)) consume();
   elements.push_back(parseStmt());
+  while(token().is(Token::new_line)) consume();
   while (token().isNot(Token::r_brace) && token().isNot(Token::eof)) {
     elements.push_back(parseStmt());
+    while(token().is(Token::new_line)) consume();
   }
   return elements;
 }

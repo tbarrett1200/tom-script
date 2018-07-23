@@ -4,18 +4,14 @@
 std::ostream& operator<<(std::ostream &os, CompilerExceptionCategory cat) {
   switch (cat) {
   case CompilerExceptionCategory::Info:
-    os << "info";
+    os << "\33[34minfo\033[0m";
     break;
   case CompilerExceptionCategory::Warning:
-    os << "warning";
+    os << "\33[33mwarning\033[0m";
     break;
   case CompilerExceptionCategory::Error:
-    os << "error";
+    os << "\33[31merror\033[0m";
     break;
   }
   return os;
-}
-
-std::ostream& operator<<(std::ostream &os, const CompilerException &e) {
-  return os << e.file << ":" << e.loc << ": " << e.category << ": " << e.message;;
 }

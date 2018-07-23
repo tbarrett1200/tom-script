@@ -11,10 +11,28 @@
 TEST(DeclParser, parseLetDecl) {
 
   auto parse = [](std::string text) {
-    SourceManager::currentSource = new SourceCode(std::istringstream(text),"test");
-    Parser parser = Parser{SourceManager::currentSource};
+    Parser parser = Parser{text};
     return parser.parseLetDecl();
   };
 
-  EXPECT_NO_THROW(parse("let a: Integer = 5"));
+  std::shared_ptr<LetDecl> letDecl;
+
+  ASSERT_NO_THROW(letDecl = parse("let a: Integer = 5"));
+  EXPECT_TRUE(letDecl->getType() != nullptr);
+  EXPECT_TRUE(letDecl->getName() == "a");
+  ASSERT_TRUE(letDecl->getExpr() != nullptr);
+  EXPECT_TRUE(letDecl->getExpr()->getKind() == Expr::Kind::IntegerExpr );
+
+  ASSERT_NO_THROW(letDecl = parse("let b: Double = 5.0"));
+  EXPECT_TRUE(letDecl->getType() != nullptr);
+  EXPECT_TRUE(letDecl->getName() == "b");
+  ASSERT_TRUE(letDecl->getExpr() != nullptr);
+  EXPECT_TRUE(letDecl->getExpr()->getKind() == Expr::Kind::DoubleExpr );
+
+  EXPECT_THROW(letDecl = parse("let b: Double"), CompilerException);
+  EXPECT_THROW(letDecl = parse("b: Double = 5.0"), CompilerException);
+  EXPECT_THROW(letDecl = parse("let b = 5.0"), CompilerException);
+  EXPECT_THROW(letDecl = parse("let b 5.0"), CompilerException);
+  EXPECT_THROW(letDecl = parse("let b: Double = 5"), CompilerException);
+
 }

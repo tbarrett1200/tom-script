@@ -1,7 +1,5 @@
-func factorial(n: Integer) -> Integer {
-  if n < 1 {
-    return 1
-  } else {
-    return n * factorial (n-1)
+func factorial (n: Integer) -> Integer {
+  if 5 == 1 {
+    return 5
   }
 }

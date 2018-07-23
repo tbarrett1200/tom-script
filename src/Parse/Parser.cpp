@@ -8,7 +8,13 @@
 #include <assert.h>
 #include <iostream>
 
-Parser::Parser(SourceCode *src) : source{src}, lexer{src} {}
+Parser::Parser(std::shared_ptr<SourceCode> src) : source{src} {
+  lexer = std::make_unique<Lexer>(src);
+}
+Parser::Parser(std::string s, std::string name) {
+  source = std::make_shared<SourceCode>(std::istringstream{s}, name);
+  lexer = std::make_unique<Lexer>(source);
+}
 
 //=*****************************************************************************
 //  # Utility
@@ -17,7 +23,7 @@ Parser::Parser(SourceCode *src) : source{src}, lexer{src} {}
 
 Token Parser::token(int index) {
   while (index >= tokens.size()) {
-    tokens.push_back(lexer.next());
+    tokens.push_back(lexer->next());
   }
   return tokens.at(index);
 }
@@ -34,10 +40,6 @@ void Parser::consumeUntil(std::vector<int> types) {
   }
 }
 
-CompilerException Parser::report(Token tok, std::string msg) {
-  return ErrorReporter{source}.report(tok, msg);
-}
-
 bool Parser::parseTerminal(int type, std::string str, bool expect = true) {
   Token tok = token();
   if (tok.is(type) && tok.lexeme == str) {
@@ -45,7 +47,7 @@ bool Parser::parseTerminal(int type, std::string str, bool expect = true) {
     return true;
   } else {
     if (expect) {
-      ErrorReporter{source}.report(tok, std::string("Error: expected ") + str);
+      throw CompilerException(tok.getLocation(), "expected " + str + " but found '" + tok.lexeme + "'");
     }
     return false;
   }
@@ -74,7 +76,7 @@ Token Parser::expectToken(int type, std::string name) {
   if (tok.is(type)) {
     consume();
     return tok;
-  } else throw report(token(), "error: expected " + name);
+  } else throw CompilerException(token().getLocation(), "expected " + name + " but found '" + tok.lexeme + "'");
 }
 
 Token Parser::expectToken(std::vector<int> types, std::string name) {
@@ -82,7 +84,7 @@ Token Parser::expectToken(std::vector<int> types, std::string name) {
   if (tok.isAny(types)) {
     consume();
     return tok;
-  } else throw report(token(), "error: expected " + name);
+  } else throw CompilerException(token().getLocation(), "expected " + name + " but found '" + tok.lexeme + "'");
 }
 
 bool Parser::consumeOperator(std::string s) {

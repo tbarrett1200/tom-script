@@ -3,7 +3,7 @@
 
 using std::string;
 
-Lexer::Lexer(SourceCode *src) : source{src}, cRow{0}, cCol{-1}, cLoc{-1} {}
+Lexer::Lexer(std::shared_ptr<SourceCode> src) : source{src}, cRow{0}, cCol{-1}, cLoc{-1} {}
 
 bool Lexer::advanceIf(bool i) {
   if (i) {
@@ -95,7 +95,7 @@ Token Lexer::lexNumber() {
       advance();
       lexeme += at();
     }
-    ErrorReporter{source}.report(sRow, sCol, "error: identifier cannot start with digit");
+    ErrorReporter{std::cerr, *source}.report(CompilerException({sRow, sCol}, "error: identifier cannot start with digit"));
     return Token(lexeme, Token::unknown, sLoc, sRow, sCol);
   }
 
@@ -224,7 +224,7 @@ Token Lexer::next() {
     switch (at()) {
 
     default:
-      ErrorReporter{source}.report(sRow, sCol, "error: unknown token");
+      ErrorReporter{std::cerr, *source}.report(CompilerException({sRow, sCol}, "error: unknown token"));
       return Token(string(1,at()), Token::unknown, sLoc, sRow, sCol);
 
     case '\n':

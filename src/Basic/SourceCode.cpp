@@ -1,6 +1,6 @@
 #include "Basic/SourceCode.h"
 
-SourceCode* SourceManager::currentSource = nullptr;
+std::shared_ptr<SourceCode> SourceManager::currentSource = nullptr;
 
 std::string SourceManager::currentFile() {
   if (SourceManager::currentSource != nullptr) {

@@ -9,23 +9,18 @@
 
 TEST(ExprParser, parseIntegerExpr) {
 
-  auto _PARSE_RESULT = [](std::string text) {
-    SourceManager::currentSource = new SourceCode(std::istringstream(text),"test");
-    Parser parser = Parser{SourceManager::currentSource};
-    return parser.parseIntegerExpr();
-  };
+  auto parse = [](std::string text) { return Parser{text}.parseIntegerExpr(); };
 
-  EXPECT_EQ(_PARSE_RESULT("123")->getText(), "123");
-  EXPECT_EQ(_PARSE_RESULT("123")->getInt(), 123);
-  EXPECT_THROW(_PARSE_RESULT("abc"), CompilerException);
-  EXPECT_THROW(_PARSE_RESULT(""), CompilerException);
+  EXPECT_EQ(parse("123")->getText(), "123");
+  EXPECT_EQ(parse("123")->getInt(), 123);
+  EXPECT_THROW(parse("abc"), CompilerException);
+  EXPECT_THROW(parse(""), CompilerException);
 }
 
 TEST(ExprParser, parseIdentifierExpr) {
 
   auto parse = [](std::string text) {
-    SourceManager::currentSource = new SourceCode(std::istringstream(text),"test");
-    Parser parser = Parser{SourceManager::currentSource};
+    Parser parser = Parser{text};
     parser.getScopeManager().addType("abc", IntegerType::getInstance());
     return parser.parseIdentifier();
   };
@@ -41,8 +36,7 @@ TEST(ExprParser, parseIdentifierExpr) {
 TEST(ExprParser, parseDoubleExpr) {
 
   auto parse = [](std::string text) {
-    SourceManager::currentSource = new SourceCode(std::istringstream(text),"test");
-    Parser parser = Parser{SourceManager::currentSource};
+    Parser parser = Parser{text};
     return parser.parseDoubleExpr();
   };
 
@@ -57,8 +51,7 @@ TEST(ExprParser, parseDoubleExpr) {
 TEST(ExprParser, parseValueExpr) {
 
   auto parse = [](std::string text) {
-    SourceManager::currentSource = new SourceCode(std::istringstream(text),"test");
-    Parser parser = Parser{SourceManager::currentSource};
+    Parser parser = Parser{text};
     parser.getScopeManager().addType("abc", IntegerType::getInstance());
     return parser.parseValueExpr();
   };
@@ -74,8 +67,7 @@ TEST(ExprParser, parseValueExpr) {
 TEST(ExprParser, parseUnaryExpr) {
 
   auto parse = [](std::string text) {
-    SourceManager::currentSource = new SourceCode(std::istringstream(text),"test");
-    Parser parser = Parser{SourceManager::currentSource};
+    Parser parser = Parser{text};
     parser.getScopeManager().addType("abc", IntegerType::getInstance());
     return parser.parseUnaryExpr();
   };
@@ -90,8 +82,7 @@ TEST(ExprParser, parseUnaryExpr) {
 TEST(ExprParser, parseBinaryExpr) {
 
   auto parse = [](std::string text) {
-    SourceManager::currentSource = new SourceCode(std::istringstream(text),"test");
-    Parser parser = Parser{SourceManager::currentSource};
+    Parser parser = Parser{text};
     parser.getScopeManager().addType("abc", IntegerType::getInstance());
     return parser.parseBinaryExpr(OperatorTable::size());
   };
@@ -108,8 +99,7 @@ TEST(ExprParser, parseBinaryExpr) {
 TEST(ExprParser, parseExprList) {
 
   auto parse = [](std::string text) {
-    SourceManager::currentSource = new SourceCode(std::istringstream(text),"test");
-    Parser parser = Parser{SourceManager::currentSource};
+    Parser parser = Parser{text};
     parser.getScopeManager().addType("abc", IntegerType::getInstance());
     return parser.parseExprList();
   };

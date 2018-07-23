@@ -59,7 +59,7 @@ public:
 
   SourceCode(std::string p) : SourceCode(std::ifstream{p}, p) {}
 
-  std::string getPath() {
+  std::string getPath() const {
     return path;
   }
 
@@ -72,11 +72,11 @@ public:
     text += c;
   }
 
-  int getLineCount() {
+  int getLineCount() const {
     return lineStarts.size()-1;
   }
 
-  std::string getLine(int i) {
+  std::string getLine(int i) const {
     if (i > getLineCount()) {
       std::stringstream ss;
       ss << "line out of bounds " << i << " is greater than " << getLineCount() << std::endl;
@@ -116,7 +116,7 @@ public:
 
 class SourceManager {
 public:
-  static SourceCode* currentSource;
+  static std::shared_ptr<SourceCode> currentSource;
   static std::string currentFile();
 };
 

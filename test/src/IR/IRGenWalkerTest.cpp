@@ -53,7 +53,7 @@ TEST(IRGenWalker, transformFunction) {
    TheFPM->add(createCFGSimplificationPass());
    TheFPM->doInitialization();
 
-  SourceManager::currentSource = new SourceCode("test_001");
+  SourceManager::currentSource = std::make_shared<SourceCode>("test_001");
   Parser parser = Parser{SourceManager::currentSource};
 
   llvm::Function *llvmFunction;

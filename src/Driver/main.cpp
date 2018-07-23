@@ -1,6 +1,3 @@
-
-
-
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -9,6 +6,7 @@
 
 #include "Basic/SourceCode.h"
 #include "Basic/CompilerException.h"
+#include "Basic/ErrorReporter.h"
 #include "Parse/Parser.h"
 #include "AST/ASTPrintWalker.h"
 
@@ -18,7 +16,7 @@ int main(int argc, char const *argv[]) {
     exit(1);
   }
   std::string path = argv[1];
-  SourceManager::currentSource = new SourceCode(path);
+  SourceManager::currentSource = std::make_shared<SourceCode>(path);
   auto parser = Parser{SourceManager::currentSource};
 
   try {
@@ -27,9 +25,8 @@ int main(int argc, char const *argv[]) {
       ASTPrintWalker(std::cout).traverse(stmt);
     }
   } catch (CompilerException e) {
-    std::cerr << e << std::endl;
+    ErrorReporter{std::cout, *SourceManager::currentSource}.report(e);
   }
 
-  delete SourceManager::currentSource;
   return 0;
 }

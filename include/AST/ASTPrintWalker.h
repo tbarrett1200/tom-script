@@ -25,7 +25,8 @@ public:
       format = format + "|  ";
     }
     format = format + "|--";
-    os  << format << "[" << typeid(m).name();
+    const TreeElement& elementRef = *m;
+    os  << format << "[" << typeid(elementRef).name();
     indent++;
     if (std::dynamic_pointer_cast<Decl>(m)) {
       os << " name='" << std::dynamic_pointer_cast<Decl>(m)->getName() << "'";
