@@ -8,13 +8,13 @@
 #include <string>
 #include <memory>
 
-class XMLPrintWalker: public ASTWalker {
+class ASTPrintWalker: public ASTWalker {
 private:
   std::ostream& os;
   int indent;
 
 public:
-  XMLPrintWalker(std::ostream& stream): os{stream} {};
+  ASTPrintWalker(std::ostream& stream): os{stream} {};
   void didTraverseNode(std::shared_ptr<TreeElement> m) override {
     --indent;
   }
@@ -24,7 +24,7 @@ public:
       format = format + "|  ";
     }
     format = format + "|--";
-    os  << format << "[" << typeid(*m).name();
+    os  << format << "[" << typeid(m).name();
     indent++;
     if (std::dynamic_pointer_cast<Decl>(m)) {
       os << " name='" << std::dynamic_pointer_cast<Decl>(m)->getName() << "'";

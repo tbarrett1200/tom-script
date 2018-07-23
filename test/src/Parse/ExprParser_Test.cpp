@@ -63,10 +63,10 @@ TEST(ExprParser, parseValueExpr) {
     return parser.parseValueExpr();
   };
 
-  EXPECT_TRUE(parse("123.456")->as<DoubleExpr>() != nullptr);
-  EXPECT_TRUE(parse("123")->as<IntegerExpr>() != nullptr);
+  EXPECT_TRUE(std::dynamic_pointer_cast<DoubleExpr>(parse("123.456")) != nullptr);
+  EXPECT_TRUE(std::dynamic_pointer_cast<IntegerExpr>(parse("123")) != nullptr);
   EXPECT_ANY_THROW(parse("def"));
-  EXPECT_TRUE(parse("abc")->as<IdentifierExpr>() != nullptr);
+  EXPECT_TRUE(std::dynamic_pointer_cast<IdentifierExpr>(parse("abc")) != nullptr);
   EXPECT_ANY_THROW(parse(""));
 
 }

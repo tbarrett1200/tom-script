@@ -28,7 +28,7 @@
 #include <Parse/Parser.h>
 #include <IR/IRGenWalker.h>
 #include <IR/KaleidoscopeJIT.h>
-#include "AST/ASTXMLPrintWalker.h"
+#include "AST/ASTPrintWalker.h"
 
 using namespace llvm;
 using namespace llvm::orc;
@@ -38,11 +38,15 @@ TEST(IRGenWalker, transformFunction) {
   InitializeNativeTargetAsmPrinter();
   InitializeNativeTargetAsmParser();
 
+  llvm::LLVMContext TheContext;
+  std::unique_ptr<llvm::Module> TheModule = llvm::make_unique<llvm::Module>("test", TheContext);
   std::unique_ptr<KaleidoscopeJIT> TheJIT = llvm::make_unique<KaleidoscopeJIT>();
-  LLVMTransformer transformer{"test"};
-  transformer.getModule()->setDataLayout(TheJIT->getTargetMachine().createDataLayout());
 
-   std::unique_ptr<legacy::FunctionPassManager> TheFPM = llvm::make_unique<legacy::FunctionPassManager>(transformer.getModule());
+  TheModule->setDataLayout(TheJIT->getTargetMachine().createDataLayout());
+
+  LLVMTransformer transformer{TheContext, TheModule.get()};
+
+   std::unique_ptr<legacy::FunctionPassManager> TheFPM = llvm::make_unique<legacy::FunctionPassManager>(TheModule.get());
    TheFPM->add(createInstructionCombiningPass());
    TheFPM->add(createReassociatePass());
    TheFPM->add(createGVNPass());
@@ -53,15 +57,12 @@ TEST(IRGenWalker, transformFunction) {
   Parser parser = Parser{SourceManager::currentSource};
   std::shared_ptr<FuncDecl> function = parser.parseFuncDecl();
 
-  XMLPrintWalker(std::cout).traverse(function);
-
   llvm::Function *llvmFunction = transformer.transformFunction(*function);
 
   verifyFunction(*llvmFunction);
 
-  transformer.getModule()->print(errs(), nullptr);
   TheFPM->run(*llvmFunction);
-  auto moduleHandle = TheJIT->addModule(transformer.getModuleOwnership());
+  auto moduleHandle = TheJIT->addModule(std::move(TheModule));
   auto testFunctionSymbol = TheJIT->findSymbol("main");
   int (*testFunction)() = (int (*)())(intptr_t)cantFail(testFunctionSymbol.getAddress());
   //--------------------------------------------------------------------------//

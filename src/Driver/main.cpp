@@ -1,6 +1,6 @@
 
 
- 
+
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -10,7 +10,7 @@
 #include "Basic/SourceCode.h"
 #include "Basic/CompilerException.h"
 #include "Parse/Parser.h"
-#include "AST/ASTXMLPrintWalker.h"
+#include "AST/ASTPrintWalker.h"
 
 int main(int argc, char const *argv[]) {
   if (argc != 2) {
@@ -24,7 +24,7 @@ int main(int argc, char const *argv[]) {
   try {
     std::vector<std::shared_ptr<Stmt>> node = parser.parseStmtList();
     for (auto stmt: node) {
-      XMLPrintWalker(std::cout).traverse(stmt);
+      ASTPrintWalker(std::cout).traverse(stmt);
     }
   } catch (CompilerException e) {
     std::cerr << e << std::endl;
