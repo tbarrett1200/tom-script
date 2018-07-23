@@ -35,10 +35,29 @@ public:
   //shared_ptr<OperatorNode> parseOperator(int);
   bool parseTerminal(int type, std::string str, bool expect);
   bool consumeToken(int type);
+
+  /**
+   * Consumes a token of the given type if it exists, otherwise throws a Compiler
+   * expection of the form "expected foo but found bar"
+   */
   Token expectToken(int type, std::string);
+
+  /**
+   * Consumes a token of any of the possible given types if it exists, otherwise throws a Compiler
+   * expection of the form "expected foo but found bar"
+   */
   Token expectToken(std::vector<int> types, std::string);
 
+  /**
+   * Checks for a token of the given type. If it exists, consumes it, and
+   * return true. Otherwise, it returns false and does not raise an error
+   */
   bool acceptToken(int type);
+
+  /**
+   * Checks for a operator_id with the given lexeme. If it exists, consumes it, and
+   * return true. Otherwise, it returns false and does not raise an error
+   */
   bool consumeOperator(string);
 
   static shared_ptr<Type> makeType(std::string);
