@@ -130,7 +130,6 @@ public:
 class ReturnStmt : public Stmt{
 public:
   std::shared_ptr<Expr> expr;
-  std::shared_ptr<StackPointer> location;
 
   // Constructors
   ReturnStmt(std::shared_ptr<Expr> d);

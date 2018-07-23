@@ -65,7 +65,7 @@ public:
    * Returns true if conversion to derived type is possible. Otherwise
    * return false.
    */
-   template<typename T> bool is() {
+   template<typename T> bool is() const {
      return (dynamic_cast<T*>(this) != nullptr);
    }
 
@@ -73,7 +73,7 @@ public:
     * Convenience method for casting Expr base type to any one of its derived
     * types. Throws a std::logic_error if conversion is not possible.
     */
-  template<typename T> T* as() {
+  template<typename T> T* as() const {
     T* casted_type = dynamic_cast<T*>(this);
     if (casted_type != nullptr) {
       return casted_type;

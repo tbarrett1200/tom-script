@@ -88,8 +88,8 @@ std::vector<std::shared_ptr<TreeElement>> FuncDecl::getChildren() const {
   std::vector<std::shared_ptr<TreeElement>> children;
   for (auto param: fParams) {
     children.push_back(param);
-    children.push_back(fStmt);
   }
+  children.push_back(fStmt);
   return children;
 }
 

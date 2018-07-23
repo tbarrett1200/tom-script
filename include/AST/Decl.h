@@ -133,6 +133,10 @@ public:
     fType = std::make_shared<FunctionType>(std::move(paramTypes), fReturnType);
   }
 
+  std::shared_ptr<CompoundStmt> getBlockStmt() const {
+    return fStmt;
+  };
+
   Decl::Kind getKind() const;
   std::string getName() const;
   std::shared_ptr<Type> getType() const {

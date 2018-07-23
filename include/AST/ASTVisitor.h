@@ -17,7 +17,6 @@ public:
 class ExprVisitor {
 public:
   virtual void visit(const class Expr&) = 0;
-  virtual void visit(const class LabeledExpr&) = 0;
   virtual void visit(const class StringExpr &) = 0;
   virtual void visit(const class IntegerExpr &) = 0;
   virtual void visit(const class DoubleExpr &) = 0;
@@ -29,7 +28,6 @@ public:
   virtual void visit(const class UnaryExpr &) = 0;
   virtual void visit(const class BinaryExpr &) = 0;
   virtual void visit(const class FunctionCall&) = 0;
-  virtual void visit(const class StackPointer &) = 0;
 };
 
 

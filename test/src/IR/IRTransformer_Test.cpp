@@ -19,9 +19,9 @@
 #include "llvm/Transforms/Scalar/GVN.h"
 
 #include <AST/Expr.h>
-#include <IR/IRTransformer.h>
+#include <IR/IRGenWalker.h>
 #include <IR/KaleidoscopeJIT.h>
-
+/*
 using namespace llvm;
 using namespace llvm::orc;
 
@@ -148,3 +148,4 @@ TEST_F(IRTransformerTest, transformBinaryExpr) {
   TheJIT->removeModule(moduleHandle);
 
 }
+*/

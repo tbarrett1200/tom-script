@@ -237,7 +237,7 @@ public:
     for (auto element: elements) {
       str += element->toString() + ",";
     }
-    str = str.substr(0, str.length()-1);
+    if (elements.size() > 0) str = str.substr(0, str.length()-1);
     str += ")";
     return str;
   }
@@ -260,7 +260,7 @@ public:
     for (auto param: params) {
       str += (param ? param->toString() : "<nullptr>") + ",";
     }
-    str = str.substr(0, str.length()-1);
+    if (params.size() > 0) str = str.substr(0, str.length()-1);
     str += ") -> " + (returns ?  returns->toString(): "<nullptr>" );
     return str;
   }
