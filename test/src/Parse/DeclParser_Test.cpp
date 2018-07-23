@@ -49,5 +49,5 @@ TEST(StmtParser, parseCompoundStmt) {
     return parser.parseCompoundStmt();
   };
 
-  EXPECT_NO_THROW(parse("{\nlet a: Integer = 5\nreturn a\n}\n"));
+  EXPECT_NO_THROW(parse("{\nlet a: Integer = 5\nreturn a\n}"));
 }
