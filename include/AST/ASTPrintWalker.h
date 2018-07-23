@@ -18,6 +18,7 @@ public:
   void didTraverseNode(std::shared_ptr<TreeElement> m) override {
     --indent;
   }
+
   void willTraverseNode(std::shared_ptr<TreeElement> m) override {
     std::string format = "";
     for (int i=0; i<indent; i++) {

@@ -52,7 +52,7 @@ public:
     } else if (type.isDoubleType()) {
       return llvm::Type::getDoubleTy(fContext);
     } else {
-      throw std::logic_error("only integer types are currently supported");
+      throw std::logic_error("only integer and double types are currently supported");
     }
   }
 
