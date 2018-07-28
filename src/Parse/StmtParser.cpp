@@ -95,3 +95,7 @@ shared_ptr<ReturnStmt> Parser::parseReturnStmt() {
   expectToken(Token::new_line, "new line");
   return std::make_shared<ReturnStmt>(expr);
 }
+
+std::shared_ptr<CompilationUnit> Parser::parseCompilationUnit() {
+  return std::make_shared<CompilationUnit>(parseStmtList());
+}

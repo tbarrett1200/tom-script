@@ -61,7 +61,7 @@ shared_ptr<Expr> Parser::parseIdentifierOrFunctionCallOrAccessor() {
     expectToken(Token::r_square, "]");
     return std::make_shared<AccessorExpr>(id, index);
   } else if (acceptToken(Token::l_paren)) {
-    auto tuple = parseFunctionParameters();
+    auto tuple = parseFunctionArguments();
     return make_shared<FunctionCall>(move(id), move(tuple));
   } else {
     return id;
@@ -79,7 +79,7 @@ shared_ptr<IdentifierExpr> Parser::parseIdentifier() {
   }
 }
 
-std::vector<std::shared_ptr<Expr>> Parser::parseFunctionParameters() {
+std::vector<std::shared_ptr<Expr>> Parser::parseFunctionArguments() {
   expectToken(Token::l_paren, "left parenthesis");
   if (consumeToken(Token::r_paren)) return {};
   auto list = parseExprList();
@@ -97,7 +97,7 @@ shared_ptr<Expr> Parser::parseTupleExpr() {
 
 shared_ptr<FunctionCall> Parser::parseFunctionCall() {
   auto id = parseIdentifier();
-  auto tuple = parseFunctionParameters();
+  auto tuple = parseFunctionArguments();
   return make_shared<FunctionCall>(move(id), move(tuple));
 }
 

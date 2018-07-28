@@ -2,8 +2,6 @@
 #define AST_STMT_H
 
 #include "AST/TreeElement.h"
-#include "AST/Expr.h"
-#include "AST/Decl.h"
 #include "Basic/SourceCode.h"
 
 #include <memory>
@@ -11,7 +9,7 @@
 class ReturnStmt;
 class ConditionalStmtList;
 
-class Stmt : virtual public TreeElement {
+class Stmt : public TreeElement {
 public:
   enum class Kind {
     #define STMT(SELF, PARENT) SELF,
@@ -69,11 +67,11 @@ public:
 
 class ConditionalStmt : public Stmt {
 public:
-  std::shared_ptr<Expr> condition;
+  std::shared_ptr<class Expr> condition;
   std::shared_ptr<CompoundStmt> stmt;
 
   // Constructors
-  ConditionalStmt(std::shared_ptr<Expr> c, std::shared_ptr<CompoundStmt> s);
+  ConditionalStmt(std::shared_ptr<class Expr> c, std::shared_ptr<CompoundStmt> s);
 
   // Stmt Overrides
   Stmt::Kind getKind() const;
@@ -106,15 +104,16 @@ public:
   bool hasElseStmt() const;
   bool returns() const;
   int size() const;
+
 };
 
 class WhileLoop : public Stmt {
 public:
-  std::shared_ptr<Expr> condition;
+  std::shared_ptr<class Expr> condition;
   std::shared_ptr<CompoundStmt> stmt;
 
   // Constructors
-  WhileLoop(std::shared_ptr<Expr> c, std::shared_ptr<CompoundStmt> s);
+  WhileLoop(std::shared_ptr<class Expr> c, std::shared_ptr<CompoundStmt> s);
 
   // Stmt Overrides
   Stmt::Kind getKind() const;
@@ -147,10 +146,10 @@ public:
 
 class ExprStmt : public Stmt {
 public:
-  std::shared_ptr<Expr> expr;
+  std::shared_ptr<class Expr> expr;
 
   // Constructors
-  ExprStmt(std::shared_ptr<Expr> d);
+  ExprStmt(std::shared_ptr<class Expr> d);
 
   // Stmt Overrides
   Stmt::Kind getKind() const;
@@ -165,10 +164,10 @@ public:
 
 class DeclStmt : public Stmt {
 public:
-  std::shared_ptr<Decl> decl;
+  std::shared_ptr<class Decl> decl;
 
   // Constructors
-  DeclStmt(std::shared_ptr<Decl> d);
+  DeclStmt(std::shared_ptr<class Decl> d);
 
   // Stmt Overrides
   Stmt::Kind getKind() const;
@@ -180,6 +179,29 @@ public:
   bool returns() const;
 };
 
-std::ostream& operator<<(std::ostream& os, const Stmt& x);
+class CompilationUnit : public Stmt {
+private:
+  std::vector<std::shared_ptr<Stmt>> stmts;
+public:
+  CompilationUnit(std::vector<std::shared_ptr<Stmt>> s): stmts{s} {};
+
+  Stmt::Kind getKind() const { return Kind::CompilationUnit; }
+
+  std::vector<std::shared_ptr<TreeElement>> getChildren() const {
+    std::vector<std::shared_ptr<TreeElement>> children;
+    for (auto stmt: stmts) {
+      children.push_back(stmt);
+    }
+    return children;
+  }
+
+  bool returns() const {
+    return true;
+  }
+
+  std::vector<std::shared_ptr<Stmt>>& getStmts() {
+    return stmts;
+  }
+};
 
 #endif

@@ -20,7 +20,7 @@ shared_ptr<Type> Parser::parseType() {
 
 shared_ptr<Type> Parser::parseTypeIdentifier() {
   auto token = expectToken(Token::identifier, "type identifier");
-  if (token.lexeme == "Integer") return IntegerType::getInstance();
+  if (token.lexeme == "Int") return IntegerType::getInstance();
   else if (token.lexeme == "Boolean") return BooleanType::getInstance();
   else if (token.lexeme == "Double") return DoubleType::getInstance();
   else {

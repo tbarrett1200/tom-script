@@ -2,6 +2,7 @@
 #define STMT(SELF, SUPER)
 #endif
 
+STMT(CompilationUnit, Stmt)
 STMT(CompoundStmt, Stmt)
 STMT(ConditionalStmt, Stmt)
 STMT(ConditionalStmtList, Stmt)

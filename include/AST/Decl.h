@@ -4,14 +4,16 @@
 #include "Basic/SourceCode.h"
 #include "Basic/Token.h"
 #include "AST/TreeElement.h"
+#include "AST/DeclContext.h"
 #include "AST/Expr.h"
 #include "AST/Type.h"
+#include "AST/Stmt.h"
 
 #include <vector>
+#include <memory>
 
 class CompoundStmt;
 class FunctionType;
-class DeclContext;
 
 class Decl : public TreeElement {
 public:
@@ -35,100 +37,194 @@ public:
   template<typename T> T* as() {
     return dynamic_cast<T*>(this);
   }
+
+  virtual void setDeclContext(DeclContext *parent) = 0;
+  virtual DeclContext* getDeclContext() const = 0;
 };
 
 
 class TypeAlias : public Decl {
+private:
+  DeclContext* fParentContext;
+  Token fName;
+  std::shared_ptr<Type> fType;
+
 public:
-  Token name;
-  std::shared_ptr<Type> type;
-
-  std::shared_ptr<Expr> getExpr() const;
-  void setExpr(std::shared_ptr<Expr> e);
-
-  std::vector<std::shared_ptr<TreeElement>> getChildren() const;
-  Decl::Kind getKind() const;
-  std::string getName() const;
-  std::shared_ptr<Type> getType() const {
-    return type;
+  std::vector<std::shared_ptr<TreeElement>> getChildren() const override {
+    return {};
   }
 
-  TypeAlias(Token n, std::shared_ptr<Type> t);
+  Decl::Kind getKind() const override{
+    return Decl::Kind::TypeAlias;
+  }
+
+  std::string getName() const override {
+    return fName.lexeme;
+  }
+
+  std::shared_ptr<Type> getType() const override {
+    return fType;
+  }
+
+  virtual DeclContext* getDeclContext() const override {
+    return fParentContext;
+  }
+
+  virtual void setDeclContext(DeclContext *parent) override {
+    fParentContext = parent;
+  }
+
+  TypeAlias(Token aName, std::shared_ptr<Type> aType)
+  :  fName{aName}, fType{aType} {}
 };
 
 class VarDecl : public Decl {
+private:
+  DeclContext* fParentContext;
+  Token fName;
+  std::shared_ptr<Type> fType;
+  std::shared_ptr<Expr> fExpr;
+
 public:
-  Token name;
-  std::shared_ptr<Type> type;
-  std::shared_ptr<Expr> expr;
 
-  std::shared_ptr<Expr> getExpr() const;
-  void setExpr(std::shared_ptr<Expr>);
-
-  std::vector<std::shared_ptr<TreeElement>> getChildren() const;
-  Decl::Kind getKind() const;
-  std::string getName() const;
-  std::shared_ptr<Type> getType() const {
-    return type;
+  std::shared_ptr<Expr> getExpr() const {
+    return fExpr;
   }
 
-  VarDecl(Token n, std::shared_ptr<Type> t, std::shared_ptr<Expr> e);
+  std::vector<std::shared_ptr<TreeElement>> getChildren() const override {
+    return {fExpr};
+  }
+
+  Decl::Kind getKind() const override {
+    return Decl::Kind::VarDecl;
+  }
+  std::string getName() const override {
+    return fName.lexeme;
+  }
+  std::shared_ptr<Type> getType() const override {
+    return fType;
+  }
+
+  virtual DeclContext* getDeclContext() const override {
+    return fParentContext;
+  }
+
+  virtual void setDeclContext(DeclContext *parent) override {
+    fParentContext = parent;
+  }
+
+  VarDecl(Token n, std::shared_ptr<Type> t, std::shared_ptr<Expr> e)
+  : fName{n}, fType{t}, fExpr{e} {}
 };
 
+
 class LetDecl : public Decl {
+private:
+  DeclContext* fParentContext;
+  Token fName;
+  std::shared_ptr<Type> fType;
+  std::shared_ptr<Expr> fExpr;
 public:
-  Token name;
-  std::shared_ptr<Type> type;
-  std::shared_ptr<Expr> expr;
 
-  std::shared_ptr<Expr> getExpr() const;
-  void setExpr(std::shared_ptr<Expr>);
-
-  std::vector<std::shared_ptr<TreeElement>> getChildren() const;
-  Decl::Kind getKind() const;
-  std::string getName() const;
-  std::shared_ptr<Type> getType() const {
-    return type;
+  std::vector<std::shared_ptr<TreeElement>> getChildren() const override {
+    return {fExpr};
   }
-  LetDecl(Token n, std::shared_ptr<Type> t, std::shared_ptr<Expr> e);
+
+  Decl::Kind getKind() const override {
+    return Decl::Kind::LetDecl;
+  }
+
+  std::string getName() const override {
+    return fName.lexeme;
+  }
+  std::shared_ptr<Type> getType() const override {
+    return fType;
+  }
+
+  std::shared_ptr<Expr> getExpr() const {
+    return fExpr;
+  }
+  virtual DeclContext* getDeclContext() const override {
+    return fParentContext;
+  }
+
+  virtual void setDeclContext(DeclContext *parent) override {
+    fParentContext = parent;
+  }
+
+  LetDecl(Token n, std::shared_ptr<Type> t, std::shared_ptr<Expr> e)
+  : fName{n}, fType{t}, fExpr{e} {}
 };
 
 
 class ParamDecl : public Decl {
 private:
-  Token name;
-  std::shared_ptr<Type> type;
+  DeclContext* fParentContext;
+  Token fName;
+  std::shared_ptr<Type> fType;
 public:
 
   ParamDecl(Token n, std::shared_ptr<Type> t)
-  : name{n}, type{t} {}
+  : fName{n}, fType{t} {}
 
-  Decl::Kind getKind() const;
-  std::string getName() const;
-  std::shared_ptr<Type> getType() const {
-    return type;
+  Decl::Kind getKind() const override {
+    return Decl::Kind::ParamDecl;
   }
-  std::vector<std::shared_ptr<TreeElement>> getChildren() const;
+  std::string getName() const override {
+    return fName.lexeme;
+  }
+
+  std::shared_ptr<Type> getType() const override {
+    return fType;
+  }
+
+  virtual DeclContext* getDeclContext() const override {
+    return fParentContext;
+  }
+
+  virtual void setDeclContext(DeclContext *parent) override {
+    fParentContext = parent;
+  }
+
+  std::vector<std::shared_ptr<TreeElement>> getChildren() const override {
+    return {};
+  }
 
 };
 
 /// A named, explicitly typed function
 class FuncDecl : public Decl {
 private:
+  std::unique_ptr<DeclContext> fContext;
   std::shared_ptr<FunctionType> fType;
   Token fName;
   std::vector<std::shared_ptr<ParamDecl>> fParams;
   std::shared_ptr<Type> fReturnType;
   std::shared_ptr<CompoundStmt> fStmt;
-
 public:
 
-
   FuncDecl(Token n, std::vector<std::shared_ptr<ParamDecl>>&& p, std::shared_ptr<Type> t, std::shared_ptr<CompoundStmt> s)
-  : fName{n}, fParams{p}, fReturnType{t}, fStmt{s} {
+  : fContext{std::make_unique<DeclContext>(DeclContext::getGlobalContext())}
+  , fName{n}
+  , fParams{p}
+  , fReturnType{t}
+  , fStmt{s} {
+
     std::vector<std::shared_ptr<Type>> paramTypes;
+
     for (auto param: fParams) {
+      fContext->addDecl(param.get());
       paramTypes.push_back(param->getType());
+    }
+
+    for (auto stmt: s->list) {
+      DeclStmt* declStmt = dynamic_cast<DeclStmt*>(stmt.get());
+      if (declStmt) {
+        Decl* decl = dynamic_cast<Decl*>(declStmt->decl.get());
+        if (decl) {
+          fContext->addDecl(decl);
+        }
+      }
     }
     fType = std::make_shared<FunctionType>(std::move(paramTypes), fReturnType);
   }
@@ -137,16 +233,38 @@ public:
     return fStmt;
   };
 
-  Decl::Kind getKind() const;
-  std::string getName() const;
-  std::shared_ptr<Type> getType() const {
+  Decl::Kind getKind() const override {
+    return Decl::Kind::FuncDecl;
+  }
+
+  std::string getName() const override {
+    return fName.lexeme;
+  }
+
+  std::shared_ptr<Type> getType() const override{
     return fType;
   }
 
-  std::vector<std::shared_ptr<TreeElement>> getChildren() const;
+  virtual DeclContext* getDeclContext() const override {
+    return fContext.get();
+  }
+
+  virtual void setDeclContext(DeclContext *parent) override {
+    fContext->setParentContext(parent);
+  }
+
+  std::vector<std::shared_ptr<TreeElement>> getChildren() const override {
+    std::vector<std::shared_ptr<TreeElement>> children;
+    for (auto param: fParams) {
+      children.push_back(param);
+    }
+    children.push_back(fStmt);
+    return children;
+  }
   const std::vector<std::shared_ptr<ParamDecl>>& getParams() const {
     return fParams;
   };
 
 };
+
 #endif

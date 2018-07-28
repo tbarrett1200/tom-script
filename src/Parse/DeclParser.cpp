@@ -37,9 +37,11 @@ std::shared_ptr<VarDecl> Parser::parseVarDecl() {
   expectToken(Token::kw_var, "var");
   auto name = expectToken(Token::identifier, "identifier");
   std::shared_ptr<Type> type = consumeToken(Token::colon)? parseType(): nullptr;
-  std::shared_ptr<Expr> expr = consumeOperator("=")? parseExpr(): nullptr;
-  if (type || expr) return std::make_shared<VarDecl>(name, move(type), move(expr));
-  else throw CompilerException(token().getLocation(),  "expected type or expression");
+  scope.addType(name.lexeme, type);
+  if (consumeOperator("=")) {
+    auto expr = parseExpr();
+    return std::make_shared<VarDecl>(name, move(type), move(expr));
+  } else throw CompilerException(token().getLocation(),  "variables must be initialized at declaration");
 }
 
 std::shared_ptr<LetDecl> Parser::parseLetDecl() {
