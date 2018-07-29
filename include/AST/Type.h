@@ -63,6 +63,8 @@ public:
    */
   bool isDoubleType() const;
 
+  bool isBooleanType() const;
+
   virtual std::string toString() const = 0;
 };
 

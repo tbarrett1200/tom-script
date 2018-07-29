@@ -2,9 +2,13 @@ func add(a: Int, b: Int) -> Int {
   return a + b
 }
 
-func main() -> Int {
+func foo() -> Int {
   var c: Int = 10
   let d: Int = add(c, 5)
   c = 12
   return c + d
+}
+
+func main() -> Boolean {
+  return true || false
 }

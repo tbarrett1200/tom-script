@@ -110,6 +110,9 @@ shared_ptr<Expr> Parser::parseValueExpr() {
     return parseIntegerExpr();
   case Token::l_square:
     return parseListExpr();
+  case Token::kw_true:
+  case Token::kw_false:
+    return parseBoolExpr();
   case Token::double_literal:
     return parseDoubleExpr();
   case Token::string_literal:
@@ -183,6 +186,17 @@ shared_ptr<IntegerExpr> Parser::parseIntegerExpr() {
 shared_ptr<DoubleExpr> Parser::parseDoubleExpr() {
   auto token = expectToken(Token::double_literal, "double literal");
   return make_shared<DoubleExpr>(token);
+}
+
+
+shared_ptr<BoolExpr> Parser::parseBoolExpr() {
+  if (token().is(Token::kw_true)) {
+    return make_shared<BoolExpr>(expectToken(Token::kw_true, "true"));
+  } else if (token().is(Token::kw_false)) {
+    return make_shared<BoolExpr>(expectToken(Token::kw_false, "false"));
+  } else {
+    throw CompilerException(token().getLocation(), "expected 'true' or 'false'");
+  }
 }
 
 /**

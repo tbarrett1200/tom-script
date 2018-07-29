@@ -63,10 +63,12 @@ public:
   llvm::Type* transformType(const Type &type) {
     if (type.isIntegerType()) {
       return llvm::Type::getInt64Ty(fContext);
+    } if (type.isBooleanType()) {
+      return llvm::Type::getInt1Ty(fContext);
     } else if (type.isDoubleType()) {
       return llvm::Type::getDoubleTy(fContext);
     } else {
-      throw std::logic_error("only integer and double types are currently supported");
+      throw std::logic_error("only integer, boolean, and double types are currently supported");
     }
   }
 
@@ -171,6 +173,8 @@ public:
       return llvm::ConstantInt::get(transformType(*expr.getType()), (uint64_t)(dynamic_cast<const IntegerExpr&>(expr).getInt()), true);
     } else if (dynamic_cast<const DoubleExpr*>(&expr)) {
       return llvm::ConstantFP::get(transformType(*expr.getType()), (dynamic_cast<const DoubleExpr&>(expr).getDouble()));
+    }  else if (dynamic_cast<const BoolExpr*>(&expr)) {
+      return llvm::ConstantInt::get(transformType(*expr.getType()), dynamic_cast<const BoolExpr&>(expr).getBool()?1:0);
     } else if (dynamic_cast<const BinaryExpr*>(&expr)) {
       return transformBinaryExpr(dynamic_cast<const BinaryExpr&>(expr));
     } else if (dynamic_cast<const IdentifierExpr*>(&expr)) {
@@ -211,6 +215,14 @@ public:
         return builder.CreateFMul(lval, rval);
       } else if (expr.getOperator() == "/") {
         return builder.CreateFDiv(lval, rval);
+      } else {
+        throw std::logic_error("error: binary expression of this type not implemented");
+      }
+    } else if (expr.getType()->isBooleanType()) {
+      if (expr.getOperator() == "&&") {
+        return builder.CreateAnd(lval, rval);
+      } else if (expr.getOperator() == "||") {
+        return builder.CreateOr(lval, rval);
       } else {
         throw std::logic_error("error: binary expression of this type not implemented");
       }

@@ -92,8 +92,8 @@ std::string BoolExpr::getLexeme() const {
 
 Expr::Kind  BoolExpr::getKind() const { return Kind::BoolExpr; }
 
-bool  BoolExpr::getBool() {
-  return token.lexeme == "true";
+bool BoolExpr::getBool() const {
+  return token.lexeme == "true" ? 1: 0;
 }
 
 bool BoolExpr::isLeftValue() const {

@@ -99,7 +99,7 @@ int main(int argc, char const *argv[]) {
     if (printIR) TheModule->print(llvm::errs(), nullptr);
     auto moduleHandle = TheJIT->addModule(std::move(TheModule));
     auto mainFunctionSymbol = TheJIT->findSymbol("main");
-    int (*mainFunction)() = (int (*)())(intptr_t)cantFail(mainFunctionSymbol.getAddress());
+    bool (*mainFunction)() = (bool (*)())(intptr_t)cantFail(mainFunctionSymbol.getAddress());
 
     std::cout << "program returned successfully with value " << mainFunction() << std::endl;
     TheJIT->removeModule(moduleHandle);

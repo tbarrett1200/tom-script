@@ -18,6 +18,9 @@ bool Type::isDoubleType() const {
   return getCanonicalType()->getKind() == Kind::DoubleType;
 }
 
+bool Type::isBooleanType() const {
+  return getCanonicalType()->getKind() == Kind::BooleanType;
+}
 
 //----------------------------------------------------------------------------//
 // IntegerType

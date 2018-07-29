@@ -175,7 +175,7 @@ public:
   /* Returns a vector of children for easy traversal */
   std::string getLexeme() const;
   Expr::Kind getKind() const;
-  bool getBool();
+  bool getBool() const;
   BoolExpr(bool b);
   bool isLeftValue() const;
   virtual void accept(ASTVisitor& t) const {

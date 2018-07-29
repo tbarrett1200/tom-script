@@ -285,6 +285,8 @@ public:
    */
   std::shared_ptr<IntegerExpr> parseIntegerExpr();
 
+  shared_ptr<BoolExpr> parseBoolExpr();
+
   /**
    *
    */
