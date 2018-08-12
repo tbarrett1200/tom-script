@@ -7,7 +7,7 @@
 shared_ptr<Stmt> Parser::parseStmt()  {
   switch(token().getType()) {
     case Token::l_brace: return parseCompoundStmt();
-    case Token::kw_if: return parseConditionalStmtList();
+    case Token::kw_if: return parseConditionalBlock();
     case Token::kw_return: return parseReturnStmt();
     case Token::kw_while: return parseWhileLoop();
     case Token::kw_var:
@@ -34,25 +34,31 @@ shared_ptr<CompoundStmt> Parser::parseCompoundStmt()  {
 }
 
 shared_ptr<ConditionalStmt> Parser::parseConditionalStmt() {
-  auto expr = parseExpr();
-  auto stmt = parseCompoundStmt();
-  return std::make_shared<ConditionalStmt>(expr, stmt);
+  if (token().is(Token::kw_let)) {
+    auto let_decl = parseLetDecl();
+    auto stmt = parseCompoundStmt();
+    return std::make_shared<ConditionalStmt>(let_decl, stmt);
+  } else {
+    auto expr = parseExpr();
+    auto stmt = parseCompoundStmt();
+    return std::make_shared<ConditionalStmt>(expr, stmt);
+  }
 }
 
-shared_ptr<ConditionalStmtList> Parser::parseConditionalStmtList()  {
-
+std::shared_ptr<ConditionalBlock> Parser::parseConditionalBlock()  {
+  std::vector<std::shared_ptr<Stmt>> stmts;
   if (consumeToken(Token::kw_if)) {
-    auto stmt = parseConditionalStmt();
-    if (consumeToken(Token::kw_else)) {
-      auto list = parseConditionalStmtList();
-      return std::make_shared<ConditionalStmtList>(stmt, list);
-    } else {
-      return std::make_shared<ConditionalStmtList>(stmt, nullptr);
+    stmts.push_back(parseConditionalStmt());
+    while (consumeToken(Token::kw_else)) {
+      if (consumeToken(Token::kw_if)) {
+        stmts.push_back(parseConditionalStmt());
+      } else {
+        stmts.push_back(parseCompoundStmt());
+        break;
+      }
     }
-  } else {
-    auto stmt = parseCompoundStmt();
-    return std::make_shared<ConditionalStmtList>(std::make_shared<ConditionalStmt>(nullptr, stmt), nullptr);
   }
+  return std::make_shared<ConditionalBlock>(stmts);
 }
 
 shared_ptr<DeclStmt> Parser::parseDeclStmt()  {

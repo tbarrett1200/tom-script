@@ -36,6 +36,7 @@ protected:
     fRange = aRange;
   };
 
+public:
   /**
    * Expr Subclasses should call this in their constructor. After construction,
    * all expressions should have a type.
@@ -44,7 +45,6 @@ protected:
     fType = aType;
   };
 
-public:
   /**
    * An enumeration allowing for switching over the dynamic runtime type of an
    * Expression. Very useful when working with polymorphic types.
@@ -240,6 +240,14 @@ public:
   Expr::Kind getKind() const;
   bool isLeftValue() const;
 
+  std::string getOperator() {
+    return op.lexeme;
+  }
+
+  Expr& getExpr() {
+    return *expr;
+  }
+
   virtual void accept(ASTVisitor& t) const {
      t.visit(*this);
   }
@@ -268,6 +276,13 @@ public:
      t.visit(*this);
   }
 
+  Expr& getLeft() {
+    return *left;
+  }
+
+  Expr& getRight() {
+    return *right;
+  }
   std::string getOperator() const {
     return op.lexeme;
   }
@@ -285,12 +300,18 @@ public:
   }
   std::vector<std::shared_ptr<TreeElement>> getChildren() const {
     std::vector<std::shared_ptr<TreeElement>> children;
-    children.push_back(name);
     for (auto arg: arguments) {
       children.push_back(arg);
     }
     return children;
   }
+  std::vector<std::shared_ptr<Expr>>& getArguments() {
+    return arguments;
+  }
+  std::string getFunctionName() {
+    return name->getLexeme();
+  }
+
   FunctionCall(std::shared_ptr<IdentifierExpr> n, std::vector<std::shared_ptr<Expr>>&& a);
   bool isLeftValue() const;
   Expr::Kind getKind() const;

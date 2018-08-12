@@ -460,7 +460,7 @@ public:
    *
    * <conditional-stmt-list> := <contional-stmt>+
    */
-  std::shared_ptr<ConditionalStmtList> parseConditionalStmtList();
+   std::shared_ptr<ConditionalBlock> parseConditionalBlock();
 
   /**
    * Parses as many stmts as possible from the input stream. It will stop

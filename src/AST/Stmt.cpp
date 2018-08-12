@@ -50,59 +50,6 @@ std::vector<std::shared_ptr<TreeElement>> ConditionalStmt::getChildren() const {
 }
 
 //----------------------------------------------------------------------------//
-// ConditionalStmtList
-//----------------------------------------------------------------------------//
-
-ConditionalStmtList::ConditionalStmtList(std::shared_ptr<ConditionalStmt> e, std::shared_ptr<ConditionalStmtList> l): element{e}, list{l} {
-  if (!e) throw std::logic_error("violated precondition: statement is required");
-  if (e->isElseStmt() && list) throw std::logic_error("violated precondition: else statement must be last statement in list");
-}
-
-ConditionalStmtList::ConditionalStmtList(std::vector<std::shared_ptr<ConditionalStmt>> l) {
-  if (l.size() == 0) {
-    throw std::runtime_error("type list must have at least one type");
-  }
-  if (l.size() == 1) {
-    element = l[0];
-    list = nullptr;
-  } else {
-    element = l[0];
-    l.erase(l.begin());
-    list = std::make_shared<ConditionalStmtList>(l);
-  }
-}
-
-bool ConditionalStmtList::returns() const {
-  if (!hasElseStmt()) return false;
-  else {
-    if (list == nullptr) return element->returns();
-    else return element->returns() && list->returns();
-  }
-}
-
-
-Stmt::Kind ConditionalStmtList::getKind() const { return Kind::ConditionalStmtList; }
-
-std::vector<std::shared_ptr<TreeElement>> ConditionalStmtList::getChildren() const {
-  if (!list) return {element};
-  else {
-    auto children = list->getChildren();
-    children.insert(children.begin(), element);
-    return children;
-  }
-}
-
-int ConditionalStmtList::size() const {
-  if (!list) return 1;
-  else return list->size()+1;
-}
-
-bool ConditionalStmtList::hasElseStmt() const {
-  if (list) return list->hasElseStmt();
-  else return element->isElseStmt();
-}
-
-//----------------------------------------------------------------------------//
 // WhileLoop
 //----------------------------------------------------------------------------//
 

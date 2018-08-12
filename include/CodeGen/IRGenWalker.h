@@ -1,6 +1,7 @@
 #ifndef IR_GEN_WALKER
 #define IR_GEN_WALKER
 
+/*
 #include "llvm/ADT/APFloat.h"
 #include "llvm/ADT/APInt.h"
 #include "llvm/ADT/STLExtras.h"
@@ -37,6 +38,7 @@ class LLVMTransformer {
 private:
   llvm::LLVMContext& fContext;
   llvm::Module* fModule;
+  llvm::Function* fFunction;
   llvm::BasicBlock *fCurrentBlock;
 
   DeclContext* currentContext;
@@ -72,11 +74,97 @@ public:
     }
   }
 
+
+  void transformReturnStmt(const ReturnStmt& stmt) {
+    llvm::IRBuilder<> builder{fCurrentBlock};
+    builder.CreateRet(transformExpr(*stmt.expr));
+  }
+
+  void transformDeclStmt(const DeclStmt& declStmt) {
+    llvm::IRBuilder<> builder{fCurrentBlock};
+    Decl* decl = dynamic_cast<Decl*>(declStmt.decl.get());
+    if (dynamic_cast<LetDecl*>(decl)) {
+      LetDecl *letDecl = dynamic_cast<LetDecl*>(decl);
+      llvm::Value *v = transformExpr(*letDecl->getExpr());
+      fNamedValues[letDecl->getName()] = std::make_shared<VariableValue>(false, v, nullptr);
+    } else if (dynamic_cast<VarDecl*>(decl)) {
+      VarDecl *varDecl = dynamic_cast<VarDecl*>(decl);
+      llvm::AllocaInst *alloca = builder.CreateAlloca(transformType(*varDecl->getType()), 0, varDecl->getName());
+      builder.CreateStore(transformExpr(*varDecl->getExpr()), alloca);
+      fNamedValues[varDecl->getName()] = std::make_shared<VariableValue>(true, nullptr, alloca);;
+    } else {
+      throw std::logic_error("only let and var declarations are currently supported");
+    }
+  }
+
+  void transformExprStmt(const ExprStmt& exprStmt) {
+    llvm::IRBuilder<> builder{fCurrentBlock};
+    const Expr* expr = dynamic_cast<const Expr*>(exprStmt.expr.get());
+    if (dynamic_cast<const BinaryExpr*>(expr)) {
+      const BinaryExpr* binExpr = dynamic_cast<const BinaryExpr*>(expr);
+      if (binExpr->getOperator() == "=") {
+        if (dynamic_cast<const IdentifierExpr*>(binExpr->left.get())) {
+          const IdentifierExpr *identifier = dynamic_cast<const IdentifierExpr*>(binExpr->left.get());
+          llvm::AllocaInst *alloca = fNamedValues[identifier->token.lexeme]->fAlloca;
+          if (alloca) {
+            builder.CreateStore(transformExpr(*binExpr->right), alloca);
+          } else {
+            throw std::logic_error("lvalue is not mutable or not found");
+          }
+        } else {
+          throw std::logic_error("can only assign to lvalue");
+        }
+      } else {
+        throw std::logic_error("only assignment expr stmts currently supported");
+      }
+    }
+  }
+
+  void transformWhileLoop(const WhileLoop& whileLoop) {
+    llvm::IRBuilder<> builder{fCurrentBlock};
+
+    // create a basic block and break unconditionally on it
+    llvm::BasicBlock *loopCondition = llvm::BasicBlock::Create(fContext, "loop_cond", funcContext);
+    builder.CreateBr(loopCondition);
+
+    // create a basic block for loop body - will modify fCurrentBlock
+    llvm::BasicBlock *loopBody = transformStmtList(funcContext, whileLoop->stmt->list);
+
+    // create a basic block for loop end.
+    llvm::BasicBlock *loopEnd = llvm::BasicBlock::Create(fContext, "loop_end", funcContext);
+
+    // generate conditional code
+    fCurrentBlock = loopCondition;
+    llvm::IRBuilder<> builder{loopCondition};
+    llvm::Value *condition = transformExpr(*whileLoop->condition);
+    builder.CreateCondBr(condition, loopBody, loopEnd);
+
+    fCurrentBlock = loopEnd;
+  }
+
+  llvm::BasicBlock* transformStmtList(llvm::Function* funcContext, std::vector<std::shared_ptr<Stmt>> list) {
+    fCurrentBlock = llvm::BasicBlock::Create(fContext, "entry", funcContext);
+    for (auto stmt: list) {
+      if (std::dynamic_pointer_cast<ReturnStmt>(stmt)) {
+        transformReturnStmt(*std::dynamic_pointer_cast<ReturnStmt>(stmt));
+      } else if (std::dynamic_pointer_cast<DeclStmt>(stmt)) {
+        transformDeclStmt(*std::dynamic_pointer_cast<DeclStmt>(stmt));
+      } else if (std::dynamic_pointer_cast<ExprStmt>(stmt)) {
+        transformExprStmt(*std::dynamic_pointer_cast<ExprStmt>(stmt));
+      } else if (std::dynamic_pointer_cast<WhileLoop>(stmt)) {
+        transformWhileLoop(*std::dynamic_pointer_cast<WhileLoop>(stmt));
+      } else {
+        throw std::logic_error("only return statements are currently supported");
+      }
+    }
+    return fCurrentBlock;
+  }
+
   llvm::Function* transformFunction(const FuncDecl &func) {
     currentContext = func.getDeclContext();
 
     llvm::FunctionType* type = transformFunctionType(*std::dynamic_pointer_cast<FunctionType>(func.getType()));
-    llvm::Function* function = llvm::Function::Create(type, llvm::Function::ExternalLinkage, func.getName(), fModule);
+    fFunction = llvm::Function::Create(type, llvm::Function::ExternalLinkage, func.getName(), fModule);
 
     int index = 0;
     for (auto &arg : function->args()) {
@@ -85,55 +173,11 @@ public:
       fNamedValues[param->getName()] = std::make_shared<VariableValue>(false, &arg, nullptr);
     }
 
-    fCurrentBlock = llvm::BasicBlock::Create(fContext, "entry", function);
-    llvm::IRBuilder<> builder{fCurrentBlock};
-    for (auto stmt: func.getBlockStmt()->list) {
-      if (std::dynamic_pointer_cast<ReturnStmt>(stmt)) {
-        builder.CreateRet(transformExpr(*std::dynamic_pointer_cast<ReturnStmt>(stmt)->expr));
-      } else if (std::dynamic_pointer_cast<DeclStmt>(stmt)) {
-        DeclStmt* declStmt = dynamic_cast<DeclStmt*>(stmt.get());
-        Decl* decl = dynamic_cast<Decl*>(declStmt->decl.get());
-        if (dynamic_cast<LetDecl*>(decl)) {
-          LetDecl *letDecl = dynamic_cast<LetDecl*>(decl);
-          llvm::Value *v = transformExpr(*letDecl->getExpr());
-          fNamedValues[letDecl->getName()] = std::make_shared<VariableValue>(false, v, nullptr);
-        } else if (dynamic_cast<VarDecl*>(decl)) {
-          VarDecl *varDecl = dynamic_cast<VarDecl*>(decl);
-          llvm::AllocaInst *alloca = builder.CreateAlloca(transformType(*varDecl->getType()), 0, varDecl->getName());
-          builder.CreateStore(transformExpr(*varDecl->getExpr()), alloca);
-          fNamedValues[varDecl->getName()] = std::make_shared<VariableValue>(true, nullptr, alloca);;
-        } else {
-          throw std::logic_error("only let and var declarations are currently supported");
-        }
-      } else if (std::dynamic_pointer_cast<ExprStmt>(stmt)) {
-        const ExprStmt *exprStmt = dynamic_cast<const ExprStmt*>(stmt.get());
-        const Expr* expr = dynamic_cast<const Expr*>(exprStmt->expr.get());
-        if (dynamic_cast<const BinaryExpr*>(expr)) {
-          const BinaryExpr* binExpr = dynamic_cast<const BinaryExpr*>(expr);
-          if (binExpr->getOperator() == "=") {
-            if (dynamic_cast<const IdentifierExpr*>(binExpr->left.get())) {
-              const IdentifierExpr *identifier = dynamic_cast<const IdentifierExpr*>(binExpr->left.get());
-              llvm::AllocaInst *alloca = fNamedValues[identifier->token.lexeme]->fAlloca;
-              if (alloca) {
-                builder.CreateStore(transformExpr(*binExpr->right), alloca);
-              } else {
-                throw std::logic_error("lvalue is not mutable or not found");
-              }
-            } else {
-              throw std::logic_error("can only assign to lvalue");
-            }
-          } else {
-            throw std::logic_error("only assignment expr stmts currently supported");
-          }
-        }
-      } else if (std::dynamic_pointer_cast<ReturnStmt>(stmt)) {
-        builder.CreateRet(transformExpr(*std::dynamic_pointer_cast<ReturnStmt>(stmt)->expr));
-      } else {
-        throw std::logic_error("only return statements are currently supported");
-      }
-    }
+    transformStmtList(function, func.getBlockStmt()->list);
+
     return function;
   }
+
 
   llvm::Value* transformFunctionCall(const FunctionCall& call) {
     llvm::IRBuilder<> builder{fCurrentBlock};
@@ -203,6 +247,18 @@ public:
         return builder.CreateSDiv(lval, rval);
       } else if (expr.getOperator() == "%") {
         return builder.CreateSRem(lval, rval);
+      } else if (expr.getOperator() == "==") {
+        return builder.CreateICmpEQ(lval, rval);
+      } else if (expr.getOperator() == "!=") {
+        return builder.CreateICmpNE(lval, rval);
+      } else if (expr.getOperator() == ">=") {
+        return builder.CreateICmpSGE(lval, rval);
+      } else if (expr.getOperator() == "<=") {
+        return builder.CreateICmpSLE(lval, rval);
+      } else if (expr.getOperator() == ">") {
+        return builder.CreateICmpSGT(lval, rval);
+      } else if (expr.getOperator() == "<") {
+        return builder.CreateICmpSLT(lval, rval);
       } else {
         throw std::logic_error("error: binary expression of this type not implemented");
       }
@@ -215,6 +271,18 @@ public:
         return builder.CreateFMul(lval, rval);
       } else if (expr.getOperator() == "/") {
         return builder.CreateFDiv(lval, rval);
+      } else if (expr.getOperator() == "==") {
+        return builder.CreateFCmpOEQ(lval, rval);
+      } else if (expr.getOperator() == "!=") {
+        return builder.CreateFCmpONE(lval, rval);
+      } else if (expr.getOperator() == ">=") {
+        return builder.CreateFCmpOGE(lval, rval);
+      } else if (expr.getOperator() == "<=") {
+        return builder.CreateFCmpOLE(lval, rval);
+      } else if (expr.getOperator() == ">") {
+        return builder.CreateFCmpOGT(lval, rval);
+      } else if (expr.getOperator() == "<") {
+        return builder.CreateFCmpOLT(lval, rval);
       } else {
         throw std::logic_error("error: binary expression of this type not implemented");
       }
@@ -231,5 +299,5 @@ public:
     }
   }
 };
-
+*/
 #endif

@@ -38,8 +38,9 @@ public:
     return dynamic_cast<T*>(this);
   }
 
-  virtual void setDeclContext(DeclContext *parent) = 0;
-  virtual DeclContext* getDeclContext() const = 0;
+  virtual void setParentContext(DeclContext *parent) = 0;
+  virtual const DeclContext* getDeclContext() const = 0;
+  virtual DeclContext* getDeclContext() = 0;
 };
 
 
@@ -66,11 +67,15 @@ public:
     return fType;
   }
 
-  virtual DeclContext* getDeclContext() const override {
+  virtual const DeclContext* getDeclContext() const override {
     return fParentContext;
   }
 
-  virtual void setDeclContext(DeclContext *parent) override {
+  virtual DeclContext* getDeclContext() override {
+    return fParentContext;
+  }
+
+  virtual void setParentContext(DeclContext *parent) override {
     fParentContext = parent;
   }
 
@@ -105,11 +110,15 @@ public:
     return fType;
   }
 
-  virtual DeclContext* getDeclContext() const override {
+  virtual const DeclContext* getDeclContext() const override {
     return fParentContext;
   }
 
-  virtual void setDeclContext(DeclContext *parent) override {
+  virtual DeclContext* getDeclContext() override {
+    return fParentContext;
+  }
+
+  virtual void setParentContext(DeclContext *parent) override {
     fParentContext = parent;
   }
 
@@ -144,11 +153,15 @@ public:
   std::shared_ptr<Expr> getExpr() const {
     return fExpr;
   }
-  virtual DeclContext* getDeclContext() const override {
+  virtual const DeclContext* getDeclContext() const override {
     return fParentContext;
   }
 
-  virtual void setDeclContext(DeclContext *parent) override {
+  virtual DeclContext* getDeclContext() override {
+    return fParentContext;
+  }
+
+  virtual void setParentContext(DeclContext *parent) override {
     fParentContext = parent;
   }
 
@@ -178,11 +191,15 @@ public:
     return fType;
   }
 
-  virtual DeclContext* getDeclContext() const override {
+  virtual const DeclContext* getDeclContext() const override {
     return fParentContext;
   }
 
-  virtual void setDeclContext(DeclContext *parent) override {
+  virtual DeclContext* getDeclContext() override {
+    return fParentContext;
+  }
+
+  virtual void setParentContext(DeclContext *parent) override {
     fParentContext = parent;
   }
 
@@ -195,7 +212,7 @@ public:
 /// A named, explicitly typed function
 class FuncDecl : public Decl {
 private:
-  std::unique_ptr<DeclContext> fContext;
+  DeclContext fContext;
   std::shared_ptr<FunctionType> fType;
   Token fName;
   std::vector<std::shared_ptr<ParamDecl>> fParams;
@@ -204,27 +221,14 @@ private:
 public:
 
   FuncDecl(Token n, std::vector<std::shared_ptr<ParamDecl>>&& p, std::shared_ptr<Type> t, std::shared_ptr<CompoundStmt> s)
-  : fContext{std::make_unique<DeclContext>(DeclContext::getGlobalContext())}
-  , fName{n}
+  : fName{n}
   , fParams{p}
   , fReturnType{t}
   , fStmt{s} {
 
     std::vector<std::shared_ptr<Type>> paramTypes;
-
     for (auto param: fParams) {
-      fContext->addDecl(param.get());
       paramTypes.push_back(param->getType());
-    }
-
-    for (auto stmt: s->list) {
-      DeclStmt* declStmt = dynamic_cast<DeclStmt*>(stmt.get());
-      if (declStmt) {
-        Decl* decl = dynamic_cast<Decl*>(declStmt->decl.get());
-        if (decl) {
-          fContext->addDecl(decl);
-        }
-      }
     }
     fType = std::make_shared<FunctionType>(std::move(paramTypes), fReturnType);
   }
@@ -245,12 +249,16 @@ public:
     return fType;
   }
 
-  virtual DeclContext* getDeclContext() const override {
-    return fContext.get();
+  virtual const DeclContext* getDeclContext() const override {
+    return &fContext;
   }
 
-  virtual void setDeclContext(DeclContext *parent) override {
-    fContext->setParentContext(parent);
+  virtual DeclContext* getDeclContext() override {
+    return &fContext;
+  }
+
+  virtual void setParentContext(DeclContext *parent) override {
+    fContext.setParentContext(parent);
   }
 
   std::vector<std::shared_ptr<TreeElement>> getChildren() const override {

@@ -5,10 +5,20 @@ func add(a: Int, b: Int) -> Int {
 func foo() -> Int {
   var c: Int = 10
   let d: Int = add(c, 5)
-  c = 12
+  c = 5 + 5
   return c + d
 }
 
-func main() -> Boolean {
-  return true || false
+func bar() -> Int {
+  if 5 == 5 {
+    return 1
+  }
+  return 0
+}
+func main() -> Int {
+  var x: Int = 5
+  if x == 5 {
+    x = 8
+  }
+  return x
 }

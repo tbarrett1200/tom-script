@@ -77,10 +77,8 @@ public:
   }
 
   std::string getLine(int i) const {
-    if (i > getLineCount()) {
-      std::stringstream ss;
-      ss << "line out of bounds " << i << " is greater than " << getLineCount() << std::endl;
-      throw std::string(ss.str());
+    if (i > getLineCount() || i < 0) {
+      return "";
     } else if (i == getLineCount()) {
       return text.substr(lineStarts[i], text.size()-2);
     } else {

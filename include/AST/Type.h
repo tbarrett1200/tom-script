@@ -89,7 +89,7 @@ public:
   }
 
   std::string toString() const override {
-    return "Integer";
+    return "Int";
   }
   /**
    * Returns Type::Kind::IntegerType
@@ -267,6 +267,21 @@ public:
     return str;
   }
 
+  std::shared_ptr<Type> getReturnType() {
+    return returns;
+  }
+
+  int getParamCount() {
+    return params.size();
+  }
+
+  std::shared_ptr<Type> getParam(int index) {
+    return params[index];
+  }
+  
+  std::vector<std::shared_ptr<Type>> getParamTypes() {
+    return params;
+  }
   // Type Overridess
   Type::Kind getKind() const { return Kind::FunctionType; }
 

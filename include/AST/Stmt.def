@@ -4,8 +4,8 @@
 
 STMT(CompilationUnit, Stmt)
 STMT(CompoundStmt, Stmt)
+STMT(ConditionalBlock, Stmt)
 STMT(ConditionalStmt, Stmt)
-STMT(ConditionalStmtList, Stmt)
 STMT(WhileLoop, Stmt)
 STMT(ExprStmt, Stmt)
 STMT(DeclStmt, Stmt)

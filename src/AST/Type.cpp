@@ -64,11 +64,6 @@ std::string TypeIdentifier::getName() const {
   return token.lexeme;
 }
 
-std::ostream& operator<<(std::ostream& os, Type* x) {
-  os << "Type";
-  return os;
-}
-
 bool equal(std::shared_ptr<Type> t1, std::shared_ptr<Type> t2) {
   return t1->getCanonicalType() == t2->getCanonicalType();
 }
