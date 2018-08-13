@@ -12,8 +12,15 @@
 void ScopeBuilder::buildCompilationUnitScope(CompilationUnit &unit) {
   DeclContext* global_context = DeclContext::getGlobalContext();
   global_context->addDecl(&BuiltinDecl::add_int);
+  global_context->addDecl(&BuiltinDecl::sub_int);
+  global_context->addDecl(&BuiltinDecl::mul_int);
+
   global_context->addDecl(&BuiltinDecl::assign_int);
   global_context->addDecl(&BuiltinDecl::equ_int);
+  global_context->addDecl(&BuiltinDecl::lt_int);
+  global_context->addDecl(&BuiltinDecl::lte_int);
+  global_context->addDecl(&BuiltinDecl::gt_int);
+  global_context->addDecl(&BuiltinDecl::gte_int);
 
   DeclContext* unitContext = unit.getDeclContext();
   unitContext->setParentContext(global_context);

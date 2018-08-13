@@ -278,7 +278,7 @@ public:
   std::shared_ptr<Type> getParam(int index) {
     return params[index];
   }
-  
+
   std::vector<std::shared_ptr<Type>> getParamTypes() {
     return params;
   }

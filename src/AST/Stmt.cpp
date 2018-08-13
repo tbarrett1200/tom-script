@@ -83,8 +83,7 @@ bool ReturnStmt::returns() const {
 Stmt::Kind ReturnStmt::getKind() const { return Kind::ReturnStmt;}
 
 std::vector<std::shared_ptr<TreeElement>> ReturnStmt::getChildren() const {
-  if (expr) return {expr};
-  else return {};
+  return {};
 }
 
 //----------------------------------------------------------------------------//

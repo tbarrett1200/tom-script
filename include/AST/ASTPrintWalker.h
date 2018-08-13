@@ -10,6 +10,7 @@
 #include <memory>
 
 void printASTNode(std::ostream& os, TreeElement* m) {
+
   if (Decl* decl = dynamic_cast<Decl*>(m)) {
     os << "{ \"name\":";
     switch(decl->getKind()) {
@@ -80,16 +81,21 @@ void printASTNode(std::ostream& os, TreeElement* m) {
     if (conditional_stmt->getCondition())
     os << "\"if\",";
     else
-    os << "\"while\",";
+    os << "\"else\",";
   } else {
-    os << "{ \"name\":";
-    os << "\"" << typeid(*m).name() << "\",";
+    os << "{ \"name\": ";
+    os << "\"" << "<unknown>" << "\",";
   }
+
   os << "\"children\": [";
-  for (auto it = m->getChildren().begin(); it != m->getChildren().end(); it++) {
-    printASTNode(os, it->get());
-    if (std::distance(it, m->getChildren().end()) != 1) os << ",";
+
+  if (m != nullptr) {
+    for (auto it = m->getChildren().begin(); it != m->getChildren().end(); it++) {
+      printASTNode(os, it->get());
+      if (std::distance(it, m->getChildren().end()) != 1) os << ",";
+    }
   }
+
   os << "] }";
 };
 
