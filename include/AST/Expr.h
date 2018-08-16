@@ -18,7 +18,7 @@ private:
    * in all cases. A public accessor is available to get the type, and a
    * protected setter is available to set the type at construction time.
    */
-  std::shared_ptr<class Type> fType;
+   class Type *fType;
 
   /*
    * The location in text where this expression was parsed from. This is useful
@@ -41,7 +41,7 @@ public:
    * Expr Subclasses should call this in their constructor. After construction,
    * all expressions should have a type.
    */
-  void setType(std::shared_ptr<class Type> aType) {
+  void setType(class Type *aType) {
     fType = aType;
   };
 
@@ -120,7 +120,11 @@ public:
    * expression derived classes are required to set their type in their
    * constructor.
    */
-  std::shared_ptr<Type> getType() const {
+  const class Type* getType() const {
+    return fType;
+  };
+
+  class Type* getType() {
     return fType;
   };
 
@@ -297,11 +301,11 @@ public:
 class UnaryExpr: public Expr {
 private:
   Token op_;
-  std::shared_ptr<Expr> expr_;
+  std::unique_ptr<Expr> expr_;
 public:
 
-  std::vector<std::shared_ptr<TreeElement>> getChildren() const {
-    return {expr_};
+  std::vector<TreeElement*> getChildren() const {
+    return {expr_.get()};
   }
 
   Expr::Kind getKind() const { return Kind::UnaryExpr; }
@@ -310,7 +314,7 @@ public:
     return false;
   }
 
-  UnaryExpr(Token o, std::shared_ptr<Expr> e) : op_{std::move(o)}, expr_{std::move(e)} {
+  UnaryExpr(Token o, std::unique_ptr<Expr> e) : op_{std::move(o)}, expr_{std::move(e)} {
     if (!expr_) {
       throw std::domain_error("BinaryExpr: expr is required");
     }
@@ -344,22 +348,22 @@ public:
  */
 class BinaryExpr: public Expr {
 private:
-  std::shared_ptr<Expr> left_;
+  std::unique_ptr<Expr> left_;
   Token op_;
-  std::shared_ptr<Expr> right_;
+  std::unique_ptr<Expr> right_;
 public:
 
   Expr::Kind getKind() const { return Kind::BinaryExpr; }
 
-  std::vector<std::shared_ptr<TreeElement>> getChildren() const {
-    return {left_, right_};
+  std::vector<TreeElement*> getChildren() const {
+    return {left_.get(), right_.get()};
   }
 
   bool isLeftValue() const {
     return false;
   }
 
-  BinaryExpr(std::shared_ptr<Expr> l, Token o, std::shared_ptr<Expr> r)
+  BinaryExpr(std::unique_ptr<Expr> l, Token o, std::unique_ptr<Expr> r)
   : left_{std::move(l)}, op_{o}, right_{std::move(r)} {
     if (!left_) {
       throw std::domain_error("BinaryExpr: left is required");
@@ -400,13 +404,12 @@ public:
 
 class FunctionCall: public Expr {
 private:
-  std::shared_ptr<IdentifierExpr> name_;
-  std::vector<std::shared_ptr<Expr>> arguments_;
+  std::unique_ptr<IdentifierExpr> name_;
+  std::vector<std::unique_ptr<Expr>> arguments_;
 public:
 
-  FunctionCall(std::shared_ptr<IdentifierExpr> n, std::vector<std::shared_ptr<Expr>>&& a)
-  : name_{n}, arguments_{std::move(a)} {
-    setType(n->getType());
+  FunctionCall(std::unique_ptr<IdentifierExpr> n, std::vector<std::unique_ptr<Expr>> a)
+  : name_{std::move(n)}, arguments_{std::move(a)} {
   }
 
   bool isLeftValue() const {
@@ -419,14 +422,14 @@ public:
   virtual void accept(ASTVisitor& t) const {
      t.visit(*this);
   }
-  std::vector<std::shared_ptr<TreeElement>> getChildren() const {
-    std::vector<std::shared_ptr<TreeElement>> children;
-    for (auto arg: arguments_) {
-      children.push_back(arg);
+  std::vector<TreeElement*> getChildren() const {
+    std::vector<TreeElement*> children;
+    for (auto &arg: arguments_) {
+      children.push_back(arg.get());
     }
     return children;
   }
-  const std::vector<std::shared_ptr<Expr>>& getArguments() const {
+  const std::vector<std::unique_ptr<Expr>>& getArguments() const {
     return arguments_;
   }
   StringRef getFunctionName() const {
@@ -437,7 +440,7 @@ public:
 
 class ListExpr: public Expr {
 private:
-  std::vector<std::shared_ptr<Expr>> elements_;
+  std::vector<std::unique_ptr<Expr>> elements_;
 
 public:
 
@@ -448,7 +451,7 @@ public:
     return false;
   }
 
-  ListExpr(std::vector<std::shared_ptr<Expr>>&& d): elements_{std::move(d)} {
+  ListExpr(std::vector<std::unique_ptr<Expr>>&& d): elements_{std::move(d)} {
     throw std::logic_error("list not implemented");
   }
 
@@ -456,7 +459,7 @@ public:
      t.visit(*this);
   }
 
-  const std::vector<std::shared_ptr<Expr>>& getElements() const {
+  const std::vector<std::unique_ptr<Expr>>& getElements() const {
     return elements_;
   }
 
@@ -464,13 +467,13 @@ public:
 
 class AccessorExpr: public Expr {
 private:
-  std::shared_ptr<IdentifierExpr> id_;
-  std::shared_ptr<IntegerExpr> index_;
+  std::unique_ptr<IdentifierExpr> id_;
+  std::unique_ptr<IntegerExpr> index_;
 
 public:
 
-  std::vector<std::shared_ptr<TreeElement>> getChildren() const {
-    return {id_, index_};
+  std::vector<TreeElement*> getChildren() const {
+    return {id_.get(), index_.get()};
   }
 
   Expr::Kind getKind() const {
@@ -481,7 +484,7 @@ public:
     return true;
   }
 
-  AccessorExpr(std::shared_ptr<IdentifierExpr> a, std::shared_ptr<IntegerExpr> b): id_{a}, index_{b} {
+  AccessorExpr(std::unique_ptr<IdentifierExpr> a, std::unique_ptr<IntegerExpr> b): id_{std::move(a)}, index_{std::move(b)} {
     throw std::logic_error("accessor not implemented");
   }
 
@@ -493,7 +496,7 @@ public:
 
 class TupleExpr: public Expr {
 private:
-  std::vector<std::shared_ptr<Expr>> elements_;
+  std::vector<std::unique_ptr<Expr>> elements_;
 
 public:
 
@@ -506,11 +509,11 @@ public:
 
   int size() const { return elements_.size(); }
 
-  std::shared_ptr<Expr> operator[] (int x) {
-    return elements_[x];
+  Expr& operator[] (int x) {
+    return *elements_[x];
   }
 
-  TupleExpr(std::vector<std::shared_ptr<Expr>>&& list) : elements_{std::move(list)} {
+  TupleExpr(std::vector<std::unique_ptr<Expr>> list) : elements_{std::move(list)} {
     throw std::logic_error("tuple not implemented");
   }
 

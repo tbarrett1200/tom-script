@@ -51,7 +51,7 @@ public:
 class CompoundStmt : public Stmt {
 private:
   DeclContext context;
-  std::vector<std::shared_ptr<Stmt>> list;
+  std::vector<std::unique_ptr<Stmt>> list;
 public:
 
   DeclContext* getDeclContext() {
@@ -62,24 +62,26 @@ public:
     context.setParentContext(parent);
   }
 
-  CompoundStmt(std::vector<std::shared_ptr<Stmt>>&& l) : list{std::move(l)} {}
+  CompoundStmt(std::vector<std::unique_ptr<Stmt>>&& l) : list{std::move(l)} {}
 
-  const std::vector<std::shared_ptr<Stmt>>& getStmts() const {
+  const std::vector<std::unique_ptr<Stmt>>& getStmts() const {
     return list;
   };
 
   Stmt::Kind getKind() const { return Kind::CompoundStmt;}
 
   bool returns() const {
-    for (auto stmt: list) {
+    for (auto &stmt: list) {
       if (stmt->returns()) return true;
     }
     return false;
   }
 
-  std::vector<std::shared_ptr<TreeElement>> getChildren() const {
-    std::vector<std::shared_ptr<TreeElement>> treeVector;
-    std::copy(list.begin(), list.end(), std::back_inserter(treeVector));
+  std::vector<TreeElement*> getChildren() const {
+    std::vector<TreeElement*> treeVector;
+    for (auto &stmt: list) {
+      treeVector.push_back(stmt.get());
+    }
     return treeVector;
   }
 };
@@ -87,15 +89,15 @@ public:
 class ConditionalStmt : public Stmt {
 private:
   DeclContext context;
-  std::shared_ptr<class LetDecl> declaration;
-  std::shared_ptr<class Expr> condition;
-  std::shared_ptr<CompoundStmt> stmt;
+  std::unique_ptr<class LetDecl> declaration;
+  std::unique_ptr<class Expr> condition;
+  std::unique_ptr<CompoundStmt> stmt;
 
 public:
 
   // Constructors
-  ConditionalStmt(std::shared_ptr<class LetDecl> d, std::shared_ptr<CompoundStmt> s)
-  : declaration{d}, stmt{s} {}
+  ConditionalStmt(std::unique_ptr<class LetDecl> d, std::unique_ptr<CompoundStmt> s)
+  : declaration{std::move(d)}, stmt{std::move(s)} {}
 
   DeclContext* getDeclContext() {
     return &context;
@@ -118,8 +120,8 @@ public:
   }
 
 
-  ConditionalStmt(std::shared_ptr<Expr> c, std::shared_ptr<CompoundStmt> s) : condition{c}, stmt{s} {
-    if (!s) throw std::logic_error("violated precondition: statement is required");
+  ConditionalStmt(std::unique_ptr<Expr> c, std::unique_ptr<CompoundStmt> s) : condition{std::move(c)}, stmt{std::move(s)} {
+    if (!stmt) throw std::logic_error("violated precondition: statement is required");
   }
 
   Stmt::Kind getKind() const { return Kind::ConditionalStmt;}
@@ -132,17 +134,17 @@ public:
     return !condition;
   }
 
-  std::vector<std::shared_ptr<TreeElement>> getChildren() const;
+  std::vector<TreeElement*> getChildren() const;
 
 };
 
 class ConditionalBlock : public Stmt {
 private:
-  std::vector<std::shared_ptr<Stmt>> stmts;
+  std::vector<std::unique_ptr<Stmt>> stmts;
 public:
-  ConditionalBlock(std::vector<std::shared_ptr<Stmt>> list): stmts{list} {}
+  ConditionalBlock(std::vector<std::unique_ptr<Stmt>> list): stmts{std::move(list)} {}
 
-  std::vector<std::shared_ptr<Stmt>>& getStmts() {
+  std::vector<std::unique_ptr<Stmt>>& getStmts() {
     return stmts;
   }
 
@@ -150,10 +152,10 @@ public:
     return Stmt::Kind::ConditionalBlock;
   }
 
-  std::vector<std::shared_ptr<TreeElement>> getChildren() const {
-    std::vector<std::shared_ptr<TreeElement>> children;
-    for (auto stmt: stmts) {
-      children.push_back(stmt);
+  std::vector<TreeElement*> getChildren() const {
+    std::vector<TreeElement*> children;
+    for (auto &stmt: stmts) {
+      children.push_back(stmt.get());
     }
     return children;
   }
@@ -163,15 +165,15 @@ public:
 class WhileLoop : public Stmt {
 private:
   DeclContext context_;
-  std::shared_ptr<class LetDecl> declaration_;
-  std::shared_ptr<class Expr> condition_;
-  std::shared_ptr<CompoundStmt> stmt_;
+  std::unique_ptr<class LetDecl> declaration_;
+  std::unique_ptr<class Expr> condition_;
+  std::unique_ptr<CompoundStmt> stmt_;
 
 public:
 
-  WhileLoop(std::shared_ptr<Expr> c, std::shared_ptr<CompoundStmt> s): condition_{c}, stmt_{s} {
-    if (!c) throw std::logic_error("violated precondition: condition is required");
-    if (!s) throw std::logic_error("violated precondition: statement is required");
+  WhileLoop(std::unique_ptr<Expr> c, std::unique_ptr<CompoundStmt> s): condition_{std::move(c)}, stmt_{std::move(s)} {
+    if (!condition_) throw std::logic_error("violated precondition: condition is required");
+    if (!stmt_) throw std::logic_error("violated precondition: statement is required");
   }
 
   bool returns() const {
@@ -180,7 +182,7 @@ public:
 
   Stmt::Kind getKind() const { return Kind::WhileLoop;}
 
-  std::vector<std::shared_ptr<TreeElement>> getChildren() const;
+  std::vector<TreeElement*> getChildren() const;
 
   LetDecl* getDeclaration() {
     return declaration_.get();
@@ -206,10 +208,10 @@ public:
 
 class ReturnStmt : public Stmt{
 private:
-  std::shared_ptr<Expr> expr_;
+  std::unique_ptr<Expr> expr_;
 
 public:
-  ReturnStmt(std::shared_ptr<Expr> d): expr_{d} {}
+  ReturnStmt(std::unique_ptr<Expr> d): expr_{std::move(d)} {}
 
   bool returns() const {
     return true;
@@ -226,17 +228,17 @@ public:
 
   Stmt::Kind getKind() const { return Kind::ReturnStmt;}
 
-  std::vector<std::shared_ptr<TreeElement>> getChildren() const;
+  std::vector<TreeElement*> getChildren() const;
 };
 
 class ExprStmt : public Stmt {
 private:
-  std::shared_ptr<class Expr> expr_;
+  std::unique_ptr<class Expr> expr_;
 
 public:
 
-  ExprStmt(std::shared_ptr<Expr> e): expr_{e} {
-    if (!e) throw std::logic_error("violated precondition: expr is required");
+  ExprStmt(std::unique_ptr<Expr> e): expr_{std::move(e)} {
+    if (!expr_) throw std::logic_error("violated precondition: expr is required");
   }
 
   bool returns() const {
@@ -245,7 +247,7 @@ public:
 
   Stmt::Kind getKind() const { return Kind::ExprStmt;}
 
-  std::vector<std::shared_ptr<TreeElement>> getChildren() const;
+  std::vector<TreeElement*> getChildren() const;
 
   const Expr* getExpr() const {
     return expr_.get();
@@ -260,17 +262,17 @@ public:
 
 class DeclStmt : public Stmt {
 private:
-  std::shared_ptr<class Decl> decl_;
+  std::unique_ptr<class Decl> decl_;
 
 public:
 
-  DeclStmt(std::shared_ptr<Decl> d): decl_{d} {
-    if (!d) throw std::logic_error("violated precondition: decl is required");
+  DeclStmt(std::unique_ptr<Decl> d): decl_{std::move(d)} {
+    if (!decl_) throw std::logic_error("violated precondition: decl is required");
   }
 
   Stmt::Kind getKind() const { return Kind::DeclStmt;}
 
-  std::vector<std::shared_ptr<TreeElement>> getChildren() const;
+  std::vector<TreeElement*> getChildren() const;
 
   bool returns() const {
     return false;
@@ -285,27 +287,31 @@ public:
   }
 };
 
+/// Represents a single file. Each CompilationUnit has its own unique
+/// Declaration context, which contains file-scoped declarations such as
+/// functions. It also contains a list of file-scoped stmts. Currently, the
+/// only allowed stmt is a DeclStmt whose decl is a FuncDecl.
 class CompilationUnit : public Stmt {
 private:
-  std::vector<std::shared_ptr<Stmt>> stmts;
-  DeclContext context;
+  std::vector<std::unique_ptr<Stmt>> stmts_;
+  DeclContext context_;
 public:
-  CompilationUnit(std::vector<std::shared_ptr<Stmt>> s): stmts{s} {};
+  CompilationUnit(std::vector<std::unique_ptr<Stmt>> stmts): stmts_{std::move(stmts)} {};
 
   Stmt::Kind getKind() const { return Kind::CompilationUnit; }
 
   DeclContext* getDeclContext() {
-    return &context;
+    return &context_;
   }
 
-  std::vector<std::shared_ptr<TreeElement>> getChildren() const;
+  std::vector<TreeElement*> getChildren() const;
 
   bool returns() const {
     return true;
   }
 
-  const std::vector<std::shared_ptr<Stmt>>& getStmts() const {
-    return stmts;
+  const std::vector<std::unique_ptr<Stmt>>& getStmts() const {
+    return stmts_;
   }
 };
 

@@ -15,40 +15,40 @@ private:
 public:
   ASTScopePrinter(std::ostream& stream): os{stream} {};
 
-  bool visitCompilationUnit(std::shared_ptr<CompilationUnit> tree) override {
+  bool visitCompilationUnit(CompilationUnit& tree) override {
     os << "---------- " << "unit"<< " ----------" << std::endl;
-    for (const std::pair<StringRef, Decl*> pair: tree->getDeclContext()->getDeclMap()) {
+    for (const std::pair<StringRef, Decl*> pair: tree.getDeclContext()->getDeclMap()) {
       os << pair.first << ": " << (pair.second ? pair.second->getType()->toString() : "<error: no decl> ")<< std::endl;
     }
     return true;
   }
 
-  bool visitFuncDecl(std::shared_ptr<FuncDecl> tree) override {
-    os << "---------- " << "func " << tree->getName() << " ----------" << std::endl;
-    for (const std::pair<StringRef, Decl*> pair: tree->getDeclContext()->getDeclMap()) {
+  bool visitFuncDecl(FuncDecl& tree) override {
+    os << "---------- " << "func " << tree.getName() << " ----------" << std::endl;
+    for (const std::pair<StringRef, Decl*> pair: tree.getDeclContext()->getDeclMap()) {
       os << pair.first << ": " << (pair.second ? pair.second->getType()->toString() : "<error: no decl> ")<< std::endl;
     }
     return true;
   }
 
-  bool visitCompoundStmt(std::shared_ptr<CompoundStmt> tree) override {
+  bool visitCompoundStmt(CompoundStmt& tree) override {
     os << "---------- " << "block" << " ----------" << std::endl;
-    for (const std::pair<StringRef, Decl*> pair: tree->getDeclContext()->getDeclMap()) {
+    for (const std::pair<StringRef, Decl*> pair: tree.getDeclContext()->getDeclMap()) {
       os << pair.first << ": " << (pair.second ? pair.second->getType()->toString() : "<error: no decl> ")<< std::endl;
     }
     return true;
   }
 
-  bool visitConditionalStmt(std::shared_ptr<ConditionalStmt> tree) override {
+  bool visitConditionalStmt(ConditionalStmt& tree) override {
     os << "---------- " << "cond" << " ----------" << std::endl;
-    for (const std::pair<StringRef, Decl*> pair: tree->getDeclContext()->getDeclMap()) {
+    for (const std::pair<StringRef, Decl*> pair: tree.getDeclContext()->getDeclMap()) {
       os << pair.first << ": " << pair.second->getType()->toString() << std::endl;
     }
     return true;
   }
-  bool visitWhileLoop(std::shared_ptr<WhileLoop> tree) override {
+  bool visitWhileLoop(WhileLoop& tree) override {
     os << "---------- " << "loop" << " ----------" << std::endl;
-    for (const std::pair<StringRef, Decl*> pair: tree->getDeclContext()->getDeclMap()) {
+    for (const std::pair<StringRef, Decl*> pair: tree.getDeclContext()->getDeclMap()) {
       os << pair.first << ": " << pair.second->getType()->toString() << std::endl;
     }
     return true;

@@ -137,40 +137,40 @@ public:
   /**
    *
    */
-  std::shared_ptr<Type> parseType();
+  Type* parseType();
   /**
    *
    */
-  std::shared_ptr<Type> parseTypeIdentifier();
+  Type* parseTypeIdentifier();
   /**
    *
    */
-  std::vector<std::shared_ptr<Type>> parseTupleTypeElementList();
+  std::vector<Type*> parseTupleTypeElementList();
   /**
    *
    */
-  std::shared_ptr<TupleType> parseTupleType();
+  TupleType* parseTupleType();
   /**
    *
    */
-  std::shared_ptr<FunctionType> parseFunctionType();
+  FunctionType* parseFunctionType();
   /**
    *
    */
-  std::shared_ptr<Type> parseTupleOrFunctionType();
+  Type* parseTupleOrFunctionType();
   /**
    *
    */
-  std::shared_ptr<ListType> parseListType();
+  ListType* parseListType();
   /**
    *
    */
-  std::shared_ptr<MapType> parseMapType();
+  MapType* parseMapType();
 
   /**
    *
    */
-  std::shared_ptr<Type> parseListOrMapType();
+  Type* parseListOrMapType();
 
   //===----------------------  Declaration Parsers ------------------------===//
 
@@ -178,49 +178,49 @@ public:
   /**
    *
    */
-  std::shared_ptr<FuncDecl> parseUndefFuncDecl();
+  std::unique_ptr<FuncDecl> parseUndefFuncDecl();
 
   /**
    *
    */
-  std::shared_ptr<Decl> parseDecl();
+  std::unique_ptr<Decl> parseDecl();
 
   /**
    *
    */
-  std::shared_ptr<TypeAlias> parseTypeAlias();
+  std::unique_ptr<TypeAlias> parseTypeAlias();
 
   /**
    *
    */
-  std::shared_ptr<VarDecl> parseVarDecl();
+  std::unique_ptr<VarDecl> parseVarDecl();
 
   /**
    *
    */
-  std::shared_ptr<LetDecl> parseLetDecl();
+  std::unique_ptr<LetDecl> parseLetDecl();
 
   /**
    *
    */
-  std::shared_ptr<FuncDecl> parseFuncDecl();
+  std::unique_ptr<FuncDecl> parseFuncDecl();
 
   /**
    *
    */
-  std::shared_ptr<ParamDecl> parseParamDecl();
+  std::unique_ptr<ParamDecl> parseParamDecl();
 
   /**
    *
    */
-  std::vector<std::shared_ptr<ParamDecl>> parseParamDeclList();
+  std::vector<std::unique_ptr<ParamDecl>> parseParamDeclList();
 
   //===-----------------------  Expression Parsers ------------------------===//
 
   /**
    *
    */
-  std::shared_ptr<Expr> parseExpr(int precedence = OperatorTable::size());
+  std::unique_ptr<Expr> parseExpr(int precedence = OperatorTable::size());
 
   /**
    * Parses an expression nested in parenthesis. This method simply wraprs the
@@ -229,7 +229,7 @@ public:
    *
    * <expr> := '(' <expr> ')'
    */
-  std::shared_ptr<Expr> parseParenthesizedExpr();
+  std::unique_ptr<Expr> parseParenthesizedExpr();
 
   /**
    * Because of the shortcomings of LL parsing, operator precedence parsing is
@@ -249,61 +249,61 @@ public:
   /**
    *
    */
-  std::shared_ptr<Expr> parseBinaryExpr(int precedence);
+  std::unique_ptr<Expr> parseBinaryExpr(int precedence);
 
   /**
    *
    */
-  std::shared_ptr<Expr> parseInfixNone(int precedence);
+  std::unique_ptr<Expr> parseInfixNone(int precedence);
 
   /**
    *
    */
-  std::shared_ptr<Expr> parseInfixLeft(int precedence);
+  std::unique_ptr<Expr> parseInfixLeft(int precedence);
 
   /**
    *
    */
-  std::shared_ptr<Expr> parseInfixRight(int precedence);
+  std::unique_ptr<Expr> parseInfixRight(int precedence);
 
   /**
    *
    */
-  std::shared_ptr<Expr> parseUnaryExpr();
+  std::unique_ptr<Expr> parseUnaryExpr();
 
   /**
    *
    */
-  std::shared_ptr<Expr> parseValueExpr();
+  std::unique_ptr<Expr> parseValueExpr();
 
   /**
    *
    */
-  std::shared_ptr<IntegerExpr> parseIntegerExpr();
+  std::unique_ptr<IntegerExpr> parseIntegerExpr();
 
-  shared_ptr<BoolExpr> parseBoolExpr();
+  std::unique_ptr<BoolExpr> parseBoolExpr();
 
   /**
    *
    */
-  std::shared_ptr<DoubleExpr> parseDoubleExpr();
+  std::unique_ptr<DoubleExpr> parseDoubleExpr();
 
   /**
    * Parses a string literal
    */
-  std::shared_ptr<StringExpr> parseStringExpr();
+  std::unique_ptr<StringExpr> parseStringExpr();
 
   /**
    * Parses a list expression, which is an expression list wrapped in square
    * brackets.
    */
-  std::shared_ptr<ListExpr> parseListExpr();
+  std::unique_ptr<ListExpr> parseListExpr();
 
   /**
    * Looks ahead in the token stream and returns either a function call,
    * identifier, or accessor expression depending on the context.
    */
-  std::shared_ptr<Expr> parseIdentifierOrFunctionCallOrAccessor();
+  std::unique_ptr<Expr> parseIdentifierOrFunctionCallOrAccessor();
 
   /**
    * Parses a comma seperated list of expression. This is similar to argument
@@ -311,7 +311,7 @@ public:
    *
    * <expr-list> := (<expr> ( ',' <expr> )* )?
    */
-  std::vector<std::shared_ptr<Expr>> parseExprList();
+  std::vector<std::unique_ptr<Expr>> parseExprList();
 
   /**
    * Parses an identifier, which is just a thin wrapper arround a identifier
@@ -319,7 +319,7 @@ public:
    *
    * <identifier> := Token::identifier
    */
-  std::shared_ptr<IdentifierExpr> parseIdentifier();
+  std::unique_ptr<IdentifierExpr> parseIdentifier();
 
   /**
    * Parses a tuple expression, which is a comma seperated list of expressions
@@ -327,7 +327,7 @@ public:
    *
    * <tuple-expr> := '(' <argument-list> ')'
    */
-  std::shared_ptr<Expr> parseTupleExpr();
+  std::unique_ptr<Expr> parseTupleExpr();
 
   /**
    * Parses a function call, which is an identifier token followed by a
@@ -339,7 +339,7 @@ public:
    *
    * <function-call> := <identifier> '(' <argument-list> ')'
    */
-  std::shared_ptr<FunctionCall> parseFunctionCall();
+  std::unique_ptr<FunctionCall> parseFunctionCall();
 
   /**
    * Parses a list of comma seperated expressions for use as arguments to a
@@ -351,7 +351,7 @@ public:
    *
    * <function-arguments> := (<expr> ( ',' <expr> )* )?
    */
-  std::vector<std::shared_ptr<Expr>> parseFunctionArguments();
+  std::vector<std::unique_ptr<Expr>> parseFunctionArguments();
 
 
   //===------------------------  Statement Parsers ------------------------===//
@@ -384,7 +384,7 @@ public:
    *
    *
    */
-  std::shared_ptr<Stmt> parseStmt();
+  std::unique_ptr<Stmt> parseStmt();
 
   /**
    * Parses a return statment from the token stream. There may not
@@ -393,7 +393,7 @@ public:
    *
    * <return-stmt> := 'return' <expr> <new-line>
    */
-  std::shared_ptr<ReturnStmt> parseReturnStmt();
+  std::unique_ptr<ReturnStmt> parseReturnStmt();
 
   /**
    * Parses a list of statements wrapped in braces from the token stream.
@@ -412,7 +412,7 @@ public:
    * checking stage should raise a warning if a return statement occurs in the
    * middle of a block.
    */
-  std::shared_ptr<CompoundStmt> parseCompoundStmt();
+  std::unique_ptr<CompoundStmt> parseCompoundStmt();
 
   /**
    * Parses a while loop from the token stream. The while statement consists
@@ -422,7 +422,7 @@ public:
    *
    * <while-loop> := 'while' <expr> <compound-stmt> <new-line>
    */
-  std::shared_ptr<WhileLoop> parseWhileLoop();
+  std::unique_ptr<WhileLoop> parseWhileLoop();
 
   /**
    * Parses a conditional statment from the input stream. The conditional
@@ -444,7 +444,7 @@ public:
    *       job of the parser. A later semantic checking stage should make sure
    *       that the conditional statement has a boolean type.
    */
-  std::shared_ptr<ConditionalStmt> parseConditionalStmt();
+  std::unique_ptr<ConditionalStmt> parseConditionalStmt();
 
   /**
    * Parses a group of conditional statments. The first conditional statment
@@ -456,7 +456,7 @@ public:
    *
    * <conditional-stmt-list> := <contional-stmt>+
    */
-   std::shared_ptr<ConditionalBlock> parseConditionalBlock();
+   std::unique_ptr<ConditionalBlock> parseConditionalBlock();
 
   /**
    * Parses as many stmts as possible from the input stream. It will stop
@@ -473,7 +473,7 @@ public:
    *       Standard containers contain a wide variety of efficient iterators
    *       that would not be practical to recreate at this time.
    */
-  std::vector<std::shared_ptr<Stmt>> parseStmtList();
+  std::vector<std::unique_ptr<Stmt>> parseStmtList();
 
   /**
    * Parses a newline-terminated declaration from the token stream. This method
@@ -484,7 +484,7 @@ public:
    *
    * <decl-stmt> := <decl> <new-line>
    */
-  std::shared_ptr<DeclStmt> parseDeclStmt();
+  std::unique_ptr<DeclStmt> parseDeclStmt();
 
   /**
    * Parses a newline-terminated expression from the token stream. This method
@@ -494,9 +494,9 @@ public:
    *
    * <expr-stmt> := <expr> <new-line>
    */
-  std::shared_ptr<ExprStmt> parseExprStmt();
+  std::unique_ptr<ExprStmt> parseExprStmt();
 
-  std::shared_ptr<CompilationUnit> parseCompilationUnit();
+  std::unique_ptr<CompilationUnit> parseCompilationUnit();
 
 };
 

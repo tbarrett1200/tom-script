@@ -4,7 +4,7 @@
 #include <memory>
 
 
-shared_ptr<Stmt> Parser::parseStmt()  {
+std::unique_ptr<Stmt> Parser::parseStmt()  {
   switch(token_.type()) {
     case Token::l_brace: return parseCompoundStmt();
     case Token::kw_if: return parseConditionalBlock();
@@ -26,30 +26,30 @@ shared_ptr<Stmt> Parser::parseStmt()  {
   }
 }
 
-shared_ptr<CompoundStmt> Parser::parseCompoundStmt()  {
+std::unique_ptr<CompoundStmt> Parser::parseCompoundStmt()  {
   expectToken(Token::l_brace, "left brace");
   while(token_.is(Token::new_line)) consume();
-  if (consumeToken(Token::r_brace)) return std::make_shared<CompoundStmt>(std::vector<std::shared_ptr<Stmt>>());
+  if (consumeToken(Token::r_brace)) return std::make_unique<CompoundStmt>(std::vector<std::unique_ptr<Stmt>>());
   auto list = parseStmtList();
   while(token_.is(Token::new_line)) consume();
   expectToken(Token::r_brace, "right brace");
-  return std::make_shared<CompoundStmt>(std::move(list));
+  return std::make_unique<CompoundStmt>(std::move(list));
 }
 
-shared_ptr<ConditionalStmt> Parser::parseConditionalStmt() {
+std::unique_ptr<ConditionalStmt> Parser::parseConditionalStmt() {
   if (token_.is(Token::kw_let)) {
     auto let_decl = parseLetDecl();
     auto stmt = parseCompoundStmt();
-    return std::make_shared<ConditionalStmt>(let_decl, stmt);
+    return std::make_unique<ConditionalStmt>(std::move(let_decl), std::move(stmt));
   } else {
     auto expr = parseExpr();
-    auto stmt = parseCompoundStmt();
-    return std::make_shared<ConditionalStmt>(expr, stmt);
+    std::unique_ptr<CompoundStmt> stmt = parseCompoundStmt();
+    return std::make_unique<ConditionalStmt>(std::move(expr), std::move(stmt));
   }
 }
 
-std::shared_ptr<ConditionalBlock> Parser::parseConditionalBlock()  {
-  std::vector<std::shared_ptr<Stmt>> stmts;
+std::unique_ptr<ConditionalBlock> Parser::parseConditionalBlock()  {
+  std::vector<std::unique_ptr<Stmt>> stmts;
   if (consumeToken(Token::kw_if)) {
     stmts.push_back(parseConditionalStmt());
     while (consumeToken(Token::kw_else)) {
@@ -61,23 +61,23 @@ std::shared_ptr<ConditionalBlock> Parser::parseConditionalBlock()  {
       }
     }
   }
-  return std::make_shared<ConditionalBlock>(stmts);
+  return std::make_unique<ConditionalBlock>(std::move(stmts));
 }
 
-shared_ptr<DeclStmt> Parser::parseDeclStmt()  {
+std::unique_ptr<DeclStmt> Parser::parseDeclStmt()  {
   auto decl = parseDecl();
   expectToken(Token::new_line, "new line");
-  return std::make_shared<DeclStmt>(decl);
+  return std::make_unique<DeclStmt>(std::move(decl));
 }
 
-shared_ptr<ExprStmt> Parser::parseExprStmt() {
+std::unique_ptr<ExprStmt> Parser::parseExprStmt() {
   auto expr = parseExpr();
   expectToken(Token::new_line, "new line");
-  return std::make_shared<ExprStmt>(expr);
+  return std::make_unique<ExprStmt>(std::move(expr));
 }
 
-std::vector<std::shared_ptr<Stmt>> Parser::parseStmtList()  {
-  std::vector<std::shared_ptr<Stmt>> elements;
+std::vector<std::unique_ptr<Stmt>> Parser::parseStmtList()  {
+  std::vector<std::unique_ptr<Stmt>> elements;
   while(token_.is(Token::new_line)) consume();
   if (token_.isAny({Token::r_brace, Token::eof})) return elements;
   while(token_.is(Token::new_line)) consume();
@@ -90,21 +90,21 @@ std::vector<std::shared_ptr<Stmt>> Parser::parseStmtList()  {
   return elements;
 }
 
-shared_ptr<WhileLoop> Parser::parseWhileLoop()  {
+std::unique_ptr<WhileLoop> Parser::parseWhileLoop()  {
   expectToken(Token::kw_while, "while");
   auto expr = parseExpr();
   auto stmt = parseCompoundStmt();
-  return std::make_shared<WhileLoop>(expr, stmt);
+  return std::make_unique<WhileLoop>(std::move(expr), std::move(stmt));
 }
 
-shared_ptr<ReturnStmt> Parser::parseReturnStmt() {
+std::unique_ptr<ReturnStmt> Parser::parseReturnStmt() {
   expectToken(Token::kw_return, "return");
-  if (consumeToken(Token::new_line)) return std::make_shared<ReturnStmt>(nullptr);
+  if (consumeToken(Token::new_line)) return std::make_unique<ReturnStmt>(nullptr);
   auto expr = parseExpr();
   expectToken(Token::new_line, "new line");
-  return std::make_shared<ReturnStmt>(expr);
+  return std::make_unique<ReturnStmt>(std::move(expr));
 }
 
-std::shared_ptr<CompilationUnit> Parser::parseCompilationUnit() {
-  return std::make_shared<CompilationUnit>(parseStmtList());
+std::unique_ptr<CompilationUnit> Parser::parseCompilationUnit() {
+  return std::make_unique<CompilationUnit>(parseStmtList());
 }

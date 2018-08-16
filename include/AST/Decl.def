@@ -2,6 +2,7 @@
 #define DECL(SELF, SUPER)
 #endif
 
+DECL(BasicDecl, Decl)
 DECL(TypeAlias, Decl)
 DECL(VarDecl, Decl)
 DECL(ParamDecl, Decl)

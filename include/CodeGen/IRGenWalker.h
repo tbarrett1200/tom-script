@@ -85,12 +85,12 @@ public:
     const Decl* decl = dynamic_cast<const Decl*>(declStmt.getDecl());
     if (dynamic_cast<const LetDecl*>(decl)) {
       const LetDecl *letDecl = dynamic_cast<const LetDecl*>(decl);
-      llvm::Value *v = transformExpr(*letDecl->getExpr(),current_block);
+      llvm::Value *v = transformExpr(letDecl->getExpr(),current_block);
       fNamedValues[letDecl->getName()] = std::make_shared<VariableValue>(false, v, nullptr);
     } else if (dynamic_cast<const VarDecl*>(decl)) {
       const VarDecl *varDecl = dynamic_cast<const VarDecl*>(decl);
       llvm::AllocaInst *alloca = builder.CreateAlloca(transformType(*varDecl->getType()), 0, varDecl->getName().str());
-      builder.CreateStore(transformExpr(*varDecl->getExpr(),current_block), alloca);
+      builder.CreateStore(transformExpr(varDecl->getExpr(),current_block), alloca);
       fNamedValues[varDecl->getName()] = std::make_shared<VariableValue>(true, nullptr, alloca);;
     } else {
       throw std::logic_error("only let and var declarations are currently supported");
@@ -123,7 +123,7 @@ public:
   llvm::Function* transformFunction(const FuncDecl &func) {
     currentContext = func.getDeclContext();
 
-    llvm::FunctionType* type = transformFunctionType(*std::dynamic_pointer_cast<FunctionType>(func.getType()));
+    llvm::FunctionType* type = transformFunctionType(dynamic_cast<FunctionType&>(*func.getType()));
     fFunction = llvm::Function::Create(type, llvm::Function::ExternalLinkage, func.getName().str(), fModule);
 
     int index = 0;
@@ -135,7 +135,7 @@ public:
 
     llvm::BasicBlock *entry_block = llvm::BasicBlock::Create(fContext, "entry", fFunction);
 
-    transformCompoundStmt(*func.getBlockStmt(), entry_block);
+    transformCompoundStmt(func.getBlockStmt(), entry_block);
 
     return fFunction;
   }

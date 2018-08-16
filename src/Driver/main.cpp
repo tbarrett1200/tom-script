@@ -65,7 +65,7 @@ int main(int argc, char const *argv[]) {
   std::string path = argv[1];
   SourceManager::currentSource = std::make_shared<SourceFile>(path);
   auto parser = Parser{SourceManager::currentSource};
-  
+
 
   try {
     std::shared_ptr<CompilationUnit> unit = parser.parseCompilationUnit();
@@ -76,7 +76,7 @@ int main(int argc, char const *argv[]) {
       printASTNode(myfile, unit.get());
       myfile.close();
     }
-    if (printScope) ASTScopePrinter(std::cout).traverse(unit);
+    if (printScope) ASTScopePrinter(std::cout).traverse(unit.get());
     compileAST(*unit);
   } catch (CompilerException e) {
       ErrorReporter{std::cout, *SourceManager::currentSource}.report(e);
@@ -110,8 +110,8 @@ void compileAST(CompilationUnit& unit) {
     llvm::Function *llvmFunction;
 
     try {
-      for (auto stmt: unit.getStmts()) {
-        const DeclStmt *declStmt = stmt->as<const DeclStmt>();
+      for (auto &stmt: unit.getStmts()) {
+        const DeclStmt *declStmt = dynamic_cast<const DeclStmt*>(stmt.get());
         const FuncDecl *funcDecl = dynamic_cast<const FuncDecl*>(declStmt->getDecl());
         llvmFunction = transformer.transformFunction(*funcDecl);
         verifyFunction(*llvmFunction);

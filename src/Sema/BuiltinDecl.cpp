@@ -3,67 +3,74 @@
 #include "AST/Type.h"
 #include <memory>
 
-FuncDecl BuiltinDecl::add_int{
+BasicDecl BuiltinDecl::add_int{
   Token{Token::operator_id, StringRef{"+"}}
-, {std::make_shared<ParamDecl>(Token{}, IntegerType::getInstance()), std::make_shared<ParamDecl>(Token{}, IntegerType::getInstance())}
-, IntegerType::getInstance()
-, nullptr
+, FunctionType::getInstance(
+    {IntegerType::getInstance(), IntegerType::getInstance()}
+  , IntegerType::getInstance()
+  )
 };
 
-FuncDecl BuiltinDecl::sub_int{
+BasicDecl BuiltinDecl::sub_int{
   Token{Token::operator_id, StringRef{"-"}}
-, {std::make_shared<ParamDecl>(Token{}, IntegerType::getInstance()), std::make_shared<ParamDecl>(Token{}, IntegerType::getInstance())}
-, IntegerType::getInstance()
-, nullptr
+, FunctionType::getInstance(
+    {IntegerType::getInstance(), IntegerType::getInstance()}
+  , IntegerType::getInstance()
+  )
 };
 
-FuncDecl BuiltinDecl::mul_int{
+BasicDecl BuiltinDecl::mul_int{
   Token{Token::operator_id, StringRef{"*"}}
-, {std::make_shared<ParamDecl>(Token{}, IntegerType::getInstance()), std::make_shared<ParamDecl>(Token{}, IntegerType::getInstance())}
-, IntegerType::getInstance()
-, nullptr
+, FunctionType::getInstance(
+    {IntegerType::getInstance(), IntegerType::getInstance()}
+  , IntegerType::getInstance()
+  )
 };
 
-FuncDecl BuiltinDecl::assign_int{
+BasicDecl BuiltinDecl::assign_int{
   Token{Token::operator_id, StringRef{"="}}
-, {std::make_shared<ParamDecl>(Token{}, IntegerType::getInstance()), std::make_shared<ParamDecl>(Token{}, IntegerType::getInstance())}
-, IntegerType::getInstance()
-, nullptr
+, FunctionType::getInstance(
+    {IntegerType::getInstance(), IntegerType::getInstance()}
+  , IntegerType::getInstance()
+  )
 };
 
-FuncDecl BuiltinDecl::equ_int{
+BasicDecl BuiltinDecl::equ_int{
   Token{Token::operator_id, StringRef{"=="}}
-, {std::make_shared<ParamDecl>(Token{}, IntegerType::getInstance()), std::make_shared<ParamDecl>(Token{}, IntegerType::getInstance())}
-, BooleanType::getInstance()
-, nullptr
+, FunctionType::getInstance(
+    {IntegerType::getInstance(), IntegerType::getInstance()}
+  , BooleanType::getInstance()
+  )
 };
 
-
-FuncDecl BuiltinDecl::lt_int{
-  Token{ Token::operator_id,StringRef{"<"}}
-, {std::make_shared<ParamDecl>(Token{}, IntegerType::getInstance()), std::make_shared<ParamDecl>(Token{}, IntegerType::getInstance())}
-, BooleanType::getInstance()
-, nullptr
+BasicDecl BuiltinDecl::lt_int{
+  Token{Token::operator_id, StringRef{"<"}}
+, FunctionType::getInstance(
+    {IntegerType::getInstance(), IntegerType::getInstance()}
+  , BooleanType::getInstance()
+  )
 };
 
-
-FuncDecl BuiltinDecl::gt_int{
+BasicDecl BuiltinDecl::gt_int{
   Token{Token::operator_id, StringRef{">"}}
-, {std::make_shared<ParamDecl>(Token{}, IntegerType::getInstance()), std::make_shared<ParamDecl>(Token{}, IntegerType::getInstance())}
-, BooleanType::getInstance()
-, nullptr
+, FunctionType::getInstance(
+    {IntegerType::getInstance(), IntegerType::getInstance()}
+  , BooleanType::getInstance()
+  )
 };
 
-FuncDecl BuiltinDecl::gte_int{
+BasicDecl BuiltinDecl::gte_int{
   Token{Token::operator_id, StringRef{">="}}
-, {std::make_shared<ParamDecl>(Token{}, IntegerType::getInstance()), std::make_shared<ParamDecl>(Token{}, IntegerType::getInstance())}
-, BooleanType::getInstance()
-, nullptr
+, FunctionType::getInstance(
+    {IntegerType::getInstance(), IntegerType::getInstance()}
+  , BooleanType::getInstance()
+  )
 };
 
-FuncDecl BuiltinDecl::lte_int{
+BasicDecl BuiltinDecl::lte_int{
   Token{Token::operator_id, StringRef{"<="}}
-, {std::make_shared<ParamDecl>(Token{}, IntegerType::getInstance()), std::make_shared<ParamDecl>(Token{}, IntegerType::getInstance())}
-, BooleanType::getInstance()
-, nullptr
+, FunctionType::getInstance(
+    {IntegerType::getInstance(), IntegerType::getInstance()}
+  , BooleanType::getInstance()
+  )
 };

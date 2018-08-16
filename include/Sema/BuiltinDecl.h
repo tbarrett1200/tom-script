@@ -7,16 +7,16 @@
 
 class BuiltinDecl {
 public:
-  static FuncDecl add_int;
-  static FuncDecl sub_int;
-  static FuncDecl mul_int;
+  static BasicDecl add_int;
+  static BasicDecl sub_int;
+  static BasicDecl mul_int;
 
-  static FuncDecl assign_int;
-  static FuncDecl equ_int;
-  static FuncDecl lt_int;
-  static FuncDecl lte_int;
-  static FuncDecl gt_int;
-  static FuncDecl gte_int;
+  static BasicDecl assign_int;
+  static BasicDecl equ_int;
+  static BasicDecl lt_int;
+  static BasicDecl lte_int;
+  static BasicDecl gt_int;
+  static BasicDecl gte_int;
 
 };
 #endif

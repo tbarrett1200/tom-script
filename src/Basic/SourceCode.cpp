@@ -13,8 +13,7 @@ bool operator!=(const StringRef& str1, const StringRef& str2) {
 }
 
 bool operator<(const StringRef& str1, const StringRef& str2) {
-  return str1.length != str2.length
-      || (str1.start != str2.start && strncmp(str2.start, str1.start, str1.length) < 0);
+  return strncmp(str2.start, str1.start, str1.length) < 0;
 }
 
 std::ostream& operator<<(std::ostream &stream, const StringRef& ref) {

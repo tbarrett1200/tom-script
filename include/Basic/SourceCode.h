@@ -121,9 +121,9 @@ public:
     }
 
     for (auto it = line_starts_.begin(); it != line_starts_.end(); it++) {
-      if (*it < loc) {
-        int row = std::distance(line_starts_.begin(), it);
-        return SourceLocation(row, loc - *it);
+      if (*it > loc) {
+        int row = std::distance(line_starts_.begin(), it) - 1;
+        return SourceLocation(row, loc - line_starts_[row]);
       }
     }
 

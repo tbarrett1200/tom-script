@@ -5,18 +5,18 @@
 #include "AST/Type.h"
 #include "Parse/Parser.h"
 //
-// std::shared_ptr<FuncDecl> Parser::parseUndefFuncDecl() {
+// std::unique_ptr<FuncDecl> Parser::parseUndefFuncDecl() {
 //   expectToken(Token::kw_func, "func");
 //   Token name = expectToken({Token::identifier, Token::operator_id}, "identifier");
 //   expectToken(Token::l_paren, "left parenthesis");
-//   std::vector<std::shared_ptr<ParamDecl>>&& param = acceptToken(Token::r_paren) ? std::vector<std::shared_ptr<ParamDecl>>() : parseParamDeclList();
+//   std::vector<std::unique_ptr<ParamDecl>>&& param = acceptToken(Token::r_paren) ? std::vector<std::unique_ptr<ParamDecl>>() : parseParamDeclList();
 //   expectToken(Token::r_paren, "right parenthesis");
 //   if (!consumeOperator("->")) throw CompilerException(token_.location(),  "error: expected ->");
-//   std::shared_ptr<Type> type = parseType();
-//   return std::make_shared<FuncDecl>(name, param, type, nullptr);
+//   Type* type = parseType();
+//   return std::make_unique<FuncDecl>(name, param, type, nullptr);
 // }
 
-std::shared_ptr<Decl> Parser::parseDecl() {
+std::unique_ptr<Decl> Parser::parseDecl() {
   switch(token_.type()) {
   case Token::kw_var: return parseVarDecl();
   case Token::kw_let: return parseLetDecl();
@@ -25,43 +25,43 @@ std::shared_ptr<Decl> Parser::parseDecl() {
   default: throw CompilerException(token_.location(),  "error: unable to parse decl");
   }
 }
-std::shared_ptr<TypeAlias> Parser::parseTypeAlias() {
+std::unique_ptr<TypeAlias> Parser::parseTypeAlias() {
   expectToken(Token::kw_typealias, "typedecl");
   auto name = expectToken(Token::identifier, "identifier");
   if (!consumeOperator("=")) throw CompilerException(token_.location(),  "expected '='");
   auto type = parseType();
-  return std::make_shared<TypeAlias>(name, move(type));
+  return std::make_unique<TypeAlias>(name, type);
 }
 
-std::shared_ptr<VarDecl> Parser::parseVarDecl() {
+std::unique_ptr<VarDecl> Parser::parseVarDecl() {
   expectToken(Token::kw_var, "var");
   auto name = expectToken(Token::identifier, "identifier");
-  std::shared_ptr<Type> type = consumeToken(Token::colon)? parseType(): nullptr;
+  Type* type = consumeToken(Token::colon)? parseType(): nullptr;
   if (consumeOperator("=")) {
     auto expr = parseExpr();
-    return std::make_shared<VarDecl>(name, type, expr);
+    return std::make_unique<VarDecl>(name, type, std::move(expr));
   } else throw CompilerException(token_.location(),  "variables must be initialized at declaration");
 }
 
-std::shared_ptr<LetDecl> Parser::parseLetDecl() {
+std::unique_ptr<LetDecl> Parser::parseLetDecl() {
   expectToken(Token::kw_let, "let");
   auto name = expectToken(Token::identifier, "identifier");
-  std::shared_ptr<Type> type = consumeToken(Token::colon)? parseType(): nullptr;
+  Type* type = consumeToken(Token::colon)? parseType(): nullptr;
   if (consumeOperator("=")) {
     auto expr = parseExpr();
-    return std::make_shared<LetDecl>(name, type, expr);
+    return std::make_unique<LetDecl>(name, type, std::move(expr));
   } else throw CompilerException(token_.location(),  "constants must be initialized at declaration");
 }
 
-std::shared_ptr<ParamDecl> Parser::parseParamDecl() {
+std::unique_ptr<ParamDecl> Parser::parseParamDecl() {
   auto name = expectToken(Token::identifier, "identifier");
   expectToken(Token::colon, "colon");
   auto type = parseType();
-  return std::make_shared<ParamDecl>(name, type);
+  return std::make_unique<ParamDecl>(name, type);
 }
 
-std::vector<std::shared_ptr<ParamDecl>> Parser::parseParamDeclList() {
-  std::vector<std::shared_ptr<ParamDecl>> elements;
+std::vector<std::unique_ptr<ParamDecl>> Parser::parseParamDeclList() {
+  std::vector<std::unique_ptr<ParamDecl>> elements;
   elements.push_back(parseParamDecl());
   while (consumeToken(Token::comma)) {
     elements.push_back(parseParamDecl());
@@ -69,14 +69,14 @@ std::vector<std::shared_ptr<ParamDecl>> Parser::parseParamDeclList() {
   return elements;
 }
 
-std::shared_ptr<FuncDecl> Parser::parseFuncDecl() {
+std::unique_ptr<FuncDecl> Parser::parseFuncDecl() {
   expectToken(Token::kw_func, "func");
   auto name = expectToken({Token::identifier, Token::operator_id}, "identifier");
   expectToken(Token::l_paren, "left parenthesis");
-  auto param = acceptToken(Token::r_paren) ? std::vector<std::shared_ptr<ParamDecl>>() : parseParamDeclList();
+  auto param = acceptToken(Token::r_paren) ? std::vector<std::unique_ptr<ParamDecl>>() : parseParamDeclList();
   expectToken(Token::r_paren, "right parenthesis");
   if (!consumeOperator("->")) throw CompilerException(token_.location(),  "error: expected ->");
   auto type = parseType();
   auto stmt = parseCompoundStmt();
-  return std::make_shared<FuncDecl>(name, std::move(param), type, stmt);
+  return std::make_unique<FuncDecl>(name, std::move(param), type, std::move(stmt));
 }

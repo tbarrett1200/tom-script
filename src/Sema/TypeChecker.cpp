@@ -79,7 +79,11 @@ void TypeChecker::checkUnaryExpr(UnaryExpr &expr) {
 
       expr.setType(func_type.getReturnType());
 
-    } else throw CompilerException(nullptr, "not enough parameters to operator");
+    } else {
+      std::stringstream ss;
+      ss <<  "not enough parameters to operator '" << expr.getOperator() << "'. expected 1 but got " << func_type.getParamCount();
+      throw CompilerException(nullptr, ss.str());
+    }
   } else throw CompilerException(nullptr, "operator not declared");
 }
 void TypeChecker::checkBinaryExpr(BinaryExpr &expr) {
@@ -88,35 +92,44 @@ void TypeChecker::checkBinaryExpr(BinaryExpr &expr) {
   checkExpr(expr.getRight());
   // asserts that the operator is defined
   if (Decl *decl = this->currentContext->getDecl(expr.getOperator())) {
-    FunctionType& func_type = dynamic_cast<FunctionType&>(*decl->getType());
-    // assert the the operator has two arguments
-    if (func_type.getParamCount() == 2) {
-      const Type* decl_left_param_type = func_type.getParam(0)->getCanonicalType();
-      const Type* expr_left_param_type = expr.getLeft().getType()->getCanonicalType();
-      // assert that the left argument matches the declaration
-      if (decl_left_param_type != expr_left_param_type)
-        throw CompilerException(nullptr, "left parameter type does not match operator");
-      const Type* decl_right_param_type = func_type.getParam(1)->getCanonicalType();
-      // assert that the right argument matches the declaration
-      const Type* expr_right_param_type = expr.getLeft().getType()->getCanonicalType();
-      if (decl_right_param_type != expr_right_param_type)
-        throw CompilerException(nullptr, "right parameter type does not match operator");
+    if (FunctionType *func_type = dynamic_cast<FunctionType*>(decl->getType())) {
+      // assert the the operator has two arguments
+      if (func_type->getParamCount() == 2) {
+        const Type* decl_left_param_type = func_type->getParam(0)->getCanonicalType();
+        const Type* expr_left_param_type = expr.getLeft().getType()->getCanonicalType();
+        // assert that the left argument matches the declaration
+        if (decl_left_param_type != expr_left_param_type)
+          throw CompilerException(nullptr, "left parameter type does not match operator");
+        const Type* decl_right_param_type = func_type->getParam(1)->getCanonicalType();
+        // assert that the right argument matches the declaration
+        const Type* expr_right_param_type = expr.getLeft().getType()->getCanonicalType();
+        if (decl_right_param_type != expr_right_param_type)
+          throw CompilerException(nullptr, "right parameter type does not match operator");
 
-      expr.setType(func_type.getReturnType());
-    } else throw CompilerException(nullptr, "not enough parameters to operator");
+        expr.setType(func_type->getReturnType());
+      } else {
+        std::stringstream ss;
+        ss <<  "not enough parameters to operator '" << expr.getOperator() << "'. expected 2 but got " << func_type->getParamCount();
+        throw CompilerException(nullptr, ss.str());
+      }
+    } else {
+      std::stringstream ss;
+      ss <<  "'" << expr.getOperator() << "' is not an operator";
+      throw CompilerException(nullptr, ss.str());
+    }
   } else {
     std::stringstream ss;
-    ss <<  "operator '" << expr.getOperator() << "' not declared";
+    ss <<  "'" << expr.getOperator() << "' not declared";
     throw CompilerException(nullptr, ss.str());
   }
 }
 void TypeChecker::checkFunctionCall(FunctionCall &expr) {
-  for(auto arg: expr.getArguments()) {
+  for(auto &arg: expr.getArguments()) {
     checkExpr(*arg);
   }
 
   if (Decl *decl = this->currentContext->getDecl(expr.getFunctionName())) {
-    if (FunctionType *func_type = dynamic_cast<FunctionType*>(decl->getType().get())) {
+    if (FunctionType *func_type = dynamic_cast<FunctionType*>(decl->getType())) {
       if (func_type->getParamTypes().size() == expr.getArguments().size()) {
         for (int i = 0; i < func_type->getParamTypes().size(); i++) {
           const Type* arg = expr.getArguments()[i]->getType()->getCanonicalType();
@@ -126,6 +139,7 @@ void TypeChecker::checkFunctionCall(FunctionCall &expr) {
             ss << "improper argument types passed to function '" << expr.getFunctionName() << "'";
             throw CompilerException(nullptr, ss.str());
           }
+          expr.setType(func_type->getReturnType());
         }
       } else {
         std::stringstream ss;

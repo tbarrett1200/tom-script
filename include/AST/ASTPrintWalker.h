@@ -91,7 +91,7 @@ void printASTNode(std::ostream& os, TreeElement* m) {
 
   if (m != nullptr) {
     for (auto it = m->getChildren().begin(); it != m->getChildren().end(); it++) {
-      printASTNode(os, it->get());
+      printASTNode(os, *it);
       if (std::distance(it, m->getChildren().end()) != 1) os << ",";
     }
   }

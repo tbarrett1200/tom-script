@@ -9,7 +9,7 @@
 
 class TreeElement {
 public:
-  virtual std::vector<std::shared_ptr<TreeElement>> getChildren() const {
+  virtual std::vector<TreeElement*> getChildren() const {
     return {};
   }
 };

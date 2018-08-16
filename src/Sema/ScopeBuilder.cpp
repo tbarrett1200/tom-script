@@ -24,12 +24,13 @@ void ScopeBuilder::buildCompilationUnitScope(CompilationUnit &unit) {
 
   DeclContext* unitContext = unit.getDeclContext();
   unitContext->setParentContext(global_context);
-  for (std::shared_ptr<Stmt> stmt: unit.getStmts()) {
+  for (auto &stmt: unit.getStmts()) {
     if (DeclStmt *decl_stmt = dynamic_cast<DeclStmt*>(stmt.get())) {
       Decl* decl = decl_stmt->getDecl();
+      decl->setParentContext(unitContext);
       unitContext->addDecl(decl);
+
       if (FuncDecl *funcDecl = dynamic_cast<FuncDecl*>(decl)) {
-        funcDecl->getDeclContext()->setParentContext(unitContext);
         buildFunctionScope(*funcDecl);
       }
     }
@@ -38,26 +39,26 @@ void ScopeBuilder::buildCompilationUnitScope(CompilationUnit &unit) {
 
 void ScopeBuilder::buildFunctionScope(FuncDecl &func) {
   DeclContext *functionScope = func.getDeclContext();
-  for (std::shared_ptr<ParamDecl> param: func.getParams()) {
+  for (auto &param: func.getParams()) {
     functionScope->addDecl(param.get());
   }
-  func.getBlockStmt()->getDeclContext()->setParentContext(functionScope);
-  buildCompoundStmtScope(*func.getBlockStmt());
+  func.getBlockStmt().getDeclContext()->setParentContext(functionScope);
+  buildCompoundStmtScope(func.getBlockStmt());
 }
 
 void ScopeBuilder::buildCompoundStmtScope(CompoundStmt &block) {
   DeclContext *block_scope = block.getDeclContext();
-  for (std::shared_ptr<Stmt> stmt: block.getStmts()) {
+  for (auto &stmt: block.getStmts()) {
     if (DeclStmt *decl_stmt = dynamic_cast<DeclStmt*>(stmt.get())) {
       Decl* decl = decl_stmt->getDecl();
       decl->setParentContext(block_scope);
       block_scope->addDecl(decl);
       if (LetDecl *let_decl = dynamic_cast<LetDecl*>(decl)) {
-        if (Expr *expr = let_decl->getExpr().get()) {
+        if (Expr *expr = &let_decl->getExpr()) {
           TypeChecker{block_scope}.checkExpr(*expr);
         }
       } else if (VarDecl *let_decl = dynamic_cast<VarDecl*>(decl)) {
-        if (Expr *expr = let_decl->getExpr().get()) {
+        if (Expr *expr = &let_decl->getExpr()) {
           TypeChecker{block_scope}.checkExpr(*expr);
         }
       }
@@ -71,7 +72,7 @@ void ScopeBuilder::buildCompoundStmtScope(CompoundStmt &block) {
         TypeChecker{block_scope}.checkExpr(*expr);
       }
     } else if (ConditionalBlock *cond_stmt = dynamic_cast<ConditionalBlock*>(stmt.get())) {
-      for (std::shared_ptr<Stmt> stmt: cond_stmt->getStmts()) {
+      for (auto &stmt: cond_stmt->getStmts()) {
         if (ConditionalStmt *cond_stmt = dynamic_cast<ConditionalStmt*>(stmt.get())) {
           cond_stmt->setParentContext(block_scope);
           buildConditionalStmtScope(*cond_stmt);

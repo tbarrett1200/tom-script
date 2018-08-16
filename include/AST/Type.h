@@ -73,13 +73,13 @@ public:
  *
  */
 class IntegerType: public Type {
-  static std::shared_ptr<IntegerType> singleton;
+  static IntegerType singleton;
 
 public:
 
   IntegerType() = default;
 
-  static std::shared_ptr<IntegerType> getInstance();
+  static IntegerType* getInstance();
 
   /**
    * An Integer's canonical type is always itself.
@@ -105,13 +105,13 @@ public:
  */
 class PointerType: public Type {
 private:
-  static std::shared_ptr<PointerType> singleton;
+  static PointerType singleton;
 
 
 public:
   PointerType() = default;
 
-  static std::shared_ptr<PointerType> getInstance();
+  static PointerType* getInstance();
 
   /**
    * An Integer's canonical type is always itself.
@@ -137,7 +137,7 @@ public:
  */
 class BooleanType: public Type {
 private:
-  static std::shared_ptr<BooleanType> singleton;
+  static BooleanType singleton;
 
 public:
 
@@ -146,7 +146,7 @@ public:
   BooleanType(const BooleanType&) = delete;
   BooleanType(BooleanType&&) = delete;
 
-  static std::shared_ptr<BooleanType> getInstance();
+  static BooleanType* getInstance();
 
   std::string toString() const override {
     return "Boolean";
@@ -173,7 +173,8 @@ public:
  */
 class DoubleType: public Type {
 private:
-  static std::shared_ptr<DoubleType> singleton;
+  static DoubleType singleton;
+  static std::vector<DoubleType> instances;
 
 public:
 
@@ -182,7 +183,7 @@ public:
   DoubleType(const DoubleType&) = delete;
   DoubleType(DoubleType&&) = delete;
 
-  static std::shared_ptr<DoubleType> getInstance();
+  static DoubleType* getInstance();
 
   /**
    * An Integer's canonical type is always itself.
@@ -206,37 +207,41 @@ public:
 
 class TypeIdentifier : public Type {
 private:
-  Token token_;
+  std::string name_;
+  static std::vector<std::unique_ptr<TypeIdentifier>> instances;
 
 public:
+  static TypeIdentifier* getInstance(std::string n) {
+    instances.push_back(std::make_unique<TypeIdentifier>(n));
+    return instances.back().get();
+  }
 
   // Constructors
-  TypeIdentifier(Token n) : token_{n} {}
+  TypeIdentifier(std::string n) : name_{n} {}
 
   // Type Overrides
   Type::Kind getKind() const { return Kind::TypeIdentifier; }
 
   std::string toString() const {
-    return token_.lexeme().str();
-  }
-
-  /**
-   * Returns the name of the type identifier.
-   * e.g. Integer
-   */
-  StringRef getName() const {
-    return token_.lexeme();
+    return name_;
   }
 
 };
 
 
 class TupleType : public Type {
+private:
+  static std::vector<std::unique_ptr<TupleType>> instances;
+
 public:
-  std::vector<std::shared_ptr<Type>> elements;
+  std::vector<Type*> elements;
+  static TupleType* getInstance(std::vector<Type*> e) {
+    instances.push_back(std::make_unique<TupleType>(std::move(e)));
+    return instances.back().get();
+  }
 
   // Constructors
-  TupleType(std::vector<std::shared_ptr<Type>>&& l) : elements{move(l)} {}
+  TupleType(std::vector<Type*> e) : elements{std::move(e)} {}
 
   std::string toString() const {
     std::string str = "(";
@@ -254,12 +259,19 @@ public:
 };
 
 class FunctionType : public Type {
+private:
+  static std::vector<std::unique_ptr<FunctionType>> instances;
+
 public:
-  std::vector<std::shared_ptr<Type>> params;
-  std::shared_ptr<Type> returns;
+  std::vector<Type*> params;
+  Type* returns;
+  static FunctionType* getInstance(std::vector<Type*> p, Type *r) {
+    instances.push_back(std::make_unique<FunctionType>(p, r));
+    return instances.back().get();
+  }
 
   // Constructors
-  FunctionType(std::vector<std::shared_ptr<Type>>&& p, std::shared_ptr<Type> r) : params{std::move(p)}, returns{r} {}
+  FunctionType(std::vector<Type*> p, Type *r) : params{std::move(p)}, returns{r} {}
 
   std::string toString() const {
     std::string str = "(";
@@ -271,7 +283,7 @@ public:
     return str;
   }
 
-  std::shared_ptr<Type> getReturnType() {
+  Type* getReturnType() const {
     return returns;
   }
 
@@ -279,11 +291,11 @@ public:
     return params.size();
   }
 
-  std::shared_ptr<Type> getParam(int index) {
+  Type* getParam(int index) {
     return params[index];
   }
 
-  std::vector<std::shared_ptr<Type>> getParamTypes() {
+  const std::vector<Type*>& getParamTypes() const {
     return params;
   }
   // Type Overridess
@@ -292,11 +304,18 @@ public:
 };
 
 class ListType : public Type {
+private:
+  static std::vector<std::unique_ptr<ListType>> instances;
+
 public:
-  std::shared_ptr<Type> type;
+  Type* type;
+  static ListType* getInstance(Type* t) {
+    instances.push_back(std::make_unique<ListType>(t));
+    return instances.back().get();
+  }
 
   // Constructors
-  ListType(std::shared_ptr<Type> t) : type{t} {}
+  ListType(Type* t) : type{t} {}
 
   std::string toString() const {
     return "[" + type->toString() + "]";
@@ -308,12 +327,17 @@ public:
 };
 
 class MapType : public Type {
+private:
+  static std::vector<std::unique_ptr<MapType>> instances;
 public:
-  std::shared_ptr<Type> keyType;
-  std::shared_ptr<Type> valType;
-
+  Type* keyType;
+  Type* valType;
+  static MapType* getInstance(Type *k, Type *v) {
+    instances.push_back(std::make_unique<MapType>(k, v));
+    return instances.back().get();
+  }
   // Constructors
-  MapType(std::shared_ptr<Type> k, std::shared_ptr<Type> v) : keyType{k}, valType{v} {}
+  MapType(Type *k, Type *v) : keyType{k}, valType{v} {}
 
   // Type Overrides
   Type::Kind getKind() const { return Kind::MapType; }
@@ -329,8 +353,6 @@ public:
   const Type& getValueType() const {
     return *valType;
   }
-
-
 
 };
 

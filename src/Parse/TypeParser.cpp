@@ -9,7 +9,7 @@
 using namespace std;
 
 
-shared_ptr<Type> Parser::parseType() {
+Type* Parser::parseType() {
   switch(token_.type()) {
     case Token::l_paren: return parseTupleOrFunctionType();
     case Token::identifier: return parseTypeIdentifier();
@@ -18,7 +18,7 @@ shared_ptr<Type> Parser::parseType() {
   }
 }
 
-shared_ptr<Type> Parser::parseTypeIdentifier() {
+Type* Parser::parseTypeIdentifier() {
   auto token = expectToken(Token::identifier, "type identifier");
   if (token.lexeme() == StringRef{"Int"}) return IntegerType::getInstance();
   else if (token.lexeme()== StringRef{"Boolean"}) return BooleanType::getInstance();
@@ -30,8 +30,8 @@ shared_ptr<Type> Parser::parseTypeIdentifier() {
   }
 }
 
-std::vector<std::shared_ptr<Type>> Parser::parseTupleTypeElementList() {
-  std::vector<std::shared_ptr<Type>> elements;
+std::vector<Type*> Parser::parseTupleTypeElementList() {
+  std::vector<Type*> elements;
   elements.push_back(parseType());
   while (consumeToken(Token::comma)) {
     elements.push_back(parseType());
@@ -39,56 +39,64 @@ std::vector<std::shared_ptr<Type>> Parser::parseTupleTypeElementList() {
   return elements;
 }
 
-shared_ptr<TupleType> Parser::parseTupleType() {
+TupleType* Parser::parseTupleType() {
   expectToken(Token::l_paren, "left parenthesis");
-  auto list = token_.is(Token::r_paren)? std::vector<std::shared_ptr<Type>>(): parseTupleTypeElementList();
+  std::vector<Type*> list;
+  if (token_.isNot(Token::r_paren)) {
+    list = parseTupleTypeElementList();
+  }
   expectToken(Token::r_paren, "right parenthesis");
-  return make_shared<TupleType>(move(list));
+  return TupleType::getInstance(std::move(list));
 }
 
-shared_ptr<FunctionType> Parser::parseFunctionType() {
+FunctionType* Parser::parseFunctionType() {
   expectToken(Token::l_paren, "left parenthesis");
-  auto list = token_.is(Token::r_paren)? std::vector<std::shared_ptr<Type>>(): parseTupleTypeElementList();
+  std::vector<Type*> list;
+  if (token_.isNot(Token::r_paren)){
+    list = parseTupleTypeElementList();
+  }
   expectToken(Token::r_paren, "right parenthesis");
-
   if (!consumeOperator("->")) throw CompilerException(token_.location(),  "error: expected ->");
   auto type = parseType();
-  return make_shared<FunctionType>(move(list), move(type));
+  return FunctionType::getInstance(std::move(list), type);
 }
 
-shared_ptr<Type> Parser::parseTupleOrFunctionType() {
+Type* Parser::parseTupleOrFunctionType() {
   expectToken(Token::l_paren, "left parenthesis");
-  auto list = token_.is(Token::r_paren)? std::vector<std::shared_ptr<Type>>(): parseTupleTypeElementList();
+  std::vector<Type*> list;
+  if (token_.isNot(Token::r_paren)) {
+    list = parseTupleTypeElementList();
+  }
   expectToken(Token::r_paren, "right parenthesis");
-  if (!consumeOperator("->")) return make_shared<TupleType>(move(list));
+  if (!consumeOperator("->")) return TupleType::getInstance(std::move(list));
   auto type = parseType();
-  return make_shared<FunctionType>(move(list), move(type));
+  return FunctionType::getInstance(std::move(list), type);
 }
 
-shared_ptr<ListType> Parser::parseListType() {
+ListType* Parser::parseListType() {
   expectToken(Token::l_square, "left square bracket");
   auto type = parseType();
   expectToken(Token::r_square, "right square bracket");
-  return make_shared<ListType>(move(type));
+  return ListType::getInstance(type);
 }
 
-shared_ptr<MapType> Parser::parseMapType() {
+MapType* Parser::parseMapType() {
   expectToken(Token::l_square, "left square bracket");
   auto keyType = parseType();
   expectToken(Token::colon, "colon");
   auto valueType = parseType();
   expectToken(Token::r_square, "right square bracket");
-  return make_shared<MapType>(move(keyType), move(valueType));
+  return MapType::getInstance(keyType, valueType);
 }
 
-shared_ptr<Type> Parser::parseListOrMapType() {
+Type* Parser::parseListOrMapType() {
   expectToken(Token::l_square, "left square bracket");
   auto keyType = parseType();
   if (consumeToken(Token::colon)) {
     auto valueType = parseType();
     expectToken(Token::r_square, "right square bracket");
-    return make_shared<MapType>(move(keyType), move(valueType));
+    return MapType::getInstance(keyType, valueType);
   }
   expectToken(Token::r_square, "right square bracket");
-  return make_shared<ListType>(move(keyType));
+  return ListType::getInstance(keyType);
 }

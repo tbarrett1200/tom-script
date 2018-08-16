@@ -26,40 +26,44 @@ bool Type::isBooleanType() const {
 // IntegerType
 //----------------------------------------------------------------------------//
 
-std::shared_ptr<IntegerType> IntegerType::singleton = std::make_shared<IntegerType>();
+IntegerType IntegerType::singleton;
 
-std::shared_ptr<IntegerType> IntegerType::getInstance() {
-  return IntegerType::singleton;
+IntegerType* IntegerType::getInstance() {
+  return &IntegerType::singleton;
 }
 
 //----------------------------------------------------------------------------//
 // IntegerType
 //----------------------------------------------------------------------------//
 
-std::shared_ptr<DoubleType> DoubleType::singleton = std::make_shared<DoubleType>();
+DoubleType DoubleType::singleton;
 
 
-std::shared_ptr<DoubleType> DoubleType::getInstance() {
-  return DoubleType::singleton;
+DoubleType* DoubleType::getInstance() {
+  return &DoubleType::singleton;
 }
 
-std::shared_ptr<BooleanType> BooleanType::singleton = std::make_shared<BooleanType>();
+BooleanType BooleanType::singleton;
 
 
-std::shared_ptr<BooleanType> BooleanType::getInstance() {
-  return BooleanType::singleton;
+BooleanType* BooleanType::getInstance() {
+  return &BooleanType::singleton;
 }
 
-std::shared_ptr<PointerType> PointerType::singleton = std::make_shared<PointerType>();
+PointerType PointerType::singleton;
 
-
-std::shared_ptr<PointerType> PointerType::getInstance() {
-  return PointerType::singleton;
+PointerType* PointerType::getInstance() {
+  return &PointerType::singleton;
 }
 //----------------------------------------------------------------------------//
 // TypeIdentifier
 //----------------------------------------------------------------------------//
 
+std::vector<std::unique_ptr<TypeIdentifier>> TypeIdentifier::instances;
+std::vector<std::unique_ptr<TupleType>> TupleType::instances;
+std::vector<std::unique_ptr<FunctionType>> FunctionType::instances;
+std::vector<std::unique_ptr<ListType>> ListType::instances;
+std::vector<std::unique_ptr<MapType>> MapType::instances;
 
 bool equal(std::shared_ptr<Type> t1, std::shared_ptr<Type> t2) {
   return t1->getCanonicalType() == t2->getCanonicalType();
