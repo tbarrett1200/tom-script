@@ -1,9 +1,10 @@
 #ifndef AST_STMT_H
 #define AST_STMT_H
 
+#include "Basic/SourceCode.h"
+
 #include "AST/DeclContext.h"
 #include "AST/TreeElement.h"
-#include "Basic/SourceCode.h"
 
 #include <assert.h>
 #include <memory>

@@ -1,16 +1,17 @@
 #ifndef AST_DECL_H
 #define AST_DECL_H
 
+#include <vector>
+#include <memory>
+
 #include "Basic/SourceCode.h"
 #include "Basic/Token.h"
+
 #include "AST/TreeElement.h"
 #include "AST/DeclContext.h"
 #include "AST/Expr.h"
 #include "AST/Type.h"
 #include "AST/Stmt.h"
-
-#include <vector>
-#include <memory>
 
 class CompoundStmt;
 class FunctionType;

@@ -4,9 +4,10 @@
 #include <iostream>
 #include <list>
 
-#include "AST/TreeElement.h"
 #include "Basic/Token.h"
 #include "Basic/SourceCode.h"
+
+#include "AST/TreeElement.h"
 
 /**
  * A base class for all types.
@@ -212,8 +213,16 @@ private:
 
 public:
   static TypeIdentifier* getInstance(std::string n) {
-    instances.push_back(std::make_unique<TypeIdentifier>(n));
-    return instances.back().get();
+    const TypeIdentifier type_id{n};
+    auto it = std::find_if(instances.begin(), instances.end(), [&type_id](auto &type){
+      return type_id == *type;
+    });
+    if (it != instances.end()) {
+      return it->get();
+    } else {
+      instances.push_back(std::make_unique<TypeIdentifier>(std::move(type_id)));
+      return instances.back().get();
+    }
   }
 
   // Constructors
@@ -221,6 +230,10 @@ public:
 
   // Type Overrides
   Type::Kind getKind() const { return Kind::TypeIdentifier; }
+
+  bool operator==(const TypeIdentifier &type) const {
+    return name_ == type.name_;
+  };
 
   std::string toString() const {
     return name_;
@@ -232,26 +245,37 @@ public:
 class TupleType : public Type {
 private:
   static std::vector<std::unique_ptr<TupleType>> instances;
+  std::vector<Type*> elements_;
 
 public:
-  std::vector<Type*> elements;
-  static TupleType* getInstance(std::vector<Type*> e) {
-    instances.push_back(std::make_unique<TupleType>(std::move(e)));
-    return instances.back().get();
+  static TupleType* getInstance(std::vector<Type*> elements) {
+    const TupleType tuple_type{elements};
+    auto it = std::find_if(instances.begin(), instances.end(), [&tuple_type](auto &type){
+      return tuple_type == *type;
+    });
+    if (it != instances.end()) {
+      return it->get();
+    } else {
+      instances.push_back(std::make_unique<TupleType>(std::move(tuple_type)));
+      return instances.back().get();
+    }
   }
 
   // Constructors
-  TupleType(std::vector<Type*> e) : elements{std::move(e)} {}
+  TupleType(std::vector<Type*> e) : elements_{std::move(e)} {}
 
   std::string toString() const {
     std::string str = "(";
-    for (auto element: elements) {
+    for (auto element: elements_) {
       str += element->toString() + ",";
     }
-    if (elements.size() > 0) str = str.substr(0, str.length()-1);
+    if (elements_.size() > 0) str = str.substr(0, str.length()-1);
     str += ")";
     return str;
   }
+  bool operator==(const TupleType &type) const {
+    return elements_ == type.elements_;
+  };
 
   // Type Overrides
   Type::Kind getKind() const { return Kind::TupleType; }
@@ -261,42 +285,57 @@ public:
 class FunctionType : public Type {
 private:
   static std::vector<std::unique_ptr<FunctionType>> instances;
-
+  std::vector<Type*> params_;
+  Type* returns_;
 public:
-  std::vector<Type*> params;
-  Type* returns;
-  static FunctionType* getInstance(std::vector<Type*> p, Type *r) {
-    instances.push_back(std::make_unique<FunctionType>(p, r));
-    return instances.back().get();
+
+  static FunctionType* getInstance(std::vector<Type*> params, Type *returns) {
+    const FunctionType func_type{params, returns};
+    auto it = std::find_if(instances.begin(), instances.end(), [&func_type](auto &type){
+      return func_type == *type;
+    });
+    if (it != instances.end()) {
+      return it->get();
+    } else {
+      instances.push_back(std::make_unique<FunctionType>(std::move(func_type)));
+      return instances.back().get();
+    }
   }
 
   // Constructors
-  FunctionType(std::vector<Type*> p, Type *r) : params{std::move(p)}, returns{r} {}
+  FunctionType(std::vector<Type*> params, Type *returns)
+  : params_{std::move(params)}, returns_{returns} {}
 
   std::string toString() const {
     std::string str = "(";
-    for (auto param: params) {
-      str += (param ? param->toString() : "<nullptr>") + ",";
+
+    for (auto param: params_) {
+      str += param->toString();
     }
-    if (params.size() > 0) str = str.substr(0, str.length()-1);
-    str += ") -> " + (returns ?  returns->toString(): "<nullptr>" );
+
+    if (params_.size() > 0) str = str.substr(0, str.length()-1);
+    str += ") -> " + (returns_ ? returns_->toString(): "()" );
     return str;
   }
 
   Type* getReturnType() const {
-    return returns;
+    return returns_;
   }
 
+  bool operator==(const FunctionType &type) const {
+    return params_ == type.params_ && returns_ == type.returns_;
+  };
+
   int getParamCount() {
-    return params.size();
+    return params_.size();
   }
 
   Type* getParam(int index) {
-    return params[index];
+    return params_[index];
   }
 
   const std::vector<Type*>& getParamTypes() const {
-    return params;
+    return params_;
   }
   // Type Overridess
   Type::Kind getKind() const { return Kind::FunctionType; }
@@ -306,19 +345,32 @@ public:
 class ListType : public Type {
 private:
   static std::vector<std::unique_ptr<ListType>> instances;
+  Type* type_;
 
 public:
-  Type* type;
-  static ListType* getInstance(Type* t) {
-    instances.push_back(std::make_unique<ListType>(t));
-    return instances.back().get();
+
+  static ListType* getInstance(Type* type) {
+    const ListType list_type{type};
+    auto it = std::find_if(instances.begin(), instances.end(), [&list_type](auto &type){
+      return list_type == *type;
+    });
+    if (it != instances.end()) {
+      return it->get();
+    } else {
+      instances.push_back(std::make_unique<ListType>(std::move(list_type)));
+      return instances.back().get();
+    }
   }
 
+  bool operator==(const ListType &type) const {
+    return type_ == type.type_;
+  };
+
   // Constructors
-  ListType(Type* t) : type{t} {}
+  ListType(Type* type) : type_{type} {}
 
   std::string toString() const {
-    return "[" + type->toString() + "]";
+    return "[" + type_->toString() + "]";
   }
 
   // Type Overrides
@@ -328,34 +380,48 @@ public:
 
 class MapType : public Type {
 private:
+  Type* key_;
+  Type* val_;
+
   static std::vector<std::unique_ptr<MapType>> instances;
 public:
-  Type* keyType;
-  Type* valType;
-  static MapType* getInstance(Type *k, Type *v) {
-    instances.push_back(std::make_unique<MapType>(k, v));
-    return instances.back().get();
+
+  static MapType* getInstance(Type *key, Type *val) {
+    MapType map_type{key, val};
+    auto it = std::find_if(instances.begin(), instances.end(), [&map_type](auto &type){
+      return map_type == *type;
+    });
+    if (it != instances.end()) {
+      return it->get();
+    } else {
+      instances.push_back(std::make_unique<MapType>(std::move(map_type)));
+      return instances.back().get();
+    }
   }
+
+  bool operator==(const MapType &type) const {
+    return key_ == type.key_ && val_ == type.val_;
+  };
+
   // Constructors
-  MapType(Type *k, Type *v) : keyType{k}, valType{v} {}
+  MapType(Type *key, Type *val): key_{key}, val_{val} {}
 
   // Type Overrides
   Type::Kind getKind() const { return Kind::MapType; }
 
   const Type& getKeyType() const {
-    return *keyType;
+    return *key_;
   }
 
   std::string toString() const {
-    return "[" + keyType->toString() + ": " + valType->toString() + "]";
+    return "[" + key_->toString() + ": " + key_->toString() + "]";
   }
 
   const Type& getValueType() const {
-    return *valType;
+    return *val_;
   }
 
 };
 
-bool equal(std::shared_ptr<Type> t1, std::shared_ptr<Type> t2);
 
 #endif

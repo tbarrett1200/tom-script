@@ -2,9 +2,7 @@
 #define TREE_H
 
 #include <vector>
-#include <algorithm>
-#include <initializer_list>
-#include <string>
+
 #include "Basic/SourceCode.h"
 
 class TreeElement {

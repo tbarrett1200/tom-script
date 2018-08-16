@@ -1,13 +1,14 @@
 #ifndef AST_EXPR_H
 #define AST_EXPR_H
 
-#include "AST/ASTVisitor.h"
-#include "AST/TreeElement.h"
+#include <memory>
+
 #include "Basic/Token.h"
 #include "Basic/SourceCode.h"
 
-#include <memory>
-#include <stack>
+#include "AST/ASTVisitor.h"
+#include "AST/TreeElement.h"
+
 
 class Decl;
 

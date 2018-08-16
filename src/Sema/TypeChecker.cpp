@@ -13,6 +13,7 @@
 #include "AST/Decl.h"
 #include "AST/Type.h"
 
+#include <typeinfo>
 
 void TypeChecker::checkExpr(Expr &expr) {
   switch(expr.getKind()) {

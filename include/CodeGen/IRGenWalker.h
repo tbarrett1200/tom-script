@@ -51,14 +51,14 @@ public:
   }
 
   llvm::FunctionType* transformFunctionType(const FunctionType &type) {
-    if (type.params.size() == 0) {
-      return llvm::FunctionType::get(transformType(*type.returns), false);
+    if (type.getParamTypes().size() == 0) {
+      return llvm::FunctionType::get(transformType(*type.getReturnType()), false);
     } else {
       std::vector<llvm::Type*> paramTypes;
-      for (auto paramType: type.params) {
+      for (auto paramType: type.getParamTypes()) {
         paramTypes.push_back(transformType(*paramType));
       }
-      return llvm::FunctionType::get(transformType(*type.returns), paramTypes, false);
+      return llvm::FunctionType::get(transformType(*type.getReturnType()), paramTypes, false);
     }
   }
 

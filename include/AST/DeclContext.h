@@ -1,10 +1,9 @@
 #ifndef AST_DECL_CONTEXT_H
 #define AST_DECL_CONTEXT_H
 
-#include "Basic/SourceCode.h"
-
-#include <string>
 #include <map>
+
+#include "Basic/SourceCode.h"
 
 class DeclContext {
 private:
