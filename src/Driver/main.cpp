@@ -63,9 +63,9 @@ int main(int argc, char const *argv[]) {
   }
 
   std::string path = argv[1];
-  SourceManager::currentSource = std::make_shared<SourceCode>(path);
+  SourceManager::currentSource = std::make_shared<SourceFile>(path);
   auto parser = Parser{SourceManager::currentSource};
-
+  
 
   try {
     std::shared_ptr<CompilationUnit> unit = parser.parseCompilationUnit();
@@ -79,7 +79,7 @@ int main(int argc, char const *argv[]) {
     if (printScope) ASTScopePrinter(std::cout).traverse(unit);
     compileAST(*unit);
   } catch (CompilerException e) {
-    ErrorReporter{std::cout, *SourceManager::currentSource}.report(e);
+      ErrorReporter{std::cout, *SourceManager::currentSource}.report(e);
   }
 
   return 0;
@@ -112,7 +112,7 @@ void compileAST(CompilationUnit& unit) {
     try {
       for (auto stmt: unit.getStmts()) {
         const DeclStmt *declStmt = stmt->as<const DeclStmt>();
-        FuncDecl *funcDecl = declStmt->decl->as<FuncDecl>();
+        const FuncDecl *funcDecl = dynamic_cast<const FuncDecl*>(declStmt->getDecl());
         llvmFunction = transformer.transformFunction(*funcDecl);
         verifyFunction(*llvmFunction);
         TheFPM->run(*llvmFunction);

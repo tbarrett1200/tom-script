@@ -5,7 +5,7 @@
 
 
 shared_ptr<Stmt> Parser::parseStmt()  {
-  switch(token().getType()) {
+  switch(token_.type()) {
     case Token::l_brace: return parseCompoundStmt();
     case Token::kw_if: return parseConditionalBlock();
     case Token::kw_return: return parseReturnStmt();
@@ -19,22 +19,25 @@ shared_ptr<Stmt> Parser::parseStmt()  {
     case Token::double_literal:
     case Token::string_literal:
     case Token::l_paren: return parseExprStmt();
-    default: throw CompilerException(token().getLocation(), "expected statement but found " + token().lexeme);
+    default:
+      std::stringstream ss;
+      ss <<  "expected statement but found " << token_.lexeme();
+    throw CompilerException(token_.location(), ss.str());
   }
 }
 
 shared_ptr<CompoundStmt> Parser::parseCompoundStmt()  {
   expectToken(Token::l_brace, "left brace");
-  while(token().is(Token::new_line)) consume();
+  while(token_.is(Token::new_line)) consume();
   if (consumeToken(Token::r_brace)) return std::make_shared<CompoundStmt>(std::vector<std::shared_ptr<Stmt>>());
   auto list = parseStmtList();
-  while(token().is(Token::new_line)) consume();
+  while(token_.is(Token::new_line)) consume();
   expectToken(Token::r_brace, "right brace");
   return std::make_shared<CompoundStmt>(std::move(list));
 }
 
 shared_ptr<ConditionalStmt> Parser::parseConditionalStmt() {
-  if (token().is(Token::kw_let)) {
+  if (token_.is(Token::kw_let)) {
     auto let_decl = parseLetDecl();
     auto stmt = parseCompoundStmt();
     return std::make_shared<ConditionalStmt>(let_decl, stmt);
@@ -75,14 +78,14 @@ shared_ptr<ExprStmt> Parser::parseExprStmt() {
 
 std::vector<std::shared_ptr<Stmt>> Parser::parseStmtList()  {
   std::vector<std::shared_ptr<Stmt>> elements;
-  while(token().is(Token::new_line)) consume();
-  if (token().isAny({Token::r_brace, Token::eof})) return elements;
-  while(token().is(Token::new_line)) consume();
+  while(token_.is(Token::new_line)) consume();
+  if (token_.isAny({Token::r_brace, Token::eof})) return elements;
+  while(token_.is(Token::new_line)) consume();
   elements.push_back(parseStmt());
-  while(token().is(Token::new_line)) consume();
-  while (token().isNot(Token::r_brace) && token().isNot(Token::eof)) {
+  while(token_.is(Token::new_line)) consume();
+  while (token_.isNot(Token::r_brace) && token_.isNot(Token::eof)) {
     elements.push_back(parseStmt());
-    while(token().is(Token::new_line)) consume();
+    while(token_.is(Token::new_line)) consume();
   }
   return elements;
 }

@@ -128,99 +128,163 @@ public:
 
 
 class StringExpr: public Expr {
-public:
-  Token token;
+private:
+  Token token_;
 
-  /* Returns a vector of children for easy traversal */
-  std::string getLexeme() const;
-  Expr::Kind getKind() const;
-  std::string getString() const;
-  StringExpr(std::string s);
-  bool isLeftValue() const;
+public:
+
+  StringRef lexeme() const {
+    return token_.lexeme();
+  }
+
+  Expr::Kind getKind() const { return Kind::StringExpr; }
+
+  bool isLeftValue() const {
+    return false;
+  }
+
+  std::string getString() const {
+    std::string str = token_.lexeme().str();
+    return str.substr(1, str.size()-2);
+  }
+
+
+  StringExpr(Token t) : token_{t} {
+    throw std::logic_error("string not implemented");
+
+    if (t.isNot(Token::string_literal)) {
+      throw std::domain_error("StringExpr requires a token of type string_literal");
+    }
+  }
+
 
   virtual void accept(ASTVisitor& t) const {
      t.visit(*this);
   }
 
-  StringExpr(Token t);
 };
 
 class IntegerExpr: public Expr  {
-public:
-  Token token;
-  /* Returns a vector of children for easy traversal */
-  std::string getLexeme() const;
-  Expr::Kind getKind() const;
-  int getInt() const;
-  IntegerExpr(int i);
-  bool isLeftValue() const;
+private:
+  Token token_;
 
-  std::string getText() {
-    return token.lexeme;
+public:
+
+  IntegerExpr(Token t) : token_{t} {
+    if (t.isNot(Token::integer_literal)) {
+      throw std::domain_error("IntegerExpr requires a token of type integer_literal");
+    }
+  }
+
+  StringRef lexeme() const {
+    return token_.lexeme();
+  }
+
+  Expr::Kind getKind() const { return Kind::IntegerExpr; }
+
+  int getInt() const {
+    return std::stoi(token_.lexeme().str());
+  }
+
+  bool isLeftValue() const {
+    return false;
   }
 
   virtual void accept(ASTVisitor& t) const {
      t.visit(*this);
   }
 
-  IntegerExpr(Token t);
 };
 
 
 class BoolExpr: public Expr {
+private:
+  Token token_;
 
 public:
-  Token token;
 
   /* Returns a vector of children for easy traversal */
-  std::string getLexeme() const;
-  Expr::Kind getKind() const;
-  bool getBool() const;
-  BoolExpr(bool b);
-  bool isLeftValue() const;
+  StringRef lexeme() const {
+    return token_.lexeme();
+  }
+
+  Expr::Kind  getKind() const { return Kind::BoolExpr; }
+
+  bool getBool() const {
+    return token_.lexeme() == "true" ? 1: 0;
+  }
+
+  bool isLeftValue() const {
+    return false;
+  }
+
+  BoolExpr(Token t) : token_{t} {
+    if (!(t.isAny({Token::kw_true, Token::kw_false}))) {
+      throw std::domain_error("BoolExpr requires a boolean literal");
+    }
+  }
+
   virtual void accept(ASTVisitor& t) const {
      t.visit(*this);
   }
 
-  BoolExpr(Token t);
 };
 
 class DoubleExpr: public Expr {
-public:
-  Token token;
+private:
+  Token token_;
 
-  /* Returns a vector of children for easy traversal */
-  std::string getLexeme() const;
-  Expr::Kind getKind() const;
-  double getDouble() const;
-  DoubleExpr(double i);
-  bool isLeftValue() const;
+public:
 
   virtual void accept(ASTVisitor& t) const {
      t.visit(*this);
   }
-  std::string getText() const {
-    return token.lexeme;
+  /* Returns a vector of children for easy traversal */
+  StringRef lexeme() const {
+    return token_.lexeme();
   }
-  DoubleExpr(Token t);
+
+  Expr::Kind getKind() const { return Kind::DoubleExpr; }
+
+  bool isLeftValue() const {
+    return false;
+  }
+
+  double getDouble() const {
+    return std::stod(token_.lexeme().str());
+  }
+
+  DoubleExpr(Token t) : token_{t} {
+    if (t.isNot(Token::double_literal)) {
+      throw std::domain_error("DoubleExpr requires a token of type double_literal");
+    }
+  }
 
 };
 
 
 class IdentifierExpr: public Expr {
-public:
-  Token token;
+private:
+  Token token_;
 
-  /* Returns a vector of children for easy traversal */
-  std::string getLexeme() const;
-  Expr::Kind getKind() const;
-  bool isLeftValue() const;
+public:
+
+  StringRef lexeme() const {
+    return token_.lexeme();
+  }
+
+  Expr::Kind getKind() const { return Kind::IdentifierExpr; }
+
+  bool isLeftValue() const {
+    return true;
+  }
+
+  IdentifierExpr(Token tok) : token_{tok} {}
 
   virtual void accept(ASTVisitor& t) const {
      t.visit(*this);
   }
 
-  IdentifierExpr(Token t, std::shared_ptr<class Type> type);
 };
 
 
@@ -231,28 +295,44 @@ public:
  * <UnaryExpr> ::= <OperatorExpr> <Expr>
  */
 class UnaryExpr: public Expr {
+private:
+  Token op_;
+  std::shared_ptr<Expr> expr_;
 public:
-  Token op;
-  std::shared_ptr<Expr> expr;
 
-  /* Returns a vector of children for easy traversal */
-  std::vector<std::shared_ptr<TreeElement>> getChildren() const;
-  Expr::Kind getKind() const;
-  bool isLeftValue() const;
+  std::vector<std::shared_ptr<TreeElement>> getChildren() const {
+    return {expr_};
+  }
 
-  std::string getOperator() {
-    return op.lexeme;
+  Expr::Kind getKind() const { return Kind::UnaryExpr; }
+
+  bool isLeftValue() const {
+    return false;
+  }
+
+  UnaryExpr(Token o, std::shared_ptr<Expr> e) : op_{std::move(o)}, expr_{std::move(e)} {
+    if (!expr_) {
+      throw std::domain_error("BinaryExpr: expr is required");
+    }
+  }
+
+  StringRef getOperator() {
+    return op_.lexeme();
+  }
+
+  const Expr& getExpr() const {
+    return *expr_;
   }
 
   Expr& getExpr() {
-    return *expr;
+    return *expr_;
   }
+
 
   virtual void accept(ASTVisitor& t) const {
      t.visit(*this);
   }
 
-  UnaryExpr(Token o, std::shared_ptr<Expr> e, std::shared_ptr<class Type> type);
 };
 
 /**
@@ -263,111 +343,181 @@ public:
  * <BinaryExpr> ::= <Expr> <OperatorExpr> <Expr>
  */
 class BinaryExpr: public Expr {
+private:
+  std::shared_ptr<Expr> left_;
+  Token op_;
+  std::shared_ptr<Expr> right_;
 public:
-  std::shared_ptr<Expr> left;
-  Token op;
-  std::shared_ptr<Expr> right;
 
-  Expr::Kind getKind() const;
-  bool isLeftValue() const;
-  std::vector<std::shared_ptr<TreeElement>> getChildren() const;
+  Expr::Kind getKind() const { return Kind::BinaryExpr; }
+
+  std::vector<std::shared_ptr<TreeElement>> getChildren() const {
+    return {left_, right_};
+  }
+
+  bool isLeftValue() const {
+    return false;
+  }
+
+  BinaryExpr(std::shared_ptr<Expr> l, Token o, std::shared_ptr<Expr> r)
+  : left_{std::move(l)}, op_{o}, right_{std::move(r)} {
+    if (!left_) {
+      throw std::domain_error("BinaryExpr: left is required");
+    }
+
+    if (!op_.is(Token::operator_id)) {
+      throw std::domain_error("BinaryExpr: invalid operator");
+    }
+
+    if (!right_) {
+      throw std::domain_error("BinaryExpr: right is required");
+    }
+  }
 
   virtual void accept(ASTVisitor& t) const {
      t.visit(*this);
   }
 
+  const Expr& getLeft() const {
+    return *left_;
+  }
+
+  const Expr& getRight() const {
+    return *right_;
+  }
   Expr& getLeft() {
-    return *left;
+    return *left_;
   }
 
   Expr& getRight() {
-    return *right;
+    return *right_;
   }
-  std::string getOperator() const {
-    return op.lexeme;
+  StringRef getOperator() const {
+    return op_.lexeme();
   }
 
-  BinaryExpr(std::shared_ptr<Expr> l, Token o, std::shared_ptr<Expr> r, std::shared_ptr<class Type> type);
 };
 
 class FunctionCall: public Expr {
+private:
+  std::shared_ptr<IdentifierExpr> name_;
+  std::vector<std::shared_ptr<Expr>> arguments_;
 public:
-  std::shared_ptr<IdentifierExpr> name;
-  std::vector<std::shared_ptr<Expr>> arguments;
+
+  FunctionCall(std::shared_ptr<IdentifierExpr> n, std::vector<std::shared_ptr<Expr>>&& a)
+  : name_{n}, arguments_{std::move(a)} {
+    setType(n->getType());
+  }
+
+  bool isLeftValue() const {
+    return false;
+  }
+
+  Expr::Kind getKind() const { return Kind::FunctionCall; }
+
 
   virtual void accept(ASTVisitor& t) const {
      t.visit(*this);
   }
   std::vector<std::shared_ptr<TreeElement>> getChildren() const {
     std::vector<std::shared_ptr<TreeElement>> children;
-    for (auto arg: arguments) {
+    for (auto arg: arguments_) {
       children.push_back(arg);
     }
     return children;
   }
-  std::vector<std::shared_ptr<Expr>>& getArguments() {
-    return arguments;
+  const std::vector<std::shared_ptr<Expr>>& getArguments() const {
+    return arguments_;
   }
-  std::string getFunctionName() {
-    return name->getLexeme();
+  StringRef getFunctionName() const {
+    return name_->lexeme();
   }
 
-  FunctionCall(std::shared_ptr<IdentifierExpr> n, std::vector<std::shared_ptr<Expr>>&& a);
-  bool isLeftValue() const;
-  Expr::Kind getKind() const;
 };
 
 class ListExpr: public Expr {
-public:
-  std::vector<std::shared_ptr<Expr>> elements;
+private:
+  std::vector<std::shared_ptr<Expr>> elements_;
 
-  Expr::Kind getKind() const;
-  bool isLeftValue() const;
+public:
+
+  Expr::Kind getKind() const {
+    return Kind::ListExpr;
+  }
+  bool isLeftValue() const {
+    return false;
+  }
+
+  ListExpr(std::vector<std::shared_ptr<Expr>>&& d): elements_{std::move(d)} {
+    throw std::logic_error("list not implemented");
+  }
 
   virtual void accept(ASTVisitor& t) const {
      t.visit(*this);
   }
 
   const std::vector<std::shared_ptr<Expr>>& getElements() const {
-    return elements;
+    return elements_;
   }
 
-  ListExpr(std::vector<std::shared_ptr<Expr>>&& elements);
 };
 
 class AccessorExpr: public Expr {
-public:
-  std::shared_ptr<IdentifierExpr> id;
-  std::shared_ptr<IntegerExpr> index;
+private:
+  std::shared_ptr<IdentifierExpr> id_;
+  std::shared_ptr<IntegerExpr> index_;
 
-  std::vector<std::shared_ptr<TreeElement>> getChildren() const;
-  Expr::Kind getKind() const;
-  bool isLeftValue() const;
+public:
+
+  std::vector<std::shared_ptr<TreeElement>> getChildren() const {
+    return {id_, index_};
+  }
+
+  Expr::Kind getKind() const {
+    return Expr::Kind::AccessorExpr;
+  }
+
+  bool isLeftValue() const {
+    return true;
+  }
+
+  AccessorExpr(std::shared_ptr<IdentifierExpr> a, std::shared_ptr<IntegerExpr> b): id_{a}, index_{b} {
+    throw std::logic_error("accessor not implemented");
+  }
 
   virtual void accept(ASTVisitor& t) const {
      t.visit(*this);
   }
 
-  AccessorExpr(std::shared_ptr<IdentifierExpr> id, std::shared_ptr<IntegerExpr> index);
 };
 
 class TupleExpr: public Expr {
 private:
+  std::vector<std::shared_ptr<Expr>> elements_;
 
 public:
-  std::vector<std::shared_ptr<Expr>> elements;
 
   /* Returns a vector of children for easy traversal */
-  Expr::Kind getKind() const;
-  int size() const;
-  bool isLeftValue() const;
+  Expr::Kind getKind() const { return Kind::TupleExpr; }
+
+  bool isLeftValue() const {
+    return false;
+  }
+
+  int size() const { return elements_.size(); }
+
+  std::shared_ptr<Expr> operator[] (int x) {
+    return elements_[x];
+  }
+
+  TupleExpr(std::vector<std::shared_ptr<Expr>>&& list) : elements_{std::move(list)} {
+    throw std::logic_error("tuple not implemented");
+  }
 
   virtual void accept(ASTVisitor& t) const {
      t.visit(*this);
   }
 
-  std::shared_ptr<Expr> operator[] (int x);
-  TupleExpr(std::vector<std::shared_ptr<Expr>>&& elements);
 };
 
 

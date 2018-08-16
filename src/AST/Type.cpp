@@ -60,9 +60,6 @@ std::shared_ptr<PointerType> PointerType::getInstance() {
 // TypeIdentifier
 //----------------------------------------------------------------------------//
 
-std::string TypeIdentifier::getName() const {
-  return token.lexeme;
-}
 
 bool equal(std::shared_ptr<Type> t1, std::shared_ptr<Type> t2) {
   return t1->getCanonicalType() == t2->getCanonicalType();

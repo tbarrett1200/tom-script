@@ -43,9 +43,6 @@ public:
     }
   }
 
-  SourceLocation getLocation() const {
-    return {0, 0};
-  }
   virtual bool returns() const = 0;
 
   virtual Stmt::Kind getKind() const = 0;
@@ -57,16 +54,6 @@ private:
   std::vector<std::shared_ptr<Stmt>> list;
 public:
 
-  // Constructors
-  CompoundStmt(std::vector<std::shared_ptr<Stmt>>&& l);
-
-  std::vector<std::shared_ptr<Stmt>>& getStmts() {
-    return list;
-  }
-
-  // TreeElement
-  std::vector<std::shared_ptr<TreeElement>> getChildren() const;
-
   DeclContext* getDeclContext() {
     return &context;
   }
@@ -75,26 +62,40 @@ public:
     context.setParentContext(parent);
   }
 
-  // Utility Methods
-  Stmt::Kind getKind() const;
-  bool returns() const;
+  CompoundStmt(std::vector<std::shared_ptr<Stmt>>&& l) : list{std::move(l)} {}
+
+  const std::vector<std::shared_ptr<Stmt>>& getStmts() const {
+    return list;
+  };
+
+  Stmt::Kind getKind() const { return Kind::CompoundStmt;}
+
+  bool returns() const {
+    for (auto stmt: list) {
+      if (stmt->returns()) return true;
+    }
+    return false;
+  }
+
+  std::vector<std::shared_ptr<TreeElement>> getChildren() const {
+    std::vector<std::shared_ptr<TreeElement>> treeVector;
+    std::copy(list.begin(), list.end(), std::back_inserter(treeVector));
+    return treeVector;
+  }
 };
 
 class ConditionalStmt : public Stmt {
 private:
   DeclContext context;
-public:
   std::shared_ptr<class LetDecl> declaration;
   std::shared_ptr<class Expr> condition;
   std::shared_ptr<CompoundStmt> stmt;
 
+public:
+
   // Constructors
-  ConditionalStmt(std::shared_ptr<class Expr> c, std::shared_ptr<CompoundStmt> s);
   ConditionalStmt(std::shared_ptr<class LetDecl> d, std::shared_ptr<CompoundStmt> s)
   : declaration{d}, stmt{s} {}
-
-  // Stmt Overrides
-  Stmt::Kind getKind() const;
 
   DeclContext* getDeclContext() {
     return &context;
@@ -116,12 +117,23 @@ public:
     return stmt.get();
   }
 
-  // TreeElement
+
+  ConditionalStmt(std::shared_ptr<Expr> c, std::shared_ptr<CompoundStmt> s) : condition{c}, stmt{s} {
+    if (!s) throw std::logic_error("violated precondition: statement is required");
+  }
+
+  Stmt::Kind getKind() const { return Kind::ConditionalStmt;}
+
+  bool returns() const {
+    return stmt->returns();
+  }
+
+  bool isElseStmt() const {
+    return !condition;
+  }
+
   std::vector<std::shared_ptr<TreeElement>> getChildren() const;
 
-  // Utility Methods
-  bool returns() const;
-  bool isElseStmt() const;
 };
 
 class ConditionalBlock : public Stmt {
@@ -150,104 +162,127 @@ public:
 
 class WhileLoop : public Stmt {
 private:
-  DeclContext context;
+  DeclContext context_;
+  std::shared_ptr<class LetDecl> declaration_;
+  std::shared_ptr<class Expr> condition_;
+  std::shared_ptr<CompoundStmt> stmt_;
+
 public:
-  std::shared_ptr<class LetDecl> declaration;
-  std::shared_ptr<class Expr> condition;
-  std::shared_ptr<CompoundStmt> stmt;
 
-  // Constructors
-  WhileLoop(std::shared_ptr<class Expr> c, std::shared_ptr<CompoundStmt> s);
+  WhileLoop(std::shared_ptr<Expr> c, std::shared_ptr<CompoundStmt> s): condition_{c}, stmt_{s} {
+    if (!c) throw std::logic_error("violated precondition: condition is required");
+    if (!s) throw std::logic_error("violated precondition: statement is required");
+  }
 
-  // Stmt Overrides
-  Stmt::Kind getKind() const;
+  bool returns() const {
+    return stmt_->returns();
+  }
+
+  Stmt::Kind getKind() const { return Kind::WhileLoop;}
+
+  std::vector<std::shared_ptr<TreeElement>> getChildren() const;
 
   LetDecl* getDeclaration() {
-    return declaration.get();
+    return declaration_.get();
   }
 
   Expr* getCondition() {
-      return condition.get();
+      return condition_.get();
   }
 
   CompoundStmt* getBlock() {
-    return stmt.get();
+    return stmt_.get();
   }
 
   DeclContext* getDeclContext() {
-    return &context;
+    return &context_;
   }
 
   void setParentContext(DeclContext *parent) {
-    context.setParentContext(parent);
+    context_.setParentContext(parent);
   }
-
-  // TreeElement
-  std::vector<std::shared_ptr<TreeElement>> getChildren() const;
-
-  // Utility Methods
-  bool returns() const;
 };
 
 
 class ReturnStmt : public Stmt{
+private:
+  std::shared_ptr<Expr> expr_;
+
 public:
-  std::shared_ptr<Expr> expr;
+  ReturnStmt(std::shared_ptr<Expr> d): expr_{d} {}
 
-  // Constructors
-  ReturnStmt(std::shared_ptr<Expr> d);
+  bool returns() const {
+    return true;
+  }
 
-  // Stmt Overrides
-  Stmt::Kind getKind() const;
+  const Expr& getExpr() const {
+    return *expr_;
+  }
 
-  // TreeElement
+  Expr& getExpr() {
+    return *expr_;
+  }
+
+
+  Stmt::Kind getKind() const { return Kind::ReturnStmt;}
+
   std::vector<std::shared_ptr<TreeElement>> getChildren() const;
-
-  // Utility Methods
-  bool returns() const;
 };
 
-
 class ExprStmt : public Stmt {
+private:
+  std::shared_ptr<class Expr> expr_;
+
 public:
-  std::shared_ptr<class Expr> expr;
 
-  // Constructors
-  ExprStmt(std::shared_ptr<class Expr> d);
+  ExprStmt(std::shared_ptr<Expr> e): expr_{e} {
+    if (!e) throw std::logic_error("violated precondition: expr is required");
+  }
 
-  // Stmt Overrides
-  Stmt::Kind getKind() const;
+  bool returns() const {
+    return false;
+  }
 
-  // TreeElement
+  Stmt::Kind getKind() const { return Kind::ExprStmt;}
+
   std::vector<std::shared_ptr<TreeElement>> getChildren() const;
 
-  Expr* getExpr() {
-    return expr.get();
+  const Expr* getExpr() const {
+    return expr_.get();
   }
-  // Utility Methods
-  bool returns() const;
+
+  Expr* getExpr() {
+    return expr_.get();
+  }
+
 };
 
 
 class DeclStmt : public Stmt {
+private:
+  std::shared_ptr<class Decl> decl_;
+
 public:
-  std::shared_ptr<class Decl> decl;
 
-  // Constructors
-  DeclStmt(std::shared_ptr<class Decl> d);
-
-  Decl* getDecl() {
-    return decl.get();
+  DeclStmt(std::shared_ptr<Decl> d): decl_{d} {
+    if (!d) throw std::logic_error("violated precondition: decl is required");
   }
 
-  // Stmt Overrides
-  Stmt::Kind getKind() const;
+  Stmt::Kind getKind() const { return Kind::DeclStmt;}
 
-  // TreeElement
   std::vector<std::shared_ptr<TreeElement>> getChildren() const;
 
-  // Utility Methods
-  bool returns() const;
+  bool returns() const {
+    return false;
+  }
+
+  const Decl* getDecl() const {
+    return decl_.get();
+  }
+
+  Decl* getDecl() {
+    return decl_.get();
+  }
 };
 
 class CompilationUnit : public Stmt {
@@ -263,19 +298,13 @@ public:
     return &context;
   }
 
-  std::vector<std::shared_ptr<TreeElement>> getChildren() const {
-    std::vector<std::shared_ptr<TreeElement>> children;
-    for (auto stmt: stmts) {
-      children.push_back(stmt);
-    }
-    return children;
-  }
+  std::vector<std::shared_ptr<TreeElement>> getChildren() const;
 
   bool returns() const {
     return true;
   }
 
-  std::vector<std::shared_ptr<Stmt>>& getStmts() {
+  const std::vector<std::shared_ptr<Stmt>>& getStmts() const {
     return stmts;
   }
 };

@@ -1,20 +1,11 @@
-
-func add(a: Int, b: Int) -> Int {
-  return a + b
+func factorial(num: Int) -> Int {
+  if num < 2 {
+    return 1
+  } else {
+    return num * factorial(num-1)
+  }
 }
-
-func foo() -> Int {
-  var c: Int = 10
-  let d: Int = add(c, 5)
-  c = 5 + 5
-  return c + d
-}
-
-func goo2() -> Int {
-  return 7
-}
-
 
 func main() -> Int {
-  return 4
+  return factorial(4)
 }

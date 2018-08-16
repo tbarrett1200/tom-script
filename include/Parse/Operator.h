@@ -4,6 +4,8 @@
 #include <string>
 #include <vector>
 
+#include "Basic/SourceCode.h"
+
 using namespace std;
 
 enum class Associativity {
@@ -19,8 +21,8 @@ struct PrecedenceGroup {
   Associativity associativity;
   Fixity fixity;
   bool assignment;
-  std::vector<string> operators;
-  bool contains(string);
+  std::vector<const char*> operators;
+  bool contains(StringRef);
 };
 
 class OperatorTable {

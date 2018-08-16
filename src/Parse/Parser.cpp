@@ -1,5 +1,6 @@
 #include "Parse/Parser.h"
 #include "Basic/Token.h"
+#include "Basic/SourceCode.h"
 #include "Basic/ErrorReporter.h"
 #include "Basic/CompilerException.h"
 
@@ -8,54 +9,38 @@
 #include <assert.h>
 #include <iostream>
 
-Parser::Parser(std::shared_ptr<SourceCode> src) : source{src} {
+Parser::Parser(std::shared_ptr<SourceFile> src) : source{src} {
   lexer = std::make_unique<Lexer>(src);
+  token_ = lexer->next();
 }
-Parser::Parser(std::string s, std::string name) {
-  source = std::make_shared<SourceCode>(std::istringstream{s}, name);
-  lexer = std::make_unique<Lexer>(source);
-}
+
 
 //=*****************************************************************************
 //  # Utility
 //=*****************************************************************************
 
-
-Token Parser::token(int index) {
-  while (index >= tokens.size()) {
-    tokens.push_back(lexer->next());
-  }
-  return tokens.at(index);
-}
-
-auto Parser::consume() -> void {
-  if (tokens.size() > 0) {
-    return tokens.pop_front();
-  }
-}
-
 void Parser::consumeUntil(std::vector<int> types) {
-  while (!token().isAny(types)) {
+  while (!token_.isAny(types)) {
     consume();
   }
 }
 
-bool Parser::parseTerminal(int type, std::string str, bool expect = true) {
-  Token tok = token();
-  if (tok.is(type) && tok.lexeme == str) {
+bool Parser::parseTerminal(int type, const char *lexeme, bool expect = true) {
+  if (token_.is(type) && token_.lexeme() == StringRef{lexeme}) {
     consume();
     return true;
   } else {
     if (expect) {
-      throw CompilerException(tok.getLocation(), "expected " + str + " but found '" + tok.lexeme + "'");
+      std::stringstream ss;
+      ss << "expected " << lexeme << " but found '" << lexeme << "'";
+      throw CompilerException(token_.location(), ss.str());
     }
     return false;
   }
 }
 
 bool Parser::consumeToken(int type) {
-  Token tok = token();
-  if (tok.is(type)) {
+  if (token_.is(type)) {
     consume();
     return true;
   } else {
@@ -64,32 +49,40 @@ bool Parser::consumeToken(int type) {
 }
 
 bool Parser::acceptToken(int type) {
-  if (token().is(type)) {
+  if (token_.is(type)) {
     return true;
   } else {
     return false;
   }
 }
 
-Token Parser::expectToken(int type, std::string name) {
-  Token tok = token();
+Token Parser::expectToken(int type, const char *lexeme) {
+  Token tok = token_;
   if (tok.is(type)) {
     consume();
     return tok;
-  } else throw CompilerException(token().getLocation(), "expected " + name + " but found '" + tok.lexeme + "'");
+
+  } else {
+    std::stringstream ss;
+    ss << "expected " << lexeme << " but found '" << token_.lexeme() << "'";
+    throw CompilerException(token_.location(), ss.str());
+  }
 }
 
-Token Parser::expectToken(std::vector<int> types, std::string name) {
-  Token tok = token();
+Token Parser::expectToken(std::vector<int> types, const char *lexeme) {
+  Token tok = token_;
   if (tok.isAny(types)) {
     consume();
     return tok;
-  } else throw CompilerException(token().getLocation(), "expected " + name + " but found '" + tok.lexeme + "'");
+  } else {
+    std::stringstream ss;
+    ss << "expected " << lexeme << " but found '" << tok.lexeme() << "'";
+    throw CompilerException(tok.location(), ss.str());
+  }
 }
 
-bool Parser::consumeOperator(std::string s) {
-  Token tok = token();
-  if (tok.is(Token::operator_id) && tok.lexeme == s) {
+bool Parser::consumeOperator(const char *lexeme) {
+  if (token_.is(Token::operator_id) && token_.lexeme() == StringRef{lexeme}) {
     consume();
     return true;
   } else {

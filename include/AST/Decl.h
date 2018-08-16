@@ -24,7 +24,7 @@ public:
   };
 
   virtual Decl::Kind getKind() const = 0;
-  virtual std::string getName() const = 0;
+  virtual StringRef getName() const = 0;
 
   SourceLocation getLocation() const {
     return {0, 0};
@@ -59,8 +59,8 @@ public:
     return Decl::Kind::TypeAlias;
   }
 
-  std::string getName() const override {
-    return fName.lexeme;
+  StringRef getName() const override {
+    return fName.lexeme();
   }
 
   std::shared_ptr<Type> getType() const override {
@@ -103,8 +103,8 @@ public:
   Decl::Kind getKind() const override {
     return Decl::Kind::VarDecl;
   }
-  std::string getName() const override {
-    return fName.lexeme;
+  StringRef getName() const override {
+    return fName.lexeme();
   }
   std::shared_ptr<Type> getType() const override {
     return fType;
@@ -143,8 +143,8 @@ public:
     return Decl::Kind::LetDecl;
   }
 
-  std::string getName() const override {
-    return fName.lexeme;
+  StringRef getName() const override {
+    return fName.lexeme();
   }
   std::shared_ptr<Type> getType() const override {
     return fType;
@@ -183,8 +183,8 @@ public:
   Decl::Kind getKind() const override {
     return Decl::Kind::ParamDecl;
   }
-  std::string getName() const override {
-    return fName.lexeme;
+  StringRef getName() const override {
+    return fName.lexeme();
   }
 
   std::shared_ptr<Type> getType() const override {
@@ -241,8 +241,8 @@ public:
     return Decl::Kind::FuncDecl;
   }
 
-  std::string getName() const override {
-    return fName.lexeme;
+  StringRef getName() const override {
+    return fName.lexeme();
   }
 
   std::shared_ptr<Type> getType() const override{

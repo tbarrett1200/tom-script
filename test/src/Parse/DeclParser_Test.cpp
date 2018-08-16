@@ -11,13 +11,15 @@
 TEST(DeclParser, parseLetDecl) {
 
   auto parse = [](std::string text) {
-    Parser parser = Parser{text};
+    std::stringstream ss{text};
+    std::shared_ptr<SourceFile> src = std::make_shared<SourceFile>(ss);
+    Parser parser = Parser{src};
     return parser.parseLetDecl();
   };
 
   std::shared_ptr<LetDecl> letDecl;
 
-  ASSERT_NO_THROW(letDecl = parse("let a: Integer = 5"));
+  ASSERT_NO_THROW(letDecl = parse("let a: Int = 5"));
   EXPECT_TRUE(letDecl->getType() != nullptr);
   EXPECT_TRUE(letDecl->getName() == "a");
   ASSERT_TRUE(letDecl->getExpr() != nullptr);

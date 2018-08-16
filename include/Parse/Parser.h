@@ -46,7 +46,7 @@ private:
   //===-----------------------------  Fields ------------------------------===//
 
   // The source code to parse
-  std::shared_ptr<SourceCode> source;
+  std::shared_ptr<SourceFile> source;
 
   // Turns source code into tokens
   std::unique_ptr<Lexer> lexer;
@@ -54,8 +54,7 @@ private:
   // Outut of lexer
   std::deque<Token> tokens;
 
-  // Manages identifier types
-  ScopeManager scope;
+  Token token_;
 
   //===-------------------------- Internal Use  ---------------------------===//
 
@@ -63,17 +62,14 @@ private:
   static std::vector<int> exprStartTokens;
 
 public:
-  Parser(std::shared_ptr<SourceCode> source);
-  Parser(std::string, std::string name="unknown");
+  Parser(std::shared_ptr<SourceFile> source);
 
-  ScopeManager& getScopeManager() {
-    return scope;
-  }
 
   //===-------------------------  Helper Methods --------------------------===//
 
-  Token token(int index=0);
-  void consume();
+  void consume() {
+    token_ = lexer->next();
+  }
 
   void consumeUntil(std::vector<int> types);
 
@@ -85,7 +81,7 @@ public:
    * needed. However, because the expected lexeme must be given as a parameter,
    * this information is not needed anyway.
    */
-  bool parseTerminal(int type, std::string str, bool expect);
+  bool parseTerminal(int type, const char* str, bool expect);
 
   /**
    * Consumes a token of the given type if it exists in the token stream.
@@ -108,7 +104,7 @@ public:
    * is the name that the error message should use when referring the the
    * token. It has no impact on the actual passing or failing of the parse.
    */
-  Token expectToken(int type, std::string);
+  Token expectToken(int type, const char *lexeme);
 
   /**
    * Consumes and returns a token of any of given TypeAlias if it exists, otherwise
@@ -118,7 +114,7 @@ public:
    * is the name that the error message should use when referring the the
    * token. It has no impact on the actual passing or failing of the parse.
    */
-  Token expectToken(std::vector<int> types, std::string);
+  Token expectToken(std::vector<int> types, const char *lexeme);
 
   /**
    * Checks for a token of the given type. If it exists, consumes it, and
@@ -132,7 +128,7 @@ public:
    * parseTerminal(Token::Kind::operator_id, str, false), but uses a shorter,
    * more readable syntax that is used for convenience.
    */
-  bool consumeOperator(string);
+  bool consumeOperator(const char *lexeme);
 
 
   //===--------------------------  Type Parsers ---------------------------===//

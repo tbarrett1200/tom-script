@@ -3,265 +3,280 @@
 
 using std::string;
 
-Lexer::Lexer(std::shared_ptr<SourceCode> src) : source{src}, cRow{0}, cCol{-1}, cLoc{-1} {}
-
-bool Lexer::advanceIf(bool i) {
-  if (i) {
-    advance();
-  } return i;
-}
-
-void Lexer::advance() {
-  cLoc++;
-  if (source->getChar(cLoc) == '\n') {
-    cRow++;
-    cCol = 0;
-  } else {
-    cCol++;
-  }
-}
-
-char Lexer::at(int index) {
-  return source->getChar(cLoc+index);
-}
+Lexer::Lexer(std::shared_ptr<SourceFile> src) : source{src}, source_iterator{src->begin()} {}
 
 Token Lexer::lexIdentifier()  {
-  string lexeme = string(1, at());
-  while (std::isalnum(at(1)) || at(1)=='_') {
-    advance();
-    lexeme += at();
+  const char *start = current_loc();
+
+  while (source_iterator != source->end() && (std::isalnum(*source_iterator) || *source_iterator == '_')) {
+    source_iterator++;
   }
 
+  int length = current_loc() - start;
+  StringRef str_ref{start, length};
 
-  if (lexeme == "var") {
-    return Token(lexeme, Token::kw_var, sLoc, sRow, sCol);
-  } else if (lexeme == "let") {
-    return Token(lexeme, Token::kw_let, sLoc, sRow, sCol);
-  } else if (lexeme == "func") {
-    return Token(lexeme, Token::kw_func, sLoc, sRow, sCol);
-  } else if (lexeme == "if") {
-    return Token(lexeme, Token::kw_if, sLoc, sRow, sCol);
-  } else if (lexeme == "else") {
-    return Token(lexeme, Token::kw_else, sLoc, sRow, sCol);
-  } else if (lexeme == "while") {
-    return Token(lexeme, Token::kw_while, sLoc, sRow, sCol);
-  } else if (lexeme == "return") {
-    return Token(lexeme, Token::kw_return, sLoc, sRow, sCol);
-  } else if (lexeme == "true") {
-    return Token(lexeme, Token::kw_true, sLoc, sRow, sCol);
-  } else if (lexeme == "false") {
-    return Token(lexeme, Token::kw_false, sLoc, sRow, sCol);
-  } else if (lexeme == "typedef") {
-    return Token(lexeme, Token::kw_typedef, sLoc, sRow, sCol);
-  } else if (lexeme == "typealias") {
-    return Token(lexeme, Token::kw_typealias, sLoc, sRow, sCol);
+  if (str_ref == StringRef{"var"}) {
+    return Token(Token::kw_var, str_ref);
+  } else if (str_ref == StringRef{"let"}) {
+    return Token(Token::kw_let, str_ref);
+  } else if (str_ref == StringRef{"func"}) {
+    return Token(Token::kw_func, str_ref);
+  } else if (str_ref == StringRef{"if"}) {
+    return Token(Token::kw_if, str_ref);
+  } else if (str_ref == StringRef{"else"}) {
+    return Token(Token::kw_else, str_ref);
+  } else if (str_ref == StringRef{"while"}) {
+    return Token(Token::kw_while, str_ref);
+  } else if (str_ref == StringRef{"return"}) {
+    return Token(Token::kw_return, str_ref);
+  } else if (str_ref == StringRef{"true"}) {
+    return Token(Token::kw_true, str_ref);
+  } else if (str_ref == StringRef{"false"}) {
+    return Token(Token::kw_false, str_ref);
+  } else if (str_ref == StringRef{"typedef"}) {
+    return Token(Token::kw_typedef, str_ref);
+  } else if (str_ref == StringRef{"typealias"}) {
+    return Token(Token::kw_typealias, str_ref);
   } else {
-    return Token(lexeme, Token::identifier, sLoc, sRow, sCol);
+    return Token(Token::identifier, str_ref);
   }
 }
 
 Token Lexer::lexNumber() {
-  string lexeme = string(1, at());
+  const char* start = current_loc();
+  bool floating_point = false;
 
-  while (std::isdigit(at(1))) {
-    advance();
-    lexeme += at();
-  }
-
-  if (at(1) == '.') {
-    advance();
-    lexeme += '.';
-
-    while (std::isdigit(at(1))) {
-      advance();
-      lexeme += at();
-    }
-  } else {
-    return Token(lexeme, Token::integer_literal, sLoc, sRow, sCol);
-  }
-
-  if (at(1) == 'e' || at(1) == 'E') {
-    advance();
-    lexeme += at();
-
-    while (std::isdigit(at(1))) {
-      advance();
-      lexeme += at();
+  // lex integer or pre-radix mantissa
+  while (std::isdigit(*source_iterator)) {
+    source_iterator++;
+    if (source_iterator == source->end()) {
+      return Token(Token::integer_literal, start, current_loc() - start);
     }
   }
 
-  if (std::isalpha(at(1))) {
-    while(std::isalpha(at(1))) {
-      advance();
-      lexeme += at();
+  // lex post-radix mantissa
+  if (*source_iterator == '.') {
+    floating_point = true;
+    source_iterator++;
+    if (source_iterator == source->end()) {
+      return Token(Token::double_literal, start, current_loc() - start);
     }
-    ErrorReporter{std::cerr, *source}.report(CompilerException({sRow, sCol}, "error: identifier cannot start with digit"));
-    return Token(lexeme, Token::unknown, sLoc, sRow, sCol);
+    while (std::isdigit(*source_iterator)) {
+      source_iterator++;
+      if (source_iterator == source->end()) {
+        return Token(Token::double_literal, start, current_loc() - start);
+      }
+    }
   }
 
-  return Token(lexeme, Token::double_literal, sLoc, sRow, sCol);
+  // lex exponent
+  if (*source_iterator == 'e' || *source_iterator == 'E') {
+    floating_point = true;
+    source_iterator++;
+    while (source_iterator != source->end() && std::isdigit(*source_iterator)) {
+      source_iterator++;
+    }
+  }
+
+  return Token(floating_point ? Token::double_literal: Token::integer_literal, start, current_loc() - start);
 }
 
 auto  Lexer::lexStringLiteral() -> Token {
-  string lexeme = string(1, at());
+  const char *loc = current_loc();
 
-  while (at(1) != '"' || at() == '\\') {
-    advance();
-    lexeme += at();
+  if (*source_iterator != '"') {
+    throw std::logic_error("error: expected '\"' while lexing string literal");
+  } else source_iterator++;
+
+  while (source_iterator != source->end() || *source_iterator == '"') {
+    source_iterator++;
   }
+  if (source_iterator == source->end()) {
+    throw std::logic_error("error: expected '\"' while lexing string literal");
+  } else source_iterator++;
 
-  advance();
-  lexeme += at();
-
-  return Token(lexeme, Token::string_literal, sLoc, sRow, sCol);
+  return Token(Token::string_literal, loc, current_loc() - loc);
 }
 
-void  Lexer::skipSlashStarComment() {
-  while (at(1) != '*' || at(2) != '/') {
-    advance();
+void  Lexer::lexSlashStarComment() {
+  while (source_iterator != source->end()) {
+    if (*source_iterator == '*') {
+      source_iterator++;
+      if (source_iterator != source->end()) {
+        if (*source_iterator == '/') {
+          source_iterator++;
+          return;
+        }
+      } else return;
+    } else source_iterator++;
   }
-  advance();
-  advance();
 }
 
-void  Lexer::skipSlashSlashComment() {
-    while (at() != '\n') {
-      advance();
+void  Lexer::lexSlashSlashComment() {
+  while (source_iterator != source->end()) {
+    if (*source_iterator == '\n') {
+      source_iterator++;
+      return;
+    } else {
+      source_iterator++;
     }
+  }
 }
 
-auto  Lexer::lexOperatorIdentifier() -> Token {
-  std::string lexeme;
+Token Lexer::lexOperatorIdentifier() {
+  const char* start = current_loc();
 
-  switch(at()) {
+  switch(*source_iterator) {
     case '=':
-      if (advanceIf(at(1) == '=')) lexeme = "==";
-      else lexeme = "=";
+      source_iterator++;
+      if (*source_iterator == '=') source_iterator++;
       break;
     case '-':
-      if (advanceIf(at(1) == '=')) lexeme = "-=";
-      else if (advanceIf(at(1) == '-')) lexeme = "--";
-      else if (advanceIf(at(1) == '>')) lexeme = "->";
-      else lexeme = "-";
+      source_iterator++;
+      if (*source_iterator == '=') source_iterator++;
+      else if (*source_iterator == '-') source_iterator++;
+      else if (*source_iterator == '>') source_iterator++;
       break;
     case '+':
-      if (advanceIf(at(1) == '=')) lexeme = "+=";
-      else if (advanceIf(at(1) == '+')) lexeme = "++";
-      else lexeme = "+";
+      source_iterator++;
+      if (*source_iterator == '=') source_iterator++;
+      else if (*source_iterator == '+') source_iterator++;
       break;
     case '*':
-      if (advanceIf(at(1) == '=')) lexeme = "*=";
-      else lexeme = "*";
+      source_iterator++;
+      if (*source_iterator == '=') source_iterator++;
       break;
     case '/':
-      if (advanceIf(at(1) == '=')) lexeme = "/=";
-      else lexeme = "/";
+      source_iterator++;
+      if (*source_iterator == '=') source_iterator++;
       break;
     case '%':
-      if (advanceIf(at(1) == '=')) lexeme = "%=";
-      else lexeme = "%";
+      source_iterator++;
+      if (*source_iterator == '=') source_iterator++;
       break;
     case '<':
-      if (advanceIf(at(1) == '=')) lexeme = "<=";
-      else if (advanceIf(at(1) == '<')) {
-        if (advanceIf(at(1) == '=')) lexeme = "<<=";
-        else lexeme = "<<";
-      } else lexeme = "<";
+      source_iterator++;
+      if (*source_iterator == '=') source_iterator++;
+      else if (*source_iterator == '<') {
+        source_iterator++;
+        if (*source_iterator == '=') source_iterator++;
+      }
       break;
     case '>':
-      if (advanceIf(at(1) == '=')) lexeme = ">=";
-      else if (advanceIf(at(1) == '>')) {
-        if (advanceIf(at(1) == '=')) lexeme = ">>=";
-        else lexeme = ">>";
-      } else lexeme = ">";
+      source_iterator++;
+      if (*source_iterator == '=') source_iterator++;
+      else if (*source_iterator == '>') {
+        source_iterator++;
+        if (*source_iterator == '=') source_iterator++;
+      }
       break;
     case '&':
-      if (advanceIf(at(1) == '=')) lexeme = "&=";
-      else if (advanceIf(at(1) == '&')) lexeme = "&&";
-      else lexeme = "&";
+      source_iterator++;
+      if (*source_iterator == '=') source_iterator++;
+      else if (*source_iterator == '&') source_iterator++;
       break;
     case '|':
-      if (advanceIf(at(1) == '=')) lexeme = "|=";
-      else if (advanceIf(at(1) == '|')) lexeme = "||";
-      else lexeme = "|";
+      source_iterator++;
+      if (*source_iterator == '=') source_iterator++;
+      else if (*source_iterator == '|') source_iterator++;
       break;
     case '^':
-      if (advanceIf(at(1) == '=')) lexeme = "^=";
-      else lexeme = "^";
+      source_iterator++;
+      if (*source_iterator == '=') source_iterator++;
       break;
     case '~':
-      lexeme = "~";
+      source_iterator++;
       break;
     case '.':
-      lexeme = ".";
+      source_iterator++;
       break;
     case '?':
-      lexeme = "?";
+      source_iterator++;
       break;
     case '!':
-      if (advanceIf(at(1) == '=')) lexeme = "!=";
-      else lexeme = "!";
+      source_iterator++;
+      if (*source_iterator == '=') source_iterator++;
       break;
   }
-  return Token(lexeme, Token::operator_id, sLoc, sRow, sCol);
+  return Token(Token::operator_id, start, current_loc() - start);
 }
 
-Token Lexer::getEOF() {
-  int loc = 0;
-  int row = source->getLineCount() - 1;
-  int col = source->getLine(row).length();
-  return Token("<eof>", Token::eof, loc, row, col);
+
+const char* Lexer::current_loc() const {
+  return &(*source_iterator);
+}
+
+Token Lexer::lexPunctuation() {
+  Token tok;
+  switch(*source_iterator) {
+  case '{':
+    tok = Token(Token::l_brace, current_loc(), 1);
+    break;
+  case '[':
+    tok = Token(Token::l_square, current_loc(), 1);
+    break;
+  case '(':
+    tok = Token(Token::l_paren, current_loc(), 1);
+    break;
+  case '}':
+    tok = Token(Token::r_brace, current_loc(), 1);
+    break;
+  case ']':
+    tok = Token(Token::r_square, current_loc(), 1);
+    break;
+  case ')':
+    tok = Token(Token::r_paren, current_loc(), 1);
+    break;
+  case ',':
+    tok = Token(Token::comma, current_loc(), 1);
+    break;
+  case ';':
+    tok = Token(Token::semi, current_loc(), 1);
+    break;
+  case ':':
+    tok = Token(Token::colon, current_loc(), 1);
+    break;
+  case '\\':
+    tok = Token(Token::backslash, current_loc(), 1);
+    break;
+  case '\n':
+    tok = Token(Token::new_line, current_loc(), 1);
+    break;
+  }
+
+  source_iterator++;
+  return tok;
 }
 
 Token Lexer::next() {
-  Restart:
-    advance();
-
-    sLoc = cLoc;
-    sRow = cRow;
-    sCol = cCol;
-
-    switch (at()) {
-
-    default:
-      ErrorReporter{std::cerr, *source}.report(CompilerException({sRow, sCol}, "error: unknown token"));
-      return Token(string(1,at()), Token::unknown, sLoc, sRow, sCol);
-
-    case '\n':
-    case '\r':
-      cCol++;
-      return Token("<new_line>", Token::new_line, sLoc, sRow, sCol);
-
+  for (auto &it = source_iterator; it != source->end(); it++) {
+    switch(*it) {
+    // skip whitespace
     case ' ':
     case '\t':
     case '\f':
     case '\v':
-      goto Restart;  // Skip whitespace.
+      continue;
 
-    case -1:
-      return Token("<eof>", Token::eof, sLoc, sRow, sCol);
+    // newline
 
     // Punctuation Characters
-    case '{': return Token("{", Token::l_brace, sLoc, sRow, sCol);
-    case '[': return Token("[", Token::l_square, sLoc, sRow, sCol);
-    case '(': return Token("(", Token::l_paren, sLoc, sRow, sCol);
-    case '}': return Token("}", Token::r_brace, sLoc, sRow, sCol);
-    case ']': return Token("]", Token::r_square, sLoc, sRow, sCol);
-    case ')': return Token(")", Token::r_paren, sLoc, sRow, sCol);
-    case ',': return Token(",", Token::comma, sLoc, sRow, sCol);
-    case ';': return Token(";", Token::semi, sLoc, sRow, sCol);
-    case ':': return Token(":", Token::colon, sLoc, sRow, sCol);
-    case '\\': return Token("\\", Token::backslash, sLoc, sRow, sCol);
+    case '\n': case '{': case '[': case '(':
+    case '}': case ']': case ')': case ',':
+    case ';': case ':': case '\\':
+      return lexPunctuation();
 
     case '/':
-      if (at(1) == '/') {
-        skipSlashSlashComment();
-        goto Restart;
+      source_iterator++;
+      if (*source_iterator == '/') {
+        lexSlashSlashComment();
+        continue;
       }
-      if (at(1) == '*') {
-        skipSlashStarComment();
-        goto Restart;
+      if (*source_iterator == '*') {
+        lexSlashStarComment();
+        continue;
       }
+      source_iterator--;
       return lexOperatorIdentifier();
 
     case '=': case '-': case '+': case '*': case '<': case '>': case '%':
@@ -286,4 +301,6 @@ Token Lexer::next() {
     case '"':
       return lexStringLiteral();
     }
+  }
+  return Token(Token::eof, &(*source->begin()) + source->content_length(), 0);
 }

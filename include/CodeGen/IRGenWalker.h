@@ -43,7 +43,7 @@ private:
   llvm::Function* fFunction;
   const DeclContext* currentContext;
 
-  std::map<std::string, std::shared_ptr<VariableValue>> fNamedValues;
+  std::map<StringRef, std::shared_ptr<VariableValue>> fNamedValues;
 
 public:
   LLVMTransformer(llvm::LLVMContext& context, llvm::Module* module) : fContext{context} {
@@ -77,19 +77,19 @@ public:
 
   void transformReturnStmt(const ReturnStmt& stmt, llvm::BasicBlock* current_block) {
     llvm::IRBuilder<> builder{current_block};
-    builder.CreateRet(transformExpr(*stmt.expr, current_block));
+    builder.CreateRet(transformExpr(stmt.getExpr(), current_block));
   }
 
   void transformDeclStmt(const DeclStmt& declStmt, llvm::BasicBlock* current_block) {
     llvm::IRBuilder<> builder{current_block};
-    Decl* decl = dynamic_cast<Decl*>(declStmt.decl.get());
-    if (dynamic_cast<LetDecl*>(decl)) {
-      LetDecl *letDecl = dynamic_cast<LetDecl*>(decl);
+    const Decl* decl = dynamic_cast<const Decl*>(declStmt.getDecl());
+    if (dynamic_cast<const LetDecl*>(decl)) {
+      const LetDecl *letDecl = dynamic_cast<const LetDecl*>(decl);
       llvm::Value *v = transformExpr(*letDecl->getExpr(),current_block);
       fNamedValues[letDecl->getName()] = std::make_shared<VariableValue>(false, v, nullptr);
-    } else if (dynamic_cast<VarDecl*>(decl)) {
-      VarDecl *varDecl = dynamic_cast<VarDecl*>(decl);
-      llvm::AllocaInst *alloca = builder.CreateAlloca(transformType(*varDecl->getType()), 0, varDecl->getName());
+    } else if (dynamic_cast<const VarDecl*>(decl)) {
+      const VarDecl *varDecl = dynamic_cast<const VarDecl*>(decl);
+      llvm::AllocaInst *alloca = builder.CreateAlloca(transformType(*varDecl->getType()), 0, varDecl->getName().str());
       builder.CreateStore(transformExpr(*varDecl->getExpr(),current_block), alloca);
       fNamedValues[varDecl->getName()] = std::make_shared<VariableValue>(true, nullptr, alloca);;
     } else {
@@ -99,15 +99,15 @@ public:
 
   void transformExprStmt(const ExprStmt& exprStmt, llvm::BasicBlock* current_block) {
     llvm::IRBuilder<> builder{current_block};
-    const Expr* expr = dynamic_cast<const Expr*>(exprStmt.expr.get());
+    const Expr* expr = dynamic_cast<const Expr*>(exprStmt.getExpr());
     if (dynamic_cast<const BinaryExpr*>(expr)) {
       const BinaryExpr* binExpr = dynamic_cast<const BinaryExpr*>(expr);
       if (binExpr->getOperator() == "=") {
-        if (dynamic_cast<const IdentifierExpr*>(binExpr->left.get())) {
-          const IdentifierExpr *identifier = dynamic_cast<const IdentifierExpr*>(binExpr->left.get());
-          llvm::AllocaInst *alloca = fNamedValues[identifier->token.lexeme]->fAlloca;
+        if (dynamic_cast<const IdentifierExpr*>(&binExpr->getLeft())) {
+          const IdentifierExpr *identifier = dynamic_cast<const IdentifierExpr*>(&binExpr->getLeft());
+          llvm::AllocaInst *alloca = fNamedValues[identifier->lexeme()]->fAlloca;
           if (alloca) {
-            builder.CreateStore(transformExpr(*binExpr->right,current_block), alloca);
+            builder.CreateStore(transformExpr(binExpr->getRight(),current_block), alloca);
           } else {
             throw std::logic_error("lvalue is not mutable or not found");
           }
@@ -124,12 +124,12 @@ public:
     currentContext = func.getDeclContext();
 
     llvm::FunctionType* type = transformFunctionType(*std::dynamic_pointer_cast<FunctionType>(func.getType()));
-    fFunction = llvm::Function::Create(type, llvm::Function::ExternalLinkage, func.getName(), fModule);
+    fFunction = llvm::Function::Create(type, llvm::Function::ExternalLinkage, func.getName().str(), fModule);
 
     int index = 0;
     for (auto &arg : fFunction->args()) {
       ParamDecl *param = func.getParams()[index++].get();
-      arg.setName(param->getName());
+      arg.setName(param->getName().str());
       fNamedValues[param->getName()] = std::make_shared<VariableValue>(false, &arg, nullptr);
     }
 
@@ -145,18 +145,18 @@ public:
     llvm::IRBuilder<> builder{current_block};
 
     //  return fNamedValues[identifierExpr.getLexeme()];
-    llvm::Function *CalleeF = fModule->getFunction(call.name->getLexeme());
+    llvm::Function *CalleeF = fModule->getFunction(call.getFunctionName().str());
     if (!CalleeF) {
-      throw CompilerException(call.name->token.getLocation(), "unknown function referenced");
+      throw CompilerException(call.getFunctionName().start, "unknown function referenced");
     }
 
-    if (CalleeF->arg_size() != call.arguments.size()) {
-      throw CompilerException(call.name->token.getLocation(), "wrong number of parameters");
+    if (CalleeF->arg_size() != call.getArguments().size()) {
+      throw CompilerException(call.getFunctionName().start, "wrong number of parameters");
     }
 
      std::vector<llvm::Value*> ArgsV;
-     for (unsigned i = 0, e = call.arguments.size(); i != e; ++i) {
-       ArgsV.push_back(transformExpr(*call.arguments[i],current_block));
+     for (unsigned i = 0, e = call.getArguments().size(); i != e; ++i) {
+       ArgsV.push_back(transformExpr(*call.getArguments()[i],current_block));
        if (!ArgsV.back())
          return nullptr;
      }
@@ -165,7 +165,7 @@ public:
   }
 
   llvm::Value* transformIndentifierExpr(const IdentifierExpr& expr, llvm::BasicBlock* current_block) {
-    std::shared_ptr<VariableValue> val = fNamedValues[expr.getLexeme()];
+    std::shared_ptr<VariableValue> val = fNamedValues[expr.lexeme()];
     if (val->fIsAlloca) {
       llvm::IRBuilder<> builder{current_block};
       return builder.CreateLoad(val->fAlloca);
@@ -247,8 +247,7 @@ public:
         }
       }
     }
-
-    if (llvm::pred_begin(if_exit)==llvm::pred_end(if_exit)) {
+    if (llvm::pred_begin(if_exit) == llvm::pred_end(if_exit)) {
       if_exit->removeFromParent();
     }
     return if_exit;
@@ -305,8 +304,8 @@ public:
   llvm::Value* transformBinaryExpr(const BinaryExpr& expr, llvm::BasicBlock* current_block) {
     llvm::IRBuilder<> builder{current_block};
     llvm::Value *lval, *rval;
-    lval = transformExpr(*expr.left, current_block);
-    rval = transformExpr(*expr.right, current_block);
+    lval = transformExpr(expr.getLeft(), current_block);
+    rval = transformExpr(expr.getRight(), current_block);
 
     if (lval->getType()->isIntegerTy() && rval->getType()->isIntegerTy()) {
       if (expr.getOperator() == "+") {

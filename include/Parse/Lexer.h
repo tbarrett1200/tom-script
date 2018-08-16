@@ -9,30 +9,21 @@
 // Splits a source file into
 class Lexer {
 private:
-  std::shared_ptr<SourceCode> source;
-  // lcation data for the current character in the file
-  int cRow; //row
-  int cCol; //col
-  int cLoc; //index
-  // location data for the start character in the file
-  int sRow; //row
-  int sCol; //col
-  int sLoc; //index
+  std::shared_ptr<SourceFile> source;
+  std::string::const_iterator source_iterator;
 
-  void advance();
-  bool advanceIf(bool);
-  char at(int index = 0);
   Token lexIdentifier();
   Token lexNumber();
   Token lexStringLiteral();
+  Token lexPunctuation();
   Token lexCharLiteral();
   Token lexOperatorIdentifier();
-  void skipSlashStarComment();
-  void skipSlashSlashComment();
+  void lexSlashStarComment();
+  void lexSlashSlashComment();
 public:
-  Lexer(std::shared_ptr<SourceCode>);
+  Lexer(std::shared_ptr<SourceFile> source);
+  const char* current_loc() const;
   Token next();
-  Token getEOF();
 };
 
 #endif

@@ -205,24 +205,28 @@ public:
 
 
 class TypeIdentifier : public Type {
+private:
+  Token token_;
+
 public:
-  Token token;
 
   // Constructors
-  TypeIdentifier(Token n) : token{n} {}
+  TypeIdentifier(Token n) : token_{n} {}
 
   // Type Overrides
   Type::Kind getKind() const { return Kind::TypeIdentifier; }
 
   std::string toString() const {
-    return token.lexeme;
+    return token_.lexeme().str();
   }
 
   /**
    * Returns the name of the type identifier.
    * e.g. Integer
    */
-  std::string getName() const;
+  StringRef getName() const {
+    return token_.lexeme();
+  }
 
 };
 

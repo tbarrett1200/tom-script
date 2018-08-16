@@ -22,16 +22,20 @@ private:
 
   // the file from which errors are to be reported. Supplied the lines of source
   // code for pretty printed errors.
-  const SourceCode& source;
+  const SourceFile& source;
 
 public:
   // constructs an ErrorReporter object for the given file buffer.
-  ErrorReporter(std::ostream& stream, const SourceCode& src) : stream{stream}, source{src} {}
+  ErrorReporter(std::ostream& stream, const SourceFile& src) : stream{stream}, source{src} {}
 
   void report(CompilerException err) {
-    stream << source.getPath() << ":" << err.loc.row << ":"<< err.loc.col << ": " << err.category << ": " << err.message << std::endl;
-    stream << source.getLine(err.loc.row) << std::endl;
-    stream << std::string(err.loc.col, ' ') << "^" << std::endl;
+    if (err.loc) {
+      SourceLocation location{source.location(err.loc)};
+      stream << source.path() << ":" << location.row << ":"<< location.col << ": " << err.category << ": " << err.message << std::endl;
+      stream << source.line(location.row) << std::string(location.col, ' ') << "^" << std::endl;
+    } else {
+      stream << source.path() << ": "<< err.category << ": " << err.message << std::endl;
+    }
   }
 
 };

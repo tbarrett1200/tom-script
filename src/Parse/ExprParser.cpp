@@ -18,7 +18,7 @@ std::vector<int> exprStartTokens = {
 
 
 shared_ptr<Expr> Parser::parseExpr(int precedence) {
-  if (token().is(Token::l_paren)) return parseTupleExpr();
+  if (token_.is(Token::l_paren)) return parseTupleExpr();
 
   switch(precedence) {
     case 0: return parseValueExpr();
@@ -46,11 +46,11 @@ std::vector<std::shared_ptr<Expr>> Parser::parseExprList() {
 }
 
 Token Parser::parseOperator(int precedence) {
-  Token tok = token();
-  if (OperatorTable::level(precedence).contains(tok.lexeme)) {
+  Token tok = token_;
+  if (OperatorTable::level(precedence).contains(tok.lexeme())) {
     consume();
     return tok;
-  } else throw CompilerException(token().getLocation(),  "error: expected operator");
+  } else throw CompilerException(tok.location(),  "error: expected operator");
 }
 
 shared_ptr<Expr> Parser::parseIdentifierOrFunctionCallOrAccessor() {
@@ -61,22 +61,16 @@ shared_ptr<Expr> Parser::parseIdentifierOrFunctionCallOrAccessor() {
     expectToken(Token::r_square, "]");
     return std::make_shared<AccessorExpr>(id, index);
   } else if (acceptToken(Token::l_paren)) {
-    auto tuple = parseFunctionArguments();
-    return make_shared<FunctionCall>(move(id), move(tuple));
+    auto args = parseFunctionArguments();
+    return make_shared<FunctionCall>(id, std::move(args));
   } else {
     return id;
   }
 }
 
-
 shared_ptr<IdentifierExpr> Parser::parseIdentifier() {
   auto token = expectToken({Token::identifier, Token::operator_id}, "identifier");
-  auto type = scope.getType(token.lexeme);
-  if (type == nullptr) {
-    throw CompilerException(token.getLocation(), std::string("undeclared identifier ") + token.lexeme );
-  } else {
-    return std::make_shared<IdentifierExpr>(token, type);
-  }
+  return std::make_shared<IdentifierExpr>(token);
 }
 
 std::vector<std::shared_ptr<Expr>> Parser::parseFunctionArguments() {
@@ -89,7 +83,7 @@ std::vector<std::shared_ptr<Expr>> Parser::parseFunctionArguments() {
 
 shared_ptr<Expr> Parser::parseTupleExpr() {
   expectToken(Token::l_paren, "left parenthesis");
-  if (acceptToken(Token::colon)) throw CompilerException(token().getLocation(),  "error: expected labeled tuple member");
+  if (acceptToken(Token::colon)) throw CompilerException(token_.location(),  "error: expected labeled tuple member");
   std::vector<std::shared_ptr<Expr>> list = parseExprList();
   expectToken(Token::r_paren, "right parenthesis");
   return make_shared<TupleExpr>(move(list));
@@ -103,7 +97,7 @@ shared_ptr<FunctionCall> Parser::parseFunctionCall() {
 
 
 shared_ptr<Expr> Parser::parseValueExpr() {
-  switch (token().getType()) {
+  switch (token_.type()) {
   case Token::identifier:
     return parseIdentifierOrFunctionCallOrAccessor();
   case Token::integer_literal:
@@ -119,21 +113,21 @@ shared_ptr<Expr> Parser::parseValueExpr() {
     return parseStringExpr();
   case Token::l_paren:
     return parseTupleExpr();
-  default: throw CompilerException(SourceManager::currentFile(),
-                                   token().getLocation(),
-                                   CompilerExceptionCategory::Error,
-                                   "expected value but got " + token().lexeme);
+  default:
+    std::stringstream ss;
+    ss << "expected value but got '" << token_.lexeme() << "'";
+    throw CompilerException(token_.location(), ss.str());
   }
 }
 
 
 shared_ptr<Expr> Parser::parseUnaryExpr() {
-  if (!OperatorTable::level(1).contains(token().lexeme)) {
+  if (!OperatorTable::level(1).contains(token_.lexeme())) {
     return parseValueExpr();
   } else {
     auto op = parseOperator(1);
     auto expr = parseValueExpr();
-    return make_shared<UnaryExpr>(move(op),move(expr), expr->getType());
+    return make_shared<UnaryExpr>(op, expr);
   }
 }
 
@@ -152,28 +146,28 @@ shared_ptr<Expr> Parser::parseBinaryExpr(int precedence) {
 
 shared_ptr<Expr> Parser::parseInfixNone(int p) {
   auto left = parseExpr(p-1);
-  if (!OperatorTable::level(p).contains(token().lexeme)) return left;
+  if (!OperatorTable::level(p).contains(token_.lexeme())) return left;
   auto op = parseOperator(p);
   auto right = parseExpr(p-1);
-  return make_shared<BinaryExpr>(move(left), move(op), move(right), left->getType());
+  return std::make_shared<BinaryExpr>(left, op, right);
 }
 
 shared_ptr<Expr> Parser::parseInfixRight(int p) {
   auto left = parseExpr(p-1);
-  if (!OperatorTable::level(p).contains(token().lexeme)) return left;
+  if (!OperatorTable::level(p).contains(token_.lexeme())) return left;
   auto op = parseOperator(p);
   auto right = parseExpr(p);
-  return make_shared<BinaryExpr>(move(left), move(op), move(right), left->getType());
+  return std::make_shared<BinaryExpr>(left, op, right);
 }
 
 shared_ptr<Expr> Parser::parseInfixLeft(int precedence) {
   auto left = parseExpr(precedence-1);
   function<shared_ptr<Expr>(int,shared_ptr<Expr>)> continueParse;
   continueParse = [this, &continueParse](int precedence, shared_ptr<Expr> left) -> shared_ptr<Expr> {
-    if (!OperatorTable::level(precedence).contains(token().lexeme)) return left;
+    if (!OperatorTable::level(precedence).contains(token_.lexeme())) return left;
     auto op = parseOperator(precedence);
     auto right = parseExpr(precedence-1);
-    return continueParse(precedence, make_shared<BinaryExpr>(move(left),move(op),move(right),left->getType()));
+    return continueParse(precedence, std::make_shared<BinaryExpr>(left, op, right));
   };
   return continueParse(precedence, move(left));
 }
@@ -190,23 +184,19 @@ shared_ptr<DoubleExpr> Parser::parseDoubleExpr() {
 
 
 shared_ptr<BoolExpr> Parser::parseBoolExpr() {
-  if (token().is(Token::kw_true)) {
+  if (token_.is(Token::kw_true)) {
     return make_shared<BoolExpr>(expectToken(Token::kw_true, "true"));
-  } else if (token().is(Token::kw_false)) {
+  } else if (token_.is(Token::kw_false)) {
     return make_shared<BoolExpr>(expectToken(Token::kw_false, "false"));
   } else {
-    throw CompilerException(token().getLocation(), "expected 'true' or 'false'");
+    throw CompilerException(token_.location(), "expected 'true' or 'false'");
   }
 }
 
-/**
- *
- *
- */
 shared_ptr<ListExpr> Parser::parseListExpr() {
-  auto l_square = expectToken(Token::l_square, "[");
-  auto &&contents = parseExprList();
-  auto r_square = expectToken(Token::r_square, "]");
+  expectToken(Token::l_square, "[");
+  std::vector<std::shared_ptr<Expr>> contents = parseExprList();
+   expectToken(Token::r_square, "]");
   return std::make_shared<ListExpr>(std::move(contents));
 }
 

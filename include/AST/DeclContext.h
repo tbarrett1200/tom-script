@@ -1,6 +1,8 @@
 #ifndef AST_DECL_CONTEXT_H
 #define AST_DECL_CONTEXT_H
 
+#include "Basic/SourceCode.h"
+
 #include <string>
 #include <map>
 
@@ -8,7 +10,7 @@ class DeclContext {
 private:
   static DeclContext globalContext;
   DeclContext *fParent;
-  std::map<std::string, class Decl*> fDecls;
+  std::map<StringRef, class Decl*> fDecls;
 public:
   DeclContext() = default;
 
@@ -20,7 +22,7 @@ public:
     return fParent;
   }
 
-  const std::map<std::string, class Decl*>& getDeclMap() const {
+  const std::map<StringRef, class Decl*>& getDeclMap() const {
     return fDecls;
   }
 
@@ -30,7 +32,7 @@ public:
 
   void addDecl(class Decl* d);
 
-  Decl* getDecl(std::string name) {
+  Decl* getDecl(StringRef name) {
     auto decl_iterator = fDecls.find(name);
     if (decl_iterator != fDecls.end()) {
       return decl_iterator->second;
@@ -41,7 +43,7 @@ public:
     } else return nullptr;
   }
 
-  template <typename T> T* getDecl(std::string name) {
+  template <typename T> T* getDecl(StringRef name) {
     auto decl_iterator = fDecls.find(name);
     if (decl_iterator != fDecls.end()) {
       T* derivedDecl = dynamic_cast<T*>(decl_iterator->second);

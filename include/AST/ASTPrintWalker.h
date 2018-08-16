@@ -47,7 +47,7 @@ void printASTNode(std::ostream& os, TreeElement* m) {
         os << "\"call "<< dynamic_cast<FunctionCall*>(m)->getFunctionName();
         break;
       case Expr::Kind::IdentifierExpr:
-        os << "\"expr "<< dynamic_cast<IdentifierExpr*>(m)->getLexeme();
+        os << "\"expr "<< dynamic_cast<IdentifierExpr*>(m)->lexeme();
         break;
       case Expr::Kind::BoolExpr:
         os << "\"expr "<< dynamic_cast<BoolExpr*>(m)->getBool();

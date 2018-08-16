@@ -10,23 +10,23 @@ using namespace std;
 
 
 shared_ptr<Type> Parser::parseType() {
-  switch(token().getType()) {
+  switch(token_.type()) {
     case Token::l_paren: return parseTupleOrFunctionType();
     case Token::identifier: return parseTypeIdentifier();
     case Token::l_square: return parseListOrMapType();
-    default: throw CompilerException(token().getLocation(),  "error: unable to parse type");
+    default: throw CompilerException(token_.location(),  "error: unable to parse type");
   }
 }
 
 shared_ptr<Type> Parser::parseTypeIdentifier() {
   auto token = expectToken(Token::identifier, "type identifier");
-  if (token.lexeme == "Int") return IntegerType::getInstance();
-  else if (token.lexeme == "Boolean") return BooleanType::getInstance();
-  else if (token.lexeme == "Double") return DoubleType::getInstance();
+  if (token.lexeme() == StringRef{"Int"}) return IntegerType::getInstance();
+  else if (token.lexeme()== StringRef{"Boolean"}) return BooleanType::getInstance();
+  else if (token.lexeme()== StringRef{"Double"}) return DoubleType::getInstance();
   else {
-    auto type = scope.getType(token.lexeme);
-    if (type != nullptr) return type;
-    else  throw CompilerException(token.getLocation(),  std::string("error: unrecognized type identifier ") + token.lexeme);
+    std::stringstream ss;
+    ss << "error: unrecognized type identifier " << token.lexeme();
+    throw CompilerException(token.location(), ss.str());
   }
 }
 
@@ -41,24 +41,24 @@ std::vector<std::shared_ptr<Type>> Parser::parseTupleTypeElementList() {
 
 shared_ptr<TupleType> Parser::parseTupleType() {
   expectToken(Token::l_paren, "left parenthesis");
-  auto list = token().is(Token::r_paren)? std::vector<std::shared_ptr<Type>>(): parseTupleTypeElementList();
+  auto list = token_.is(Token::r_paren)? std::vector<std::shared_ptr<Type>>(): parseTupleTypeElementList();
   expectToken(Token::r_paren, "right parenthesis");
   return make_shared<TupleType>(move(list));
 }
 
 shared_ptr<FunctionType> Parser::parseFunctionType() {
   expectToken(Token::l_paren, "left parenthesis");
-  auto list = token().is(Token::r_paren)? std::vector<std::shared_ptr<Type>>(): parseTupleTypeElementList();
+  auto list = token_.is(Token::r_paren)? std::vector<std::shared_ptr<Type>>(): parseTupleTypeElementList();
   expectToken(Token::r_paren, "right parenthesis");
 
-  if (!consumeOperator("->")) throw CompilerException(token().getLocation(),  "error: expected ->");
+  if (!consumeOperator("->")) throw CompilerException(token_.location(),  "error: expected ->");
   auto type = parseType();
   return make_shared<FunctionType>(move(list), move(type));
 }
 
 shared_ptr<Type> Parser::parseTupleOrFunctionType() {
   expectToken(Token::l_paren, "left parenthesis");
-  auto list = token().is(Token::r_paren)? std::vector<std::shared_ptr<Type>>(): parseTupleTypeElementList();
+  auto list = token_.is(Token::r_paren)? std::vector<std::shared_ptr<Type>>(): parseTupleTypeElementList();
   expectToken(Token::r_paren, "right parenthesis");
   if (!consumeOperator("->")) return make_shared<TupleType>(move(list));
   auto type = parseType();
