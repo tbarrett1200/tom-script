@@ -29,6 +29,6 @@ std::vector<TreeElement*> WhileLoop::getChildren() const {
 }
 
 std::vector<TreeElement*> ConditionalStmt::getChildren() const {
-  if (!condition) { return { stmt.get()}; }
-  else return { condition.get(), stmt.get()};
+  if (!condition_) { return { stmt_.get()}; }
+  else return { condition_.get(), stmt_.get()};
 }

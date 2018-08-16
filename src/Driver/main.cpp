@@ -110,7 +110,7 @@ void compileAST(CompilationUnit& unit) {
     llvm::Function *llvmFunction;
 
     try {
-      for (auto &stmt: unit.getStmts()) {
+      for (auto &stmt: unit.stmts()) {
         const DeclStmt *declStmt = dynamic_cast<const DeclStmt*>(stmt.get());
         const FuncDecl *funcDecl = dynamic_cast<const FuncDecl*>(declStmt->getDecl());
         llvmFunction = transformer.transformFunction(*funcDecl);

@@ -1,6 +1,5 @@
 #include <gtest/gtest.h>
 #include "Basic/SourceCode.h"
-#include "Parse/Scope.h"
 #include "AST/Type.h"
 
 #include "Basic/CompilerException.h"
@@ -18,7 +17,7 @@ TEST(StmtParser, parseDeclStmt) {
     return parser.parseDeclStmt();
   };
 
-  EXPECT_NO_THROW(parse("let a: Integer = 5\n"));
+  EXPECT_NO_THROW(parse("let a: Int = 5\n"));
 }
 
 TEST(StmtParser, parseStmtList) {
@@ -30,7 +29,7 @@ TEST(StmtParser, parseStmtList) {
     return parser.parseStmtList();
   };
 
-  EXPECT_NO_THROW(parse("let a: Integer = 5\nreturn a\n"));
+  EXPECT_NO_THROW(parse("let a: Int = 5\nreturn a\n"));
 }
 
 TEST(DISABLED_StmtParser, parseCompoundStmt) {
@@ -42,10 +41,10 @@ TEST(DISABLED_StmtParser, parseCompoundStmt) {
     return parser.parseCompoundStmt();
   };
 
-  EXPECT_NO_THROW(parse("{\nlet a: Integer = 5\nreturn a\n}"));
-  EXPECT_NO_THROW(parse("{\nlet a: Integer = 5\nreturn a\n}\n"));
-  EXPECT_NO_THROW(parse("{\nlet a: Integer = 5\n\nreturn a\n}\n"));
-  EXPECT_NO_THROW(parse("\n{\nlet a: Integer = 5\nreturn a\n}\n"));
+  EXPECT_NO_THROW(parse("{\nlet a: Int = 5\nreturn a\n}"));
+  EXPECT_NO_THROW(parse("{\nlet a: Int = 5\nreturn a\n}\n"));
+  EXPECT_NO_THROW(parse("{\nlet a: Int = 5\n\nreturn a\n}\n"));
+  EXPECT_NO_THROW(parse("\n{\nlet a: Int = 5\nreturn a\n}\n"));
 
 }
 

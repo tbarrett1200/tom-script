@@ -1,6 +1,5 @@
 #include "AST/Expr.h"
 #include "Parse/Parser.h"
-#include "Parse/Scope.h"
 #include "Basic/CompilerException.h"
 
 #include <functional>

@@ -1,6 +1,5 @@
 #include "Parse/Parser.h"
 #include "AST/Type.h"
-#include "Parse/Scope.h"
 
 #include "Basic/CompilerException.h"
 

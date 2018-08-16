@@ -13,7 +13,6 @@
 
 #include "Parse/Lexer.h"
 #include "Parse/Operator.h"
-#include "Parse/Scope.h"
 
 
 /**

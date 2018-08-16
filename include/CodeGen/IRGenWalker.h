@@ -77,7 +77,11 @@ public:
 
   void transformReturnStmt(const ReturnStmt& stmt, llvm::BasicBlock* current_block) {
     llvm::IRBuilder<> builder{current_block};
-    builder.CreateRet(transformExpr(stmt.getExpr(), current_block));
+    if (const Expr *expr = stmt.getExpr()) {
+      builder.CreateRet(transformExpr(*expr, current_block));
+    } else {
+      builder.CreateRetVoid();
+    }
   }
 
   void transformDeclStmt(const DeclStmt& declStmt, llvm::BasicBlock* current_block) {

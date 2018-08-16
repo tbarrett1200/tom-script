@@ -1,6 +1,5 @@
 #include <gtest/gtest.h>
 #include "Basic/SourceCode.h"
-#include "Parse/Scope.h"
 #include "AST/Type.h"
 #include "Basic/CompilerException.h"
 #include "Parse/Parser.h"
@@ -28,7 +27,6 @@ TEST(ExprParser, parseIdentifierExpr) {
     return parser.parseIdentifier();
   };
 
-  ScopeManager m;
   EXPECT_NO_THROW(parse("abc"));
 }
 
@@ -56,9 +54,9 @@ TEST(ExprParser, parseValueExpr) {
     return parser.parseValueExpr();
   };
 
-  EXPECT_TRUE(std::dynamic_pointer_cast<DoubleExpr>(parse("123.456")) != nullptr);
-  EXPECT_TRUE(std::dynamic_pointer_cast<IntegerExpr>(parse("123")) != nullptr);
-  EXPECT_TRUE(std::dynamic_pointer_cast<IdentifierExpr>(parse("abc")) != nullptr);
+  EXPECT_TRUE(parse("123.456") != nullptr);
+  EXPECT_TRUE(parse("123") != nullptr);
+  EXPECT_TRUE(parse("abc") != nullptr);
   EXPECT_ANY_THROW(parse(""));
 
 }

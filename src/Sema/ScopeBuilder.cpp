@@ -24,7 +24,7 @@ void ScopeBuilder::buildCompilationUnitScope(CompilationUnit &unit) {
 
   DeclContext* unitContext = unit.getDeclContext();
   unitContext->setParentContext(global_context);
-  for (auto &stmt: unit.getStmts()) {
+  for (auto &stmt: unit.stmts()) {
     if (DeclStmt *decl_stmt = dynamic_cast<DeclStmt*>(stmt.get())) {
       Decl* decl = decl_stmt->getDecl();
       decl->setParentContext(unitContext);
@@ -68,7 +68,7 @@ void ScopeBuilder::buildCompoundStmtScope(CompoundStmt &block) {
       loop->setParentContext(block_scope);
       buildWhileLoopScope(*loop);
     } else if (ReturnStmt *ret_stmt = dynamic_cast<ReturnStmt*>(stmt.get())) {
-      if (Expr *expr = &ret_stmt->getExpr()) {
+      if (Expr *expr = ret_stmt->getExpr()) {
         TypeChecker{block_scope}.checkExpr(*expr);
       }
     } else if (ConditionalBlock *cond_stmt = dynamic_cast<ConditionalBlock*>(stmt.get())) {

@@ -1,6 +1,5 @@
 #include <gtest/gtest.h>
 #include "Basic/SourceCode.h"
-#include "Parse/Scope.h"
 #include "AST/Type.h"
 
 #include "Basic/CompilerException.h"
@@ -22,14 +21,12 @@ TEST(DeclParser, parseLetDecl) {
   ASSERT_NO_THROW(letDecl = parse("let a: Int = 5"));
   EXPECT_TRUE(letDecl->getType() != nullptr);
   EXPECT_TRUE(letDecl->getName() == "a");
-  ASSERT_TRUE(letDecl->getExpr() != nullptr);
-  EXPECT_TRUE(letDecl->getExpr()->getKind() == Expr::Kind::IntegerExpr );
+  EXPECT_TRUE(letDecl->getExpr().getKind() == Expr::Kind::IntegerExpr );
 
   ASSERT_NO_THROW(letDecl = parse("let b: Double = 5.0"));
   EXPECT_TRUE(letDecl->getType() != nullptr);
   EXPECT_TRUE(letDecl->getName() == "b");
-  ASSERT_TRUE(letDecl->getExpr() != nullptr);
-  EXPECT_TRUE(letDecl->getExpr()->getKind() == Expr::Kind::DoubleExpr );
+  EXPECT_TRUE(letDecl->getExpr().getKind() == Expr::Kind::DoubleExpr );
 
   EXPECT_THROW(letDecl = parse("let b: Double"), CompilerException);
   EXPECT_THROW(letDecl = parse("b: Double = 5.0"), CompilerException);
