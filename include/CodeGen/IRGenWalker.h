@@ -43,7 +43,7 @@ private:
   llvm::Function* fFunction;
   const DeclContext* currentContext;
 
-  std::map<StringRef, std::shared_ptr<VariableValue>> fNamedValues;
+  std::map<StringRef, std::shared_ptr<VariableValue>> named_values_;
 
 public:
   LLVMTransformer(llvm::LLVMContext& context, llvm::Module* module) : fContext{context} {
@@ -84,20 +84,66 @@ public:
     }
   }
 
-  void transformDeclStmt(const DeclStmt& declStmt, llvm::BasicBlock* current_block) {
+  void transformLetDecl(const LetDecl& let_decl, llvm::BasicBlock* current_block) {
+    llvm::Value *v = transformExpr(let_decl.getExpr(), current_block);
+    named_values_[let_decl.getName()] = std::make_shared<VariableValue>(false, v, nullptr);
+  }
+
+  void transformVarDecl(const VarDecl& var_decl, llvm::BasicBlock* current_block) {
     llvm::IRBuilder<> builder{current_block};
+    llvm::AllocaInst *alloca = builder.CreateAlloca(transformType(*var_decl.getType()), 0, var_decl.getName().str());
+    builder.CreateStore(transformExpr(var_decl.getExpr(),current_block), alloca);
+    named_values_[var_decl.getName()] = std::make_shared<VariableValue>(true, nullptr, alloca);;
+  }
+
+  void transformDeclStmt(const DeclStmt& declStmt, llvm::BasicBlock* current_block) {
     const Decl* decl = dynamic_cast<const Decl*>(declStmt.getDecl());
-    if (dynamic_cast<const LetDecl*>(decl)) {
-      const LetDecl *letDecl = dynamic_cast<const LetDecl*>(decl);
-      llvm::Value *v = transformExpr(letDecl->getExpr(),current_block);
-      fNamedValues[letDecl->getName()] = std::make_shared<VariableValue>(false, v, nullptr);
-    } else if (dynamic_cast<const VarDecl*>(decl)) {
-      const VarDecl *varDecl = dynamic_cast<const VarDecl*>(decl);
-      llvm::AllocaInst *alloca = builder.CreateAlloca(transformType(*varDecl->getType()), 0, varDecl->getName().str());
-      builder.CreateStore(transformExpr(varDecl->getExpr(),current_block), alloca);
-      fNamedValues[varDecl->getName()] = std::make_shared<VariableValue>(true, nullptr, alloca);;
+    switch (decl->getKind()) {
+      case Decl::Kind::LetDecl:
+        transformLetDecl(dynamic_cast<const LetDecl&>(*decl), current_block);
+        break;
+      case Decl::Kind::VarDecl:
+        transformVarDecl(dynamic_cast<const VarDecl&>(*decl), current_block);
+        break;
+      case Decl::Kind::FuncDecl:
+        throw CompilerException(nullptr, "nested function declarations not current supported");
+        break;
+      default:
+        throw CompilerException(nullptr, "unable to generate code for this decl type");
+    }
+  }
+
+
+  llvm::AllocaInst* transformLeftValueIdentifierExpr(const IdentifierExpr& id_expr, llvm::BasicBlock* current_block) {
+    auto map_it = named_values_.find(id_expr.lexeme());
+    if (map_it != named_values_.end()) {
+      if (map_it->second->fIsAlloca) {
+        return map_it->second->fAlloca;
+      } else {
+        std::stringstream ss;
+        ss << "codegen: something went wrong: not l-value " << id_expr.name();
+        throw CompilerException(nullptr, ss.str());
+      }
     } else {
-      throw std::logic_error("only let and var declarations are currently supported");
+      std::stringstream ss;
+      ss << "codegen: something went wrong: unable to find " << id_expr.name();
+      throw CompilerException(nullptr, ss.str());
+    }
+  }
+
+  llvm::Value* transformLeftValueExpr(const Expr& expr, llvm::BasicBlock* current_block) {
+    if (expr.isLeftValue()) {
+      switch (expr.getKind()) {
+        case Expr::Kind::IdentifierExpr:
+          return transformLeftValueIdentifierExpr(dynamic_cast<const IdentifierExpr&>(expr), current_block);
+          break;
+        default:
+          std::stringstream ss;
+          ss << "codegen: unimplemented: unable to reference '" << expr.name() << "'";
+          throw CompilerException(nullptr, ss.str());
+      }
+    } else {
+      throw CompilerException(nullptr, "unable to reference r-value expression");
     }
   }
 
@@ -107,16 +153,14 @@ public:
     if (dynamic_cast<const BinaryExpr*>(expr)) {
       const BinaryExpr* binExpr = dynamic_cast<const BinaryExpr*>(expr);
       if (binExpr->getOperator() == "=") {
-        if (dynamic_cast<const IdentifierExpr*>(&binExpr->getLeft())) {
-          const IdentifierExpr *identifier = dynamic_cast<const IdentifierExpr*>(&binExpr->getLeft());
-          llvm::AllocaInst *alloca = fNamedValues[identifier->lexeme()]->fAlloca;
-          if (alloca) {
-            builder.CreateStore(transformExpr(binExpr->getRight(),current_block), alloca);
-          } else {
-            throw std::logic_error("lvalue is not mutable or not found");
-          }
+        if (binExpr->getLeft().isLeftValue()) {
+          llvm::Value *lval = transformLeftValueExpr(binExpr->getLeft(), current_block);
+          llvm::Value *rval = transformExpr(binExpr->getRight(), current_block);
+          builder.CreateStore(rval, lval);
         } else {
-          throw std::logic_error("can only assign to lvalue");
+          std::stringstream ss;
+          ss << "unable to assign to r-value type";
+          throw CompilerException(nullptr, ss.str());
         }
       } else {
         throw std::logic_error("only assignment expr stmts currently supported");
@@ -134,7 +178,7 @@ public:
     for (auto &arg : fFunction->args()) {
       ParamDecl *param = func.getParams()[index++].get();
       arg.setName(param->getName().str());
-      fNamedValues[param->getName()] = std::make_shared<VariableValue>(false, &arg, nullptr);
+      named_values_[param->getName()] = std::make_shared<VariableValue>(false, &arg, nullptr);
     }
 
     llvm::BasicBlock *entry_block = llvm::BasicBlock::Create(fContext, "entry", fFunction);
@@ -148,7 +192,7 @@ public:
   llvm::Value* transformFunctionCall(const FunctionCall& call, llvm::BasicBlock* current_block) {
     llvm::IRBuilder<> builder{current_block};
 
-    //  return fNamedValues[identifierExpr.getLexeme()];
+    //  return named_values_[identifierExpr.getLexeme()];
     llvm::Function *CalleeF = fModule->getFunction(call.getFunctionName().str());
     if (!CalleeF) {
       throw CompilerException(call.getFunctionName().start, "unknown function referenced");
@@ -168,13 +212,20 @@ public:
      return builder.CreateCall(CalleeF, ArgsV, "calltmp");
   }
 
-  llvm::Value* transformIndentifierExpr(const IdentifierExpr& expr, llvm::BasicBlock* current_block) {
-    std::shared_ptr<VariableValue> val = fNamedValues[expr.lexeme()];
-    if (val->fIsAlloca) {
-      llvm::IRBuilder<> builder{current_block};
-      return builder.CreateLoad(val->fAlloca);
+  llvm::Value* transformIdentifierExpr(const IdentifierExpr& expr, llvm::BasicBlock* current_block) {
+    auto map_it = named_values_.find(expr.lexeme());
+    if (map_it != named_values_.end()) {
+      std::shared_ptr<VariableValue> val = map_it->second;
+      if (val->fIsAlloca) {
+        llvm::IRBuilder<> builder{current_block};
+        return builder.CreateLoad(val->fAlloca);
+      } else {
+        return val->fValue;
+      }
     } else {
-      return val->fValue;
+      std::stringstream ss;
+      ss << "unable to access '" << expr.lexeme() << "' during codegen";
+      throw CompilerException(nullptr, ss.str());
     }
   }
 
@@ -188,7 +239,7 @@ public:
     } else if (dynamic_cast<const BinaryExpr*>(&expr)) {
       return transformBinaryExpr(dynamic_cast<const BinaryExpr&>(expr),current_block);
     } else if (dynamic_cast<const IdentifierExpr*>(&expr)) {
-      return transformIndentifierExpr(dynamic_cast<const IdentifierExpr&>(expr),current_block);
+      return transformIdentifierExpr(dynamic_cast<const IdentifierExpr&>(expr),current_block);
     } else if (dynamic_cast<const FunctionCall*>(&expr)) {
       return transformFunctionCall(dynamic_cast<const FunctionCall&>(expr),current_block);
     } else {
@@ -334,7 +385,9 @@ public:
       } else if (expr.getOperator() == "<") {
         return builder.CreateICmpSLT(lval, rval);
       } else {
-        throw std::logic_error("error: binary expression of this type not implemented");
+        std::stringstream ss;
+        ss << "binary operator '" << expr.getOperator() << "' of this type not implemented";
+        throw CompilerException(nullptr, ss.str());
       }
     } else if (lval->getType()->isDoubleTy() && rval->getType()->isDoubleTy()) {
       if (expr.getOperator() == "+") {
@@ -358,7 +411,9 @@ public:
       } else if (expr.getOperator() == "<") {
         return builder.CreateFCmpOLT(lval, rval);
       } else {
-        throw std::logic_error("error: binary expression of this type not implemented");
+        std::stringstream ss;
+        ss << "binary operator '" << expr.getOperator() << "' of this type not implemented";
+        throw CompilerException(nullptr, ss.str());
       }
     } else if (expr.getType()->isBooleanType()) {
       if (expr.getOperator() == "&&") {
@@ -366,10 +421,14 @@ public:
       } else if (expr.getOperator() == "||") {
         return builder.CreateOr(lval, rval);
       } else {
-        throw std::logic_error("error: binary expression of this type not implemented");
+        std::stringstream ss;
+        ss << "binary operator '" << expr.getOperator() << "' of this type not implemented";
+        throw CompilerException(nullptr, ss.str());
       }
     } else {
-      throw std::logic_error("only integer and double operations currently supported");
+      std::stringstream ss;
+      ss << "binary operator '" << expr.getOperator() << "' of this type not implemented";
+      throw CompilerException(nullptr, ss.str());
     }
   }
 };

@@ -3,6 +3,7 @@
 #endif
 
 TYPE(PointerType, Type)
+TYPE(ReferenceType, Type)
 TYPE(IntegerType, Type)
 TYPE(DoubleType, Type)
 TYPE(BooleanType, Type)

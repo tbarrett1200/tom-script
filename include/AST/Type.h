@@ -171,10 +171,59 @@ public:
   /// Return runtime type, which is Type::Kind::PointerType
   Type::Kind getKind() const override { return Kind::PointerType; }
 
+  const Type* getReferencedType() const { return ref_type_; }
   /// Return a string representation of the IntegerType as "*<ref_type>"
   std::string toString() const override { return "*" + ref_type_->toString(); }
 
 };
+
+
+/// A type which represents a pointer reference to another type
+class ReferenceType: public Type {
+private:
+  /// Singleton instance of PointerType
+  static std::vector<std::unique_ptr<ReferenceType>> instances;
+
+  const Type *ref_type_;
+
+public:
+  /// Construct Pointer type with given reference type
+  ReferenceType(const Type *ref_type): ref_type_{ref_type} {}
+
+  /// Return a pointer to a PointerType instance with the given key and value
+  /// types. It is guarenteed that all PointerType with the same key and value
+  /// types will have the same address, so that PointerType can be compared by
+  /// pointer for equality.
+  static const ReferenceType* getInstance(const Type *ref_type) {
+    const ReferenceType pointer_type{ref_type};
+    auto it = std::find_if(instances.begin(), instances.end()
+    , [&pointer_type](auto &type){
+      return pointer_type == *type;
+    });
+    if (it != instances.end()) {
+      return it->get();
+    } else {
+      instances.push_back(std::make_unique<ReferenceType>(std::move(pointer_type)));
+      return instances.back().get();
+    }
+  }
+
+  /// Compares fields for equality. This should only be necessary when
+  /// constructing a new instance. Otherwise, TupleType should be compared for
+  /// pointer equality.
+  bool operator==(const ReferenceType &type) const {
+    return ref_type_ == type.ref_type_;
+  };
+
+  /// Return runtime type, which is Type::Kind::PointerType
+  Type::Kind getKind() const override { return Kind::ReferenceType; }
+
+  const Type* getReferencedType() const { return ref_type_; }
+  /// Return a string representation of the IntegerType as "*<ref_type>"
+  std::string toString() const override { return "*" + ref_type_->toString(); }
+
+};
+
 
 /// A type which represents an string aliased to another type
 class TypeIdentifier : public Type {

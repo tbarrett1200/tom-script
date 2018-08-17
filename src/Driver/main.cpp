@@ -83,7 +83,6 @@ int main(int argc, char const *argv[]) {
   } catch (CompilerException e) {
       ErrorReporter{std::cout, *SourceManager::currentSource}.report(e);
   }
-
   return 0;
 }
 
@@ -119,19 +118,21 @@ void compileAST(CompilationUnit& unit) {
         verifyFunction(*llvmFunction);
         TheFPM->run(*llvmFunction);
       }
+
+      std::error_code err_code;
+      llvm::raw_fd_ostream ir_stream{llvm::StringRef{"/Users/thomasbarrett/Desktop/app/tree.txt"}, err_code,  llvm::sys::fs::F_None };
+      if (printIR) TheModule->print(ir_stream, nullptr);
+      auto moduleHandle = TheJIT->addModule(std::move(TheModule));
+      auto mainFunctionSymbol = TheJIT->findSymbol("main");
+      double (*mainFunction)() = (double (*)())(intptr_t)cantFail(mainFunctionSymbol.getAddress());
+
+      std::cout << "program returned successfully with value " << mainFunction() << std::endl;
+      TheJIT->removeModule(moduleHandle);
+
     } catch (const std::logic_error& e) {
       std::cout << e.what() << std::endl;
     } catch (const CompilerException& e2) {
       std::cout << e2.message << std::endl;
     }
 
-    std::error_code err_code;
-    llvm::raw_fd_ostream ir_stream{llvm::StringRef{"/Users/thomasbarrett/Desktop/app/tree.txt"}, err_code,  llvm::sys::fs::F_None };
-    if (printIR) TheModule->print(ir_stream, nullptr);
-    auto moduleHandle = TheJIT->addModule(std::move(TheModule));
-    auto mainFunctionSymbol = TheJIT->findSymbol("main");
-    double (*mainFunction)() = (double (*)())(intptr_t)cantFail(mainFunctionSymbol.getAddress());
-
-    std::cout << "program returned successfully with value " << mainFunction() << std::endl;
-    TheJIT->removeModule(moduleHandle);
 }
