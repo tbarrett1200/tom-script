@@ -19,7 +19,7 @@ private:
    * in all cases. A public accessor is available to get the type, and a
    * protected setter is available to set the type at construction time.
    */
-   class Type *fType;
+   const class Type *fType;
 
   /*
    * The location in text where this expression was parsed from. This is useful
@@ -42,7 +42,7 @@ public:
    * Expr Subclasses should call this in their constructor. After construction,
    * all expressions should have a type.
    */
-  void setType(class Type *aType) {
+  void setType(const class Type *aType) {
     fType = aType;
   };
 
@@ -129,9 +129,6 @@ public:
     return fType;
   };
 
-  class Type* getType() {
-    return fType;
-  };
 
 };
 
@@ -146,9 +143,9 @@ public:
     return token_.lexeme();
   }
 
-  Expr::Kind getKind() const { return Kind::StringExpr; }
+  Expr::Kind getKind() const override { return Kind::StringExpr; }
 
-  bool isLeftValue() const {
+  bool isLeftValue() const override {
     return false;
   }
 
@@ -171,7 +168,7 @@ public:
   }
 
 
-  virtual void accept(ASTVisitor& t) const {
+  virtual void accept(ASTVisitor& t) const override {
      t.visit(*this);
   }
 
@@ -197,17 +194,17 @@ public:
     return "integer-literal-expression";
   };
 
-  Expr::Kind getKind() const { return Kind::IntegerExpr; }
+  Expr::Kind getKind() const override { return Kind::IntegerExpr; }
 
   int getInt() const {
     return std::stoi(token_.lexeme().str());
   }
 
-  bool isLeftValue() const {
+  bool isLeftValue() const override {
     return false;
   }
 
-  virtual void accept(ASTVisitor& t) const {
+  virtual void accept(ASTVisitor& t) const override {
      t.visit(*this);
   }
 
@@ -225,7 +222,7 @@ public:
     return token_.lexeme();
   }
 
-  Expr::Kind  getKind() const { return Kind::BoolExpr; }
+  Expr::Kind  getKind() const override { return Kind::BoolExpr; }
 
   bool getBool() const {
     return token_.lexeme() == "true" ? 1: 0;
@@ -235,7 +232,7 @@ public:
     return "boolean-literal-expression";
   };
 
-  bool isLeftValue() const {
+  bool isLeftValue() const override {
     return false;
   }
 
@@ -245,7 +242,7 @@ public:
     }
   }
 
-  virtual void accept(ASTVisitor& t) const {
+  virtual void accept(ASTVisitor& t) const override {
      t.visit(*this);
   }
 
@@ -257,7 +254,7 @@ private:
 
 public:
 
-  virtual void accept(ASTVisitor& t) const {
+  virtual void accept(ASTVisitor& t) const override {
      t.visit(*this);
   }
   /* Returns a vector of children for easy traversal */
@@ -265,9 +262,9 @@ public:
     return token_.lexeme();
   }
 
-  Expr::Kind getKind() const { return Kind::DoubleExpr; }
+  Expr::Kind getKind() const override { return Kind::DoubleExpr; }
 
-  bool isLeftValue() const {
+  bool isLeftValue() const override {
     return false;
   }
 
@@ -298,9 +295,9 @@ public:
     return token_.lexeme();
   }
 
-  Expr::Kind getKind() const { return Kind::IdentifierExpr; }
+  Expr::Kind getKind() const override { return Kind::IdentifierExpr; }
 
-  bool isLeftValue() const {
+  bool isLeftValue() const override {
     return true;
   }
 
@@ -310,7 +307,7 @@ public:
     return "identifier-expression";
   };
 
-  virtual void accept(ASTVisitor& t) const {
+  virtual void accept(ASTVisitor& t) const override {
      t.visit(*this);
   }
 
@@ -329,13 +326,13 @@ private:
   std::unique_ptr<Expr> expr_;
 public:
 
-  std::vector<TreeElement*> getChildren() const {
+  std::vector<TreeElement*> getChildren() const override {
     return {expr_.get()};
   }
 
-  Expr::Kind getKind() const { return Kind::UnaryExpr; }
+  Expr::Kind getKind() const override { return Kind::UnaryExpr; }
 
-  bool isLeftValue() const {
+  bool isLeftValue() const override {
     return false;
   }
 
@@ -362,7 +359,7 @@ public:
   }
 
 
-  virtual void accept(ASTVisitor& t) const {
+  virtual void accept(ASTVisitor& t) const override {
      t.visit(*this);
   }
 
@@ -382,13 +379,13 @@ private:
   std::unique_ptr<Expr> right_;
 public:
 
-  Expr::Kind getKind() const { return Kind::BinaryExpr; }
+  Expr::Kind getKind() const override { return Kind::BinaryExpr; }
 
-  std::vector<TreeElement*> getChildren() const {
+  std::vector<TreeElement*> getChildren() const override {
     return {left_.get(), right_.get()};
   }
 
-  bool isLeftValue() const {
+  bool isLeftValue() const override {
     return false;
   }
 
@@ -411,7 +408,7 @@ public:
     }
   }
 
-  virtual void accept(ASTVisitor& t) const {
+  virtual void accept(ASTVisitor& t) const override {
      t.visit(*this);
   }
 
@@ -445,20 +442,20 @@ public:
   : name_{std::move(n)}, arguments_{std::move(a)} {
   }
 
-  bool isLeftValue() const {
+  bool isLeftValue() const override {
     return false;
   }
 
-  Expr::Kind getKind() const { return Kind::FunctionCall; }
+  Expr::Kind getKind() const override { return Kind::FunctionCall; }
 
   std::string name() const override {
     return "function-call-expression";
   };
 
-  virtual void accept(ASTVisitor& t) const {
+  virtual void accept(ASTVisitor& t) const override {
      t.visit(*this);
   }
-  std::vector<TreeElement*> getChildren() const {
+  std::vector<TreeElement*> getChildren() const override {
     std::vector<TreeElement*> children;
     for (auto &arg: arguments_) {
       children.push_back(arg.get());
@@ -480,10 +477,10 @@ private:
 
 public:
 
-  Expr::Kind getKind() const {
+  Expr::Kind getKind() const override {
     return Kind::ListExpr;
   }
-  bool isLeftValue() const {
+  bool isLeftValue() const override {
     return false;
   }
 
@@ -495,7 +492,7 @@ public:
     return "list-expression";
   };
 
-  virtual void accept(ASTVisitor& t) const {
+  virtual void accept(ASTVisitor& t) const override {
      t.visit(*this);
   }
 
@@ -512,15 +509,15 @@ private:
 
 public:
 
-  std::vector<TreeElement*> getChildren() const {
+  std::vector<TreeElement*> getChildren() const override {
     return {id_.get(), index_.get()};
   }
 
-  Expr::Kind getKind() const {
+  Expr::Kind getKind() const override {
     return Expr::Kind::AccessorExpr;
   }
 
-  bool isLeftValue() const {
+  bool isLeftValue() const override {
     return true;
   }
 
@@ -532,7 +529,7 @@ public:
     throw std::logic_error("accessor not implemented");
   }
 
-  virtual void accept(ASTVisitor& t) const {
+  virtual void accept(ASTVisitor& t) const override {
      t.visit(*this);
   }
 
@@ -545,9 +542,9 @@ private:
 public:
 
   /* Returns a vector of children for easy traversal */
-  Expr::Kind getKind() const { return Kind::TupleExpr; }
+  Expr::Kind getKind() const override { return Kind::TupleExpr; }
 
-  bool isLeftValue() const {
+  bool isLeftValue() const override{
     return false;
   }
 
@@ -565,7 +562,7 @@ public:
     throw std::logic_error("tuple not implemented");
   }
 
-  virtual void accept(ASTVisitor& t) const {
+  virtual void accept(ASTVisitor& t) const override {
      t.visit(*this);
   }
 

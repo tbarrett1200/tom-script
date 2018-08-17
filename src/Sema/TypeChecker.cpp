@@ -72,9 +72,9 @@ void TypeChecker::checkIdentifierExpr(IdentifierExpr &expr) {
 }
 void TypeChecker::checkUnaryExpr(UnaryExpr &expr) {
   checkExpr(expr.getExpr());
-  std::vector<Type*> param_types{ expr.getExpr().getType() };
+  std::vector<const Type*> param_types{ expr.getExpr().getType() };
   if (Decl *decl = this->currentContext->getDecl(expr.getOperator(), param_types)) {
-    FunctionType& func_type = dynamic_cast<FunctionType&>(*decl->getType());
+    const FunctionType& func_type = dynamic_cast<const FunctionType&>(*decl->getType());
     if (func_type.getParamCount() == 1) {
       const Type* decl_param_type = func_type.getParam(0)->getCanonicalType();
       const Type* expr_param_type = expr.getExpr().getType()->getCanonicalType();
@@ -95,9 +95,9 @@ void TypeChecker::checkBinaryExpr(BinaryExpr &expr) {
   checkExpr(expr.getLeft());
   checkExpr(expr.getRight());
   // asserts that the operator is defined
-  std::vector<Type*> param_types{ expr.getLeft().getType(), expr.getRight().getType() };
+  std::vector<const Type*> param_types{ expr.getLeft().getType(), expr.getRight().getType() };
   if (Decl *decl = this->currentContext->getDecl(expr.getOperator(), param_types)) {
-    if (FunctionType *func_type = dynamic_cast<FunctionType*>(decl->getType())) {
+    if (const FunctionType *func_type = dynamic_cast<const FunctionType*>(decl->getType())) {
       // assert the the operator has two arguments
       if (func_type->getParamCount() == 2) {
         const Type* decl_left_param_type = func_type->getParam(0)->getCanonicalType();
@@ -132,12 +132,12 @@ void TypeChecker::checkFunctionCall(FunctionCall &expr) {
   for(auto &arg: expr.getArguments()) {
     checkExpr(*arg);
   }
-  std::vector<Type*> param_types;
+  std::vector<const Type*> param_types;
   for(auto &arg: expr.getArguments()) {
     param_types.push_back(arg->getType());
   }
   if (Decl *decl = this->currentContext->getDecl(expr.getFunctionName(),param_types)) {
-    if (FunctionType *func_type = dynamic_cast<FunctionType*>(decl->getType())) {
+    if (const FunctionType *func_type = dynamic_cast<const FunctionType*>(decl->getType())) {
       if (func_type->getParamTypes().size() == expr.getArguments().size()) {
         for (int i = 0; i < func_type->getParamTypes().size(); i++) {
           const Type* arg = expr.getArguments()[i]->getType()->getCanonicalType();

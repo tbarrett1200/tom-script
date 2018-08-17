@@ -8,7 +8,7 @@
 
 struct DeclContextKey {
   StringRef name;
-  std::vector<class Type*> params;
+  std::vector<const class Type*> params;
   bool operator<(const DeclContextKey& key) const {
     if (name.str() == key.name.str()) return params < key.params;
     else return name.str() < key.name.str();
@@ -52,7 +52,7 @@ public:
     } else return nullptr;
   }
 
-  Decl* getDecl(StringRef name, std::vector<class Type*> params) {
+  Decl* getDecl(StringRef name, std::vector<const class Type*> params) {
     auto decl_iterator = fDecls.find({name, params});
     if (decl_iterator != fDecls.end()) {
       return decl_iterator->second;

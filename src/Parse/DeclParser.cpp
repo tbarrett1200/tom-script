@@ -12,7 +12,7 @@
 //   std::vector<std::unique_ptr<ParamDecl>>&& param = acceptToken(Token::r_paren) ? std::vector<std::unique_ptr<ParamDecl>>() : parseParamDeclList();
 //   expectToken(Token::r_paren, "right parenthesis");
 //   if (!consumeOperator("->")) throw CompilerException(token_.location(),  "error: expected ->");
-//   Type* type = parseType();
+//   const Type* type = parseType();
 //   return std::make_unique<FuncDecl>(name, param, type, nullptr);
 // }
 
@@ -36,7 +36,7 @@ std::unique_ptr<TypeAlias> Parser::parseTypeAlias() {
 std::unique_ptr<VarDecl> Parser::parseVarDecl() {
   expectToken(Token::kw_var, "var");
   auto name = expectToken(Token::identifier, "identifier");
-  Type* type = consumeToken(Token::colon)? parseType(): nullptr;
+  const Type* type = consumeToken(Token::colon)? parseType(): nullptr;
   if (consumeOperator("=")) {
     auto expr = parseExpr();
     return std::make_unique<VarDecl>(name, type, std::move(expr));
@@ -46,7 +46,7 @@ std::unique_ptr<VarDecl> Parser::parseVarDecl() {
 std::unique_ptr<LetDecl> Parser::parseLetDecl() {
   expectToken(Token::kw_let, "let");
   auto name = expectToken(Token::identifier, "identifier");
-  Type* type = consumeToken(Token::colon)? parseType(): nullptr;
+  const Type* type = consumeToken(Token::colon)? parseType(): nullptr;
   if (consumeOperator("=")) {
     auto expr = parseExpr();
     return std::make_unique<LetDecl>(name, type, std::move(expr));

@@ -21,7 +21,10 @@ public:
     os_ << "]},";
   };
   void willTraverseNode(TreeElement& m) override {
-    os_ << "{ \"name\": \"" << m.name() << "\", \"children\": [";
+    os_ << "{ \"kind\": \"" << m.name() << "\"";
+    for (auto attr: m.getAttributes())
+      os_ << ", \"" << attr.first << "\": " << "\"" << attr.second << "\" ";
+    os_ <<  ", \"children\": [";
   };
 };
 

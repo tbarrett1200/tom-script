@@ -31,8 +31,15 @@ public:
     return "decl";
   };
 
+  virtual std::vector<std::pair<std::string, std::string>> getAttributes() const override {
+    return {
+      {"name", getName().str()}
+    , {"type", getType()->toString()}
+    };
+  }
+
   virtual ~Decl() = default;
-  virtual Type* getType() const = 0;
+  virtual const Type* getType() const = 0;
 
   template<typename T> T* as() {
     return dynamic_cast<T*>(this);
@@ -52,7 +59,7 @@ class TypeAlias : public Decl {
 private:
   DeclContext* fParentContext;
   Token fName;
-  Type* fType;
+  const Type* fType;
 
 public:
 
@@ -64,7 +71,7 @@ public:
     return fName.lexeme();
   }
 
-  Type* getType() const override {
+  const Type* getType() const override {
     return fType;
   }
 
@@ -84,7 +91,7 @@ public:
     fParentContext = parent;
   }
 
-  TypeAlias(Token aName, Type* aType)
+  TypeAlias(Token aName, const Type* aType)
   :  fName{aName}, fType{aType} {}
 };
 
@@ -92,7 +99,7 @@ class VarDecl : public Decl {
 private:
   DeclContext* fParentContext;
   Token fName;
-  Type* fType;
+  const Type* fType;
   std::unique_ptr<Expr> fExpr;
 
 public:
@@ -111,7 +118,7 @@ public:
   StringRef getName() const override {
     return fName.lexeme();
   }
-  Type* getType() const override {
+  const Type* getType() const override {
     return fType;
   }
 
@@ -131,7 +138,7 @@ public:
     fParentContext = parent;
   }
 
-  VarDecl(Token n, Type* t, std::unique_ptr<Expr> e)
+  VarDecl(Token n, const Type* t, std::unique_ptr<Expr> e)
   : fName{n}, fType{t}, fExpr{std::move(e)} {}
 };
 
@@ -140,7 +147,7 @@ class LetDecl : public Decl {
 private:
   DeclContext* fParentContext;
   Token fName;
-  Type *fType;
+  const Type *fType;
   std::unique_ptr<Expr> fExpr;
 public:
 
@@ -155,7 +162,7 @@ public:
   StringRef getName() const override {
     return fName.lexeme();
   }
-  Type* getType() const override {
+  const Type* getType() const override {
     return fType;
   }
 
@@ -178,7 +185,7 @@ public:
     fParentContext = parent;
   }
 
-  LetDecl(Token n, Type* t, std::unique_ptr<Expr> e)
+  LetDecl(Token n, const Type* t, std::unique_ptr<Expr> e)
   : fName{n}, fType{t}, fExpr{std::move(e)} {}
 };
 
@@ -187,10 +194,10 @@ class ParamDecl : public Decl {
 private:
   DeclContext* fParentContext;
   Token fName;
-  Type* fType;
+  const Type* fType;
 public:
 
-  ParamDecl(Token n, Type *t)
+  ParamDecl(Token n, const Type *t)
   : fName{n}, fType{t} {}
 
   Decl::Kind getKind() const override {
@@ -200,7 +207,7 @@ public:
     return fName.lexeme();
   }
 
-  Type* getType() const override {
+  const Type* getType() const override {
     return fType;
   }
 
@@ -226,24 +233,24 @@ public:
 class FuncDecl : public Decl {
 private:
   DeclContext fContext;
-  std::unique_ptr<FunctionType> fType;
+  const FunctionType* fType;
   Token fName;
   std::vector<std::unique_ptr<ParamDecl>> fParams;
-  Type *fReturnType;
+  const Type *fReturnType;
   std::unique_ptr<CompoundStmt> fStmt;
 public:
 
-  FuncDecl(Token n, std::vector<std::unique_ptr<ParamDecl>> p, Type *t, std::unique_ptr<CompoundStmt> s)
+  FuncDecl(Token n, std::vector<std::unique_ptr<ParamDecl>> p, const Type *t, std::unique_ptr<CompoundStmt> s)
   : fName{n}
   , fParams{std::move(p)}
   , fReturnType{t}
   , fStmt{std::move(s)} {
 
-    std::vector<Type*> paramTypes;
+    std::vector<const Type*> paramTypes;
     for (auto &param: fParams) {
       paramTypes.push_back(param->getType());
     }
-    fType = std::make_unique<FunctionType>(std::move(paramTypes), fReturnType);
+    fType = FunctionType::getInstance(paramTypes, fReturnType);
   }
 
   CompoundStmt& getBlockStmt() const {
@@ -262,8 +269,8 @@ public:
     return fName.lexeme();
   }
 
-  Type* getType() const override {
-    return fType.get();
+  const Type* getType() const override {
+    return fType;
   }
 
   virtual const DeclContext* getDeclContext() const override {
@@ -297,10 +304,10 @@ class BasicDecl : public Decl {
 private:
   DeclContext* parent_context_;
   Token name_;
-  Type *type_;
+  const Type *type_;
 public:
 
-  BasicDecl(Token name, Type *type): name_{name}, type_{type} {}
+  BasicDecl(Token name, const Type *type): name_{name}, type_{type} {}
 
   Decl::Kind getKind() const override {
     return Decl::Kind::BasicDecl;
@@ -310,7 +317,7 @@ public:
     return name_.lexeme();
   }
 
-  Type* getType() const override {
+  const Type* getType() const override {
     return type_;
   }
 

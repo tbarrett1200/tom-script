@@ -28,7 +28,7 @@ bool Type::isBooleanType() const {
 
 IntegerType IntegerType::singleton;
 
-IntegerType* IntegerType::getInstance() {
+const IntegerType* IntegerType::getInstance() {
   return &IntegerType::singleton;
 }
 
@@ -39,26 +39,22 @@ IntegerType* IntegerType::getInstance() {
 DoubleType DoubleType::singleton;
 
 
-DoubleType* DoubleType::getInstance() {
+const DoubleType* DoubleType::getInstance() {
   return &DoubleType::singleton;
 }
 
 BooleanType BooleanType::singleton;
 
 
-BooleanType* BooleanType::getInstance() {
+const BooleanType* BooleanType::getInstance() {
   return &BooleanType::singleton;
 }
 
-PointerType PointerType::singleton;
-
-PointerType* PointerType::getInstance() {
-  return &PointerType::singleton;
-}
 //----------------------------------------------------------------------------//
 // TypeIdentifier
 //----------------------------------------------------------------------------//
 
+std::vector<std::unique_ptr<PointerType>> PointerType::instances;
 std::vector<std::unique_ptr<TypeIdentifier>> TypeIdentifier::instances;
 std::vector<std::unique_ptr<TupleType>> TupleType::instances;
 std::vector<std::unique_ptr<FunctionType>> FunctionType::instances;

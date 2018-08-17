@@ -136,40 +136,40 @@ public:
   /**
    *
    */
-  Type* parseType();
+  const Type* parseType();
   /**
    *
    */
-  Type* parseTypeIdentifier();
+  const Type* parseTypeIdentifier();
   /**
    *
    */
-  std::vector<Type*> parseTupleTypeElementList();
+  std::vector<const Type*> parseTupleTypeElementList();
   /**
    *
    */
-  TupleType* parseTupleType();
+  const TupleType* parseTupleType();
   /**
    *
    */
-  FunctionType* parseFunctionType();
+  const FunctionType* parseFunctionType();
   /**
    *
    */
-  Type* parseTupleOrFunctionType();
+  const Type* parseTupleOrFunctionType();
   /**
    *
    */
-  ListType* parseListType();
+  const ListType* parseListType();
   /**
    *
    */
-  MapType* parseMapType();
+  const MapType* parseMapType();
 
   /**
    *
    */
-  Type* parseListOrMapType();
+  const Type* parseListOrMapType();
 
   //===----------------------  Declaration Parsers ------------------------===//
 

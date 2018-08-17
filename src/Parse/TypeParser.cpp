@@ -8,7 +8,7 @@
 using namespace std;
 
 
-Type* Parser::parseType() {
+const Type* Parser::parseType() {
   switch(token_.type()) {
     case Token::l_paren: return parseTupleOrFunctionType();
     case Token::identifier: return parseTypeIdentifier();
@@ -17,7 +17,7 @@ Type* Parser::parseType() {
   }
 }
 
-Type* Parser::parseTypeIdentifier() {
+const Type* Parser::parseTypeIdentifier() {
   auto token = expectToken(Token::identifier, "type identifier");
   if (token.lexeme() == StringRef{"Int"}) return IntegerType::getInstance();
   else if (token.lexeme()== StringRef{"Boolean"}) return BooleanType::getInstance();
@@ -29,8 +29,8 @@ Type* Parser::parseTypeIdentifier() {
   }
 }
 
-std::vector<Type*> Parser::parseTupleTypeElementList() {
-  std::vector<Type*> elements;
+std::vector<const Type*> Parser::parseTupleTypeElementList() {
+  std::vector<const Type*> elements;
   elements.push_back(parseType());
   while (consumeToken(Token::comma)) {
     elements.push_back(parseType());
@@ -38,9 +38,9 @@ std::vector<Type*> Parser::parseTupleTypeElementList() {
   return elements;
 }
 
-TupleType* Parser::parseTupleType() {
+const TupleType* Parser::parseTupleType() {
   expectToken(Token::l_paren, "left parenthesis");
-  std::vector<Type*> list;
+  std::vector<const Type*> list;
   if (token_.isNot(Token::r_paren)) {
     list = parseTupleTypeElementList();
   }
@@ -48,9 +48,9 @@ TupleType* Parser::parseTupleType() {
   return TupleType::getInstance(std::move(list));
 }
 
-FunctionType* Parser::parseFunctionType() {
+const FunctionType* Parser::parseFunctionType() {
   expectToken(Token::l_paren, "left parenthesis");
-  std::vector<Type*> list;
+  std::vector<const Type*> list;
   if (token_.isNot(Token::r_paren)){
     list = parseTupleTypeElementList();
   }
@@ -60,9 +60,9 @@ FunctionType* Parser::parseFunctionType() {
   return FunctionType::getInstance(std::move(list), type);
 }
 
-Type* Parser::parseTupleOrFunctionType() {
+const Type* Parser::parseTupleOrFunctionType() {
   expectToken(Token::l_paren, "left parenthesis");
-  std::vector<Type*> list;
+  std::vector<const Type*> list;
   if (token_.isNot(Token::r_paren)) {
     list = parseTupleTypeElementList();
   }
@@ -72,14 +72,14 @@ Type* Parser::parseTupleOrFunctionType() {
   return FunctionType::getInstance(std::move(list), type);
 }
 
-ListType* Parser::parseListType() {
+const ListType* Parser::parseListType() {
   expectToken(Token::l_square, "left square bracket");
   auto type = parseType();
   expectToken(Token::r_square, "right square bracket");
   return ListType::getInstance(type);
 }
 
-MapType* Parser::parseMapType() {
+const MapType* Parser::parseMapType() {
   expectToken(Token::l_square, "left square bracket");
   auto keyType = parseType();
   expectToken(Token::colon, "colon");
@@ -88,7 +88,7 @@ MapType* Parser::parseMapType() {
   return MapType::getInstance(keyType, valueType);
 }
 
-Type* Parser::parseListOrMapType() {
+const Type* Parser::parseListOrMapType() {
   expectToken(Token::l_square, "left square bracket");
   auto keyType = parseType();
   if (consumeToken(Token::colon)) {

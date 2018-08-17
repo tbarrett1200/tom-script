@@ -127,7 +127,7 @@ public:
   llvm::Function* transformFunction(const FuncDecl &func) {
     currentContext = func.getDeclContext();
 
-    llvm::FunctionType* type = transformFunctionType(dynamic_cast<FunctionType&>(*func.getType()));
+    llvm::FunctionType* type = transformFunctionType(dynamic_cast<const FunctionType&>(*func.getType()));
     fFunction = llvm::Function::Create(type, llvm::Function::ExternalLinkage, func.getName().str(), fModule);
 
     int index = 0;
@@ -200,7 +200,6 @@ public:
 
     for (auto it = tree.getStmts().begin(); it != tree.getStmts().end(); it++) {
       Stmt* stmt = it->get();
-      bool last = std::distance(it, tree.getStmts().end()) == 1;
       if (ReturnStmt* ret_stmt = dynamic_cast<ReturnStmt*>(stmt)) {
         transformReturnStmt(*ret_stmt, current_block);
         return current_block;

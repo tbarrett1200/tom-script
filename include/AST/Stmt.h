@@ -86,16 +86,16 @@ public:
     return stmts_;
   };
 
-  Stmt::Kind getKind() const { return Kind::CompoundStmt;}
+  Stmt::Kind getKind() const override { return Kind::CompoundStmt;}
 
-  bool returns() const {
+  bool returns() const override {
     for (auto &stmt: stmts_) {
       if (stmt->returns()) return true;
     }
     return false;
   }
 
-  std::vector<TreeElement*> getChildren() const {
+  std::vector<TreeElement*> getChildren() const override {
     std::vector<TreeElement*> treeVector;
     for (auto &stmt: stmts_) {
       treeVector.push_back(stmt.get());
@@ -149,13 +149,13 @@ public:
     return stmt_.get();
   }
 
-  Stmt::Kind getKind() const { return Kind::ConditionalStmt;}
+  Stmt::Kind getKind() const override { return Kind::ConditionalStmt;}
 
-  bool returns() const {
+  bool returns() const override {
     return stmt_->returns();
   }
 
-  std::vector<TreeElement*> getChildren() const;
+  std::vector<TreeElement*> getChildren() const override;
 
 };
 
@@ -178,7 +178,7 @@ public:
     return stmts_;
   }
 
-  Stmt::Kind getKind() const {
+  Stmt::Kind getKind() const override {
     return Stmt::Kind::ConditionalBlock;
   }
 
@@ -186,14 +186,14 @@ public:
     return "conditional-block-statement";
   };
 
-  std::vector<TreeElement*> getChildren() const {
+  std::vector<TreeElement*> getChildren() const override {
     std::vector<TreeElement*> children;
     for (auto &stmt: stmts_) {
       children.push_back(stmt.get());
     }
     return children;
   }
-  virtual bool returns() const  { return true; }
+  virtual bool returns() const override { return true; }
 };
 
 class WhileLoop : public Stmt {
@@ -217,13 +217,13 @@ public:
     assert(stmt_ && "precondition: stmt must not be nullptr");
   }
 
-  bool returns() const {
+  bool returns() const override {
     return stmt_->returns();
   }
 
-  Stmt::Kind getKind() const { return Kind::WhileLoop;}
+  Stmt::Kind getKind() const override { return Kind::WhileLoop;}
 
-  std::vector<TreeElement*> getChildren() const;
+  std::vector<TreeElement*> getChildren() const override;
 
   std::string name() const override {
     return "while-loop-statement";
@@ -262,7 +262,7 @@ public:
   ReturnStmt(std::unique_ptr<Expr> expr): expr_{std::move(expr)} {  }
 
   /// Return true because by definition, a return stmt will always return
-  bool returns() const {
+  bool returns() const override {
     return true;
   }
 
@@ -282,10 +282,10 @@ public:
   }
 
   /// Return the runtime type, which is Stmt::Kind::ReturnStmt
-  Stmt::Kind getKind() const { return Kind::ReturnStmt;}
+  Stmt::Kind getKind() const override { return Kind::ReturnStmt;}
 
   /// Return the child nodes for walking
-  std::vector<TreeElement*> getChildren() const;
+  std::vector<TreeElement*> getChildren() const override;
 };
 
 /// Represents an Expression which appears in a list of stmts. This is required
