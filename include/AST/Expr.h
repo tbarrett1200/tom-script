@@ -46,6 +46,10 @@ public:
     fType = aType;
   };
 
+  virtual std::string name() const override {
+    return "expr";
+  };
+
   /**
    * An enumeration allowing for switching over the dynamic runtime type of an
    * Expression. Very useful when working with polymorphic types.
@@ -154,6 +158,10 @@ public:
   }
 
 
+  std::string name() const override {
+    return "string-literal-expression";
+  };
+
   StringExpr(Token t) : token_{t} {
     throw std::logic_error("string not implemented");
 
@@ -184,6 +192,10 @@ public:
   StringRef lexeme() const {
     return token_.lexeme();
   }
+
+  std::string name() const override {
+    return "integer-literal-expression";
+  };
 
   Expr::Kind getKind() const { return Kind::IntegerExpr; }
 
@@ -218,6 +230,10 @@ public:
   bool getBool() const {
     return token_.lexeme() == "true" ? 1: 0;
   }
+
+  std::string name() const override {
+    return "boolean-literal-expression";
+  };
 
   bool isLeftValue() const {
     return false;
@@ -255,6 +271,10 @@ public:
     return false;
   }
 
+  std::string name() const override {
+    return "double-literal-expression";
+  };
+
   double getDouble() const {
     return std::stod(token_.lexeme().str());
   }
@@ -285,6 +305,10 @@ public:
   }
 
   IdentifierExpr(Token tok) : token_{tok} {}
+
+  std::string name() const override {
+    return "identifier-expression";
+  };
 
   virtual void accept(ASTVisitor& t) const {
      t.visit(*this);
@@ -320,6 +344,10 @@ public:
       throw std::domain_error("BinaryExpr: expr is required");
     }
   }
+
+  std::string name() const override {
+    return "unary-expression";
+  };
 
   StringRef getOperator() {
     return op_.lexeme();
@@ -363,6 +391,10 @@ public:
   bool isLeftValue() const {
     return false;
   }
+
+  std::string name() const override {
+    return "binary-expression";
+  };
 
   BinaryExpr(std::unique_ptr<Expr> l, Token o, std::unique_ptr<Expr> r)
   : left_{std::move(l)}, op_{o}, right_{std::move(r)} {
@@ -419,6 +451,9 @@ public:
 
   Expr::Kind getKind() const { return Kind::FunctionCall; }
 
+  std::string name() const override {
+    return "function-call-expression";
+  };
 
   virtual void accept(ASTVisitor& t) const {
      t.visit(*this);
@@ -456,6 +491,10 @@ public:
     throw std::logic_error("list not implemented");
   }
 
+  std::string name() const override {
+    return "list-expression";
+  };
+
   virtual void accept(ASTVisitor& t) const {
      t.visit(*this);
   }
@@ -485,6 +524,10 @@ public:
     return true;
   }
 
+  std::string name() const override {
+    return "accessor-expression";
+  };
+
   AccessorExpr(std::unique_ptr<IdentifierExpr> a, std::unique_ptr<IntegerExpr> b): id_{std::move(a)}, index_{std::move(b)} {
     throw std::logic_error("accessor not implemented");
   }
@@ -513,6 +556,10 @@ public:
   Expr& operator[] (int x) {
     return *elements_[x];
   }
+
+  std::string name() const override {
+    return "tuple-expression";
+  };
 
   TupleExpr(std::vector<std::unique_ptr<Expr>> list) : elements_{std::move(list)} {
     throw std::logic_error("tuple not implemented");

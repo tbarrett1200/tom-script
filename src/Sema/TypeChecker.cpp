@@ -62,15 +62,18 @@ void TypeChecker::checkBoolExpr(BoolExpr &expr) {
   expr.setType(BooleanType::getInstance());
 }
 void TypeChecker::checkIdentifierExpr(IdentifierExpr &expr) {
-  if (Decl *decl = this->currentContext->getDecl(expr.lexeme())) {
+  if (Decl *decl = currentContext->getDecl(expr.lexeme())) {
     expr.setType(decl->getType());
   } else {
-    throw CompilerException(nullptr, "identifier not declared");
+    std::stringstream ss;
+    ss << "identifier '" << expr.lexeme() << "' not declared";
+    throw CompilerException(nullptr, ss.str());
   }
 }
 void TypeChecker::checkUnaryExpr(UnaryExpr &expr) {
   checkExpr(expr.getExpr());
-  if (Decl *decl = this->currentContext->getDecl(expr.getOperator())) {
+  std::vector<Type*> param_types{ expr.getExpr().getType() };
+  if (Decl *decl = this->currentContext->getDecl(expr.getOperator(), param_types)) {
     FunctionType& func_type = dynamic_cast<FunctionType&>(*decl->getType());
     if (func_type.getParamCount() == 1) {
       const Type* decl_param_type = func_type.getParam(0)->getCanonicalType();
@@ -92,7 +95,8 @@ void TypeChecker::checkBinaryExpr(BinaryExpr &expr) {
   checkExpr(expr.getLeft());
   checkExpr(expr.getRight());
   // asserts that the operator is defined
-  if (Decl *decl = this->currentContext->getDecl(expr.getOperator())) {
+  std::vector<Type*> param_types{ expr.getLeft().getType(), expr.getRight().getType() };
+  if (Decl *decl = this->currentContext->getDecl(expr.getOperator(), param_types)) {
     if (FunctionType *func_type = dynamic_cast<FunctionType*>(decl->getType())) {
       // assert the the operator has two arguments
       if (func_type->getParamCount() == 2) {
@@ -128,8 +132,11 @@ void TypeChecker::checkFunctionCall(FunctionCall &expr) {
   for(auto &arg: expr.getArguments()) {
     checkExpr(*arg);
   }
-
-  if (Decl *decl = this->currentContext->getDecl(expr.getFunctionName())) {
+  std::vector<Type*> param_types;
+  for(auto &arg: expr.getArguments()) {
+    param_types.push_back(arg->getType());
+  }
+  if (Decl *decl = this->currentContext->getDecl(expr.getFunctionName(),param_types)) {
     if (FunctionType *func_type = dynamic_cast<FunctionType*>(decl->getType())) {
       if (func_type->getParamTypes().size() == expr.getArguments().size()) {
         for (int i = 0; i < func_type->getParamTypes().size(); i++) {

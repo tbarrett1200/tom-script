@@ -27,12 +27,17 @@ public:
   virtual Decl::Kind getKind() const = 0;
   virtual StringRef getName() const = 0;
 
+  virtual std::string name() const override {
+    return "decl";
+  };
+
   virtual ~Decl() = default;
   virtual Type* getType() const = 0;
 
   template<typename T> T* as() {
     return dynamic_cast<T*>(this);
   }
+
 
   virtual void setParentContext(DeclContext *parent) = 0;
 
@@ -70,6 +75,10 @@ public:
   virtual DeclContext* getDeclContext() override {
     return fParentContext;
   }
+
+  std::string name() const override {
+    return "type-alias-declaration";
+  };
 
   virtual void setParentContext(DeclContext *parent) override {
     fParentContext = parent;
@@ -114,6 +123,10 @@ public:
     return fParentContext;
   }
 
+  std::string name() const override {
+    return "var-declaration";
+  };
+
   virtual void setParentContext(DeclContext *parent) override {
     fParentContext = parent;
   }
@@ -153,6 +166,10 @@ public:
     return fParentContext;
   }
 
+  std::string name() const override {
+    return "let-declaration";
+  };
+
   virtual DeclContext* getDeclContext() override {
     return fParentContext;
   }
@@ -186,6 +203,10 @@ public:
   Type* getType() const override {
     return fType;
   }
+
+  std::string name() const override {
+    return "parameter-declaration";
+  };
 
   virtual const DeclContext* getDeclContext() const override {
     return fParentContext;
@@ -227,6 +248,10 @@ public:
 
   CompoundStmt& getBlockStmt() const {
     return *fStmt;
+  };
+
+  std::string name() const override {
+    return "function-declaration";
   };
 
   Decl::Kind getKind() const override {
@@ -288,6 +313,7 @@ public:
   Type* getType() const override {
     return type_;
   }
+
 
   virtual const DeclContext* getDeclContext() const override {
     return parent_context_;

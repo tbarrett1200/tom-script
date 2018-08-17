@@ -1,37 +1,47 @@
-func factorial(num: Int) -> Int {
-  if num < 2 {
-    return 1
+func factorial(num: Double) -> Double {
+  if num < 2.0 {
+    return 1.0
   } else {
-    return num * factorial(num-1)
+    return num * factorial(num-1.0)
   }
 }
 
-func super_factorial(num: Int) -> Int {
- if num < 2 {
-  return 1
+func super_factorial(num: Double) -> Double {
+ if num < 2.0 {
+  return 1.0
  } else {
-  return factorial(num) * super_factorial(num-1)
+  return factorial(num) * super_factorial(num-1.0)
  }
 }
 
-func pow(a: Int, b: Int) -> Int {
- if b == 0 {
-  return 1
- } else if b < 2 {
+func pow(a: Double, b: Double) -> Double {
+ if b == 0.0 {
+  return 1.0
+ } else if b < 2.0 {
   return a
  } else {
-  return a * pow(a, b-1)
+  return a * pow(a, b-1.0)
  }
 }
 
-func hyper_factorial(num: Int) -> Int {
- if num == 1 {
-  return 1
+func hyper_factorial(num: Double) -> Double {
+ if num == 1.0 {
+  return 1.0
  } else {
-  return pow(num, num) * hyper_factorial(num-1)
+  return pow(num, num) * hyper_factorial(num-1.0)
  }
 }
 
-func main() -> Int {
-  return pow(2, 8)
+func sin(angle: Double) -> Double {
+  var result: Double = 0.0
+  var n: Double = 1.0
+  while n < 10.0 {
+    result = result + pow(2.0-1.0, n - 1.0) * pow(angle, 2.0*n-1.0)/factorial(2.0*n-1.0)
+    n = n + 1.0
+  }
+  return result
+}
+
+func main() -> Double {
+  return sin(1.0)
 }

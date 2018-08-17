@@ -7,6 +7,7 @@
 
 class TreeElement {
 public:
+  virtual std::string name() const = 0;
   virtual std::vector<TreeElement*> getChildren() const {
     return {};
   }

@@ -49,6 +49,10 @@ public:
     }
   }
 
+  virtual std::string name() const override {
+    return "statement";
+  };
+
   virtual bool returns() const = 0;
 
   virtual Stmt::Kind getKind() const = 0;
@@ -63,6 +67,10 @@ public:
   DeclContext* getDeclContext() {
     return &context_;
   }
+
+  std::string name() const override {
+    return "compound-statement";
+  };
 
   void setParentContext(DeclContext *parent) {
     context_.setParentContext(parent);
@@ -121,6 +129,10 @@ public:
     return &context;
   }
 
+  std::string name() const override {
+    return "conditional-statement";
+  };
+
   void setParentContext(DeclContext *parent) {
     context.setParentContext(parent);
   }
@@ -170,6 +182,10 @@ public:
     return Stmt::Kind::ConditionalBlock;
   }
 
+  std::string name() const override {
+    return "conditional-block-statement";
+  };
+
   std::vector<TreeElement*> getChildren() const {
     std::vector<TreeElement*> children;
     for (auto &stmt: stmts_) {
@@ -208,6 +224,10 @@ public:
   Stmt::Kind getKind() const { return Kind::WhileLoop;}
 
   std::vector<TreeElement*> getChildren() const;
+
+  std::string name() const override {
+    return "while-loop-statement";
+  };
 
   LetDecl* getDeclaration() {
     return decl_.get();
@@ -252,6 +272,10 @@ public:
     return expr_.get();
   }
 
+  std::string name() const override {
+    return "return-statement";
+  };
+
   /// Return a pointer to the return expression if it exists, otherwise nullptr
   Expr* getExpr() {
     return expr_.get();
@@ -289,6 +313,10 @@ public:
   /// Return the child nodes for walking
   std::vector<TreeElement*> getChildren() const override;
 
+  std::string name() const override {
+    return "expression-statement";
+  };
+
   /// Return a const pointer to the Expr.
   const Expr* getExpr() const {
     return expr_.get();
@@ -324,6 +352,11 @@ public:
   bool returns() const override {
     return false;
   }
+
+
+  std::string name() const override {
+    return "declaration-statement";
+  };
 
   /// Return a const pointer to the Decl.
   const Decl* getDecl() const {
@@ -364,6 +397,10 @@ public:
   DeclContext* getDeclContext() {
     return &context_;
   }
+
+  std::string name() const override {
+    return "compilation-unit";
+  };
 
   /// Return a vector of child elements for walking.
   std::vector<TreeElement*> getChildren() const override;

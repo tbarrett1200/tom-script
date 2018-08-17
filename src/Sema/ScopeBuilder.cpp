@@ -14,13 +14,30 @@ void ScopeBuilder::buildCompilationUnitScope(CompilationUnit &unit) {
   global_context->addDecl(&BuiltinDecl::add_int);
   global_context->addDecl(&BuiltinDecl::sub_int);
   global_context->addDecl(&BuiltinDecl::mul_int);
+  global_context->addDecl(&BuiltinDecl::div_int);
+  global_context->addDecl(&BuiltinDecl::mod_int);
 
   global_context->addDecl(&BuiltinDecl::assign_int);
   global_context->addDecl(&BuiltinDecl::equ_int);
+  global_context->addDecl(&BuiltinDecl::ne_int);
   global_context->addDecl(&BuiltinDecl::lt_int);
   global_context->addDecl(&BuiltinDecl::lte_int);
   global_context->addDecl(&BuiltinDecl::gt_int);
   global_context->addDecl(&BuiltinDecl::gte_int);
+
+  global_context->addDecl(&BuiltinDecl::add_dbl);
+  global_context->addDecl(&BuiltinDecl::sub_dbl);
+  global_context->addDecl(&BuiltinDecl::mul_dbl);
+  global_context->addDecl(&BuiltinDecl::div_dbl);
+  global_context->addDecl(&BuiltinDecl::mod_dbl);
+
+  global_context->addDecl(&BuiltinDecl::assign_dbl);
+  global_context->addDecl(&BuiltinDecl::equ_dbl);
+  global_context->addDecl(&BuiltinDecl::ne_dbl);
+  global_context->addDecl(&BuiltinDecl::lt_dbl);
+  global_context->addDecl(&BuiltinDecl::lte_dbl);
+  global_context->addDecl(&BuiltinDecl::gt_dbl);
+  global_context->addDecl(&BuiltinDecl::gte_dbl);
 
   DeclContext* unitContext = unit.getDeclContext();
   unitContext->setParentContext(global_context);

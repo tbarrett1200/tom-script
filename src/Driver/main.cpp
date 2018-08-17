@@ -68,12 +68,14 @@ int main(int argc, char const *argv[]) {
 
 
   try {
-    std::shared_ptr<CompilationUnit> unit = parser.parseCompilationUnit();
+    std::unique_ptr<CompilationUnit> unit = parser.parseCompilationUnit();
     ScopeBuilder().buildCompilationUnitScope(*unit);
     if (printAST) {
       std::ofstream myfile;
       myfile.open ("/Users/thomasbarrett/Desktop/app/tree.json");
-      printASTNode(myfile, unit.get());
+      ASTPrintWalker{myfile}.traverse(unit.get());
+      myfile.seekp((int)myfile.tellp()-1);
+      myfile << " ";
       myfile.close();
     }
     if (printScope) ASTScopePrinter(std::cout).traverse(unit.get());
@@ -128,7 +130,7 @@ void compileAST(CompilationUnit& unit) {
     if (printIR) TheModule->print(ir_stream, nullptr);
     auto moduleHandle = TheJIT->addModule(std::move(TheModule));
     auto mainFunctionSymbol = TheJIT->findSymbol("main");
-    int (*mainFunction)() = (int (*)())(intptr_t)cantFail(mainFunctionSymbol.getAddress());
+    double (*mainFunction)() = (double (*)())(intptr_t)cantFail(mainFunctionSymbol.getAddress());
 
     std::cout << "program returned successfully with value " << mainFunction() << std::endl;
     TheJIT->removeModule(moduleHandle);

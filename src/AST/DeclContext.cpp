@@ -3,5 +3,9 @@
 
 DeclContext DeclContext::globalContext;
 void DeclContext::addDecl(class Decl* d) {
-  fDecls[d->getName()] = d;
+  if (const FunctionType* func_type = dynamic_cast<const FunctionType*>(d->getType()->getCanonicalType())) {
+    fDecls[{d->getName(),func_type->getParamTypes()}] = d;
+  } else {
+    fDecls[{d->getName(),{}}] = d;
+  }
 }
