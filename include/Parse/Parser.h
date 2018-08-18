@@ -166,6 +166,9 @@ public:
    */
   const MapType* parseMapType();
 
+
+  const PointerType* parsePointerType();
+
   /**
    *
    */
@@ -192,7 +195,7 @@ public:
   /**
    *
    */
-  std::unique_ptr<VarDecl> parseVarDecl();
+  std::unique_ptr<Decl> parseVarDecl();
 
   /**
    *

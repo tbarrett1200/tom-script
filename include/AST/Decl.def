@@ -4,6 +4,7 @@
 
 DECL(BasicDecl, Decl)
 DECL(TypeAlias, Decl)
+DECL(UninitializedVarDecl, Decl)
 DECL(VarDecl, Decl)
 DECL(ParamDecl, Decl)
 DECL(LetDecl, Decl)

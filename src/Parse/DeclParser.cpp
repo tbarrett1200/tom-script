@@ -33,14 +33,16 @@ std::unique_ptr<TypeAlias> Parser::parseTypeAlias() {
   return std::make_unique<TypeAlias>(name, type);
 }
 
-std::unique_ptr<VarDecl> Parser::parseVarDecl() {
+std::unique_ptr<Decl> Parser::parseVarDecl() {
   expectToken(Token::kw_var, "var");
   auto name = expectToken(Token::identifier, "identifier");
   const Type* type = consumeToken(Token::colon)? parseType(): nullptr;
   if (consumeOperator("=")) {
     auto expr = parseExpr();
     return std::make_unique<VarDecl>(name, type, std::move(expr));
-  } else throw CompilerException(token_.location(),  "variables must be initialized at declaration");
+  } else {
+    return std::make_unique<UninitializedVarDecl>(name, type);
+  }
 }
 
 std::unique_ptr<LetDecl> Parser::parseLetDecl() {
