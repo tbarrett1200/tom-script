@@ -38,16 +38,16 @@ public:
 
 class LLVMTransformer {
 private:
-  llvm::LLVMContext& fContext;
-  llvm::Module* fModule;
-  llvm::Function* fFunction;
+  llvm::LLVMContext& context_;
+  llvm::Module* module_;
+  llvm::Function* function_;
   const DeclContext* currentContext;
 
   std::map<StringRef, std::shared_ptr<VariableValue>> named_values_;
 
 public:
-  LLVMTransformer(llvm::LLVMContext& context, llvm::Module* module) : fContext{context} {
-    fModule = module;
+  LLVMTransformer(llvm::LLVMContext& context, llvm::Module* module) : context_{context} {
+    module_ = module;
   }
 
   llvm::FunctionType* transformFunctionType(const FunctionType &type) {
@@ -64,16 +64,15 @@ public:
 
   llvm::Type* transformType(const Type &type) {
     if (type.isIntegerType()) {
-      return llvm::Type::getInt64Ty(fContext);
+      return llvm::Type::getInt64Ty(context_);
     } if (type.isBooleanType()) {
-      return llvm::Type::getInt1Ty(fContext);
+      return llvm::Type::getInt1Ty(context_);
     } else if (type.isDoubleType()) {
-      return llvm::Type::getDoubleTy(fContext);
+      return llvm::Type::getDoubleTy(context_);
     } else {
       throw std::logic_error("only integer, boolean, and double types are currently supported");
     }
   }
-
 
   void transformReturnStmt(const ReturnStmt& stmt, llvm::BasicBlock* current_block) {
     llvm::IRBuilder<> builder{current_block};
@@ -147,24 +146,17 @@ public:
     }
   }
 
-  void transformExprStmt(const ExprStmt& exprStmt, llvm::BasicBlock* current_block) {
+  llvm::Value* transformAssignmentStmt(const BinaryExpr& bin_expr, llvm::BasicBlock* current_block) {
     llvm::IRBuilder<> builder{current_block};
-    const Expr* expr = dynamic_cast<const Expr*>(exprStmt.getExpr());
-    if (dynamic_cast<const BinaryExpr*>(expr)) {
-      const BinaryExpr* binExpr = dynamic_cast<const BinaryExpr*>(expr);
-      if (binExpr->getOperator() == "=") {
-        if (binExpr->getLeft().isLeftValue()) {
-          llvm::Value *lval = transformLeftValueExpr(binExpr->getLeft(), current_block);
-          llvm::Value *rval = transformExpr(binExpr->getRight(), current_block);
-          builder.CreateStore(rval, lval);
-        } else {
-          std::stringstream ss;
-          ss << "unable to assign to r-value type";
-          throw CompilerException(nullptr, ss.str());
-        }
-      } else {
-        throw std::logic_error("only assignment expr stmts currently supported");
-      }
+    if (bin_expr.getLeft().isLeftValue()) {
+      llvm::Value *lval = transformLeftValueExpr(bin_expr.getLeft(), current_block);
+      llvm::Value *rval = transformExpr(bin_expr.getRight(), current_block);
+      builder.CreateStore(rval, lval);
+      return rval;
+    } else {
+      std::stringstream ss;
+      ss << "unable to assign to r-value type";
+      throw CompilerException(nullptr, ss.str());
     }
   }
 
@@ -172,20 +164,20 @@ public:
     currentContext = func.getDeclContext();
 
     llvm::FunctionType* type = transformFunctionType(dynamic_cast<const FunctionType&>(*func.getType()));
-    fFunction = llvm::Function::Create(type, llvm::Function::ExternalLinkage, func.getName().str(), fModule);
+    function_ = llvm::Function::Create(type, llvm::Function::ExternalLinkage, func.getName().str(), module_);
 
     int index = 0;
-    for (auto &arg : fFunction->args()) {
+    for (auto &arg : function_->args()) {
       ParamDecl *param = func.getParams()[index++].get();
       arg.setName(param->getName().str());
       named_values_[param->getName()] = std::make_shared<VariableValue>(false, &arg, nullptr);
     }
 
-    llvm::BasicBlock *entry_block = llvm::BasicBlock::Create(fContext, "entry", fFunction);
+    llvm::BasicBlock *entry_block = llvm::BasicBlock::Create(context_, "entry", function_);
 
     transformCompoundStmt(func.getBlockStmt(), entry_block);
 
-    return fFunction;
+    return function_;
   }
 
 
@@ -193,7 +185,7 @@ public:
     llvm::IRBuilder<> builder{current_block};
 
     //  return named_values_[identifierExpr.getLexeme()];
-    llvm::Function *CalleeF = fModule->getFunction(call.getFunctionName().str());
+    llvm::Function *CalleeF = module_->getFunction(call.getFunctionName().str());
     if (!CalleeF) {
       throw CompilerException(call.getFunctionName().start, "unknown function referenced");
     }
@@ -257,7 +249,7 @@ public:
       } else if (DeclStmt* decl_stmt = dynamic_cast<DeclStmt*>(stmt)) {
         transformDeclStmt(*decl_stmt, current_block);
       } else if (ExprStmt *expr_stmt = dynamic_cast<ExprStmt*>(stmt)) {
-        transformExprStmt(*expr_stmt, current_block);
+        transformExpr(*expr_stmt->getExpr(), current_block);
       } else if (ConditionalBlock* cond_block = dynamic_cast<ConditionalBlock*>(stmt)) {
         current_block = transformConditionalBlock(*cond_block, current_block);
       } else if (WhileLoop *while_loop = dynamic_cast<WhileLoop*>(stmt)) {
@@ -274,11 +266,11 @@ public:
     llvm::BasicBlock* current_block
   ) {
 
-    llvm::BasicBlock *if_exit = llvm::BasicBlock::Create(fContext, "if_exit", fFunction);
+    llvm::BasicBlock *if_exit = llvm::BasicBlock::Create(context_, "if_exit", function_);
 
     // for simplicity of debugging, create seperate cond_case block
     llvm::IRBuilder<> entry_builder{current_block};
-    llvm::BasicBlock *if_cond = llvm::BasicBlock::Create(fContext, "if_cond", fFunction);
+    llvm::BasicBlock *if_cond = llvm::BasicBlock::Create(context_, "if_cond", function_);
     entry_builder.CreateBr(if_cond);
 
     for (auto it = tree.getStmts().begin(); it != tree.getStmts().end(); it++) {
@@ -287,7 +279,7 @@ public:
 
 
       // the alternative block must be generated in all cases except 'else'
-      llvm::BasicBlock *next_block = last_block ? nullptr : llvm::BasicBlock::Create(fContext, "else_if_cond", fFunction);
+      llvm::BasicBlock *next_block = last_block ? nullptr : llvm::BasicBlock::Create(context_, "else_if_cond", function_);
 
       if (ConditionalStmt* cond_stmt = dynamic_cast<ConditionalStmt*>(stmt)) {
         transformConditionalStmt(*cond_stmt, if_cond, next_block, if_exit);
@@ -308,58 +300,91 @@ public:
   }
 
   llvm::BasicBlock* transformWhileLoop(
-    WhileLoop& tree,
-    llvm::BasicBlock* entry_block
+    WhileLoop& tree
+  , llvm::BasicBlock* entry_block
   ) {
-    llvm::BasicBlock *cond_block = llvm::BasicBlock::Create(fContext, "loop_cond", fFunction);
     llvm::IRBuilder<> entry_builder{entry_block};
-    entry_builder.CreateBr(cond_block);
 
-    llvm::IRBuilder<> cond_builder{cond_block};
-    llvm::Value* condition = transformExpr(*tree.getCondition(), cond_block);
-    llvm::BasicBlock *loop_block = llvm::BasicBlock::Create(fContext, "loop_body", fFunction);
-    llvm::BasicBlock *loop_exit = llvm::BasicBlock::Create(fContext, "loop_exit", fFunction);
-    cond_builder.CreateCondBr(condition, loop_block, loop_exit);
+    // creates a block to compute the loop_condition
+    llvm::BasicBlock *loop_cond = llvm::BasicBlock::Create(context_, "loop_cond", function_);
+    // unconditionally break from the previous block to the entry block
+    entry_builder.CreateBr(loop_cond);
 
-    llvm::BasicBlock* loop_body_exit = transformCompoundStmt(*tree.getBlock(), loop_block);
+    llvm::IRBuilder<> cond_builder{loop_cond};
+
+    // computes the loop condition in the loop_cond
+    llvm::Value* condition = transformExpr(*tree.getCondition(), loop_cond);
+
+    // creates the loop_body_entry and the loop_exit block
+    llvm::BasicBlock *loop_body_entry = llvm::BasicBlock::Create(context_, "loop_body_entry", function_);
+    llvm::BasicBlock *loop_exit = llvm::BasicBlock::Create(context_, "loop_exit", function_);
+
+    // conditonal break to either the loop_body_entry or the loop_exit depending
+    // on the condition
+    cond_builder.CreateCondBr(condition, loop_body_entry, loop_exit);
+
+    // computes the loop_body starting from loop_body_entry and returning the exit
+    llvm::BasicBlock* loop_body_exit = transformCompoundStmt(*tree.getBlock(), loop_body_entry);
+
+    // creates a jump to the condition at the end of the loop body if a
+    // terminator does not already exist
     if (!loop_body_exit->getTerminator()) {
       llvm::IRBuilder<> loop_body_exit_builder{loop_body_exit};
-      loop_body_exit_builder.CreateBr(cond_block);
+      loop_body_exit_builder.CreateBr(loop_cond);
     }
+
+    // returns the exit point for the loop
     return loop_exit;
   }
 
 
   void transformConditionalStmt(
-    ConditionalStmt& tree,
-    llvm::BasicBlock* if_cond,
-    llvm::BasicBlock* next_block,
-    llvm::BasicBlock* if_exit
+    ConditionalStmt& tree
+  , llvm::BasicBlock* if_cond
+  , llvm::BasicBlock* next_block
+  , llvm::BasicBlock* if_exit
   ) {
     llvm::IRBuilder<> cond_builder{if_cond};
+
+    // computes the condition in the given if_cond block
     llvm::Value* condition = transformExpr(*tree.getCondition(), if_cond);
-    llvm::BasicBlock *if_body = llvm::BasicBlock::Create(fContext, "if_body", fFunction);
 
-    if (next_block) {
-      cond_builder.CreateCondBr(condition, if_body, next_block);
-    } else {
-      cond_builder.CreateCondBr(condition, if_body, if_exit);
-    }
+    // creates the entry point for the if_body
+    llvm::BasicBlock *if_body_entry = llvm::BasicBlock::Create(context_, "if_body_entry", function_);
 
-    llvm::BasicBlock *if_body_exit = transformCompoundStmt(*tree.getBlock(), if_body);
+    // creates a conditional break to the if_body_entry, if the condition
+    // is true, and either the next_block, or the exit_block, depending on
+    // their existence, if the condition is false
+    if (next_block) cond_builder.CreateCondBr(condition, if_body_entry, next_block);
+    else cond_builder.CreateCondBr(condition, if_body_entry, if_exit);
+
+    // generates the body of the conditional stmt, entering at if_body_entry and
+    // returns a handle to the body exit.
+    llvm::BasicBlock *if_body_exit = transformCompoundStmt(tree.getBlock(), if_body_entry);
+
+    // if the conditional body does not return, forward it to if_exit
     if (!if_body_exit->getTerminator()) {
       llvm::IRBuilder<> if_body_exit_builder{if_body_exit};
       if_body_exit_builder.CreateBr(if_exit);
     }
-
   }
 
-
+  /// Adds the computation of a binary expression to the given BasicBlock and
+  /// returns a handle to its result as a llvm::Value*. This currently only
+  /// works for builtin operations and assignment. If a builtin operator call
+  /// which passed the semantic checking phase but is not yet implented is
+  /// called, then a Compiler exception is thrown with a "not implemented"
+  /// exception is thrown.
   llvm::Value* transformBinaryExpr(const BinaryExpr& expr, llvm::BasicBlock* current_block) {
     llvm::IRBuilder<> builder{current_block};
-    llvm::Value *lval, *rval;
-    lval = transformExpr(expr.getLeft(), current_block);
-    rval = transformExpr(expr.getRight(), current_block);
+
+    // assignment is special
+    if (expr.getOperator() == StringRef{"="}) {
+      return transformAssignmentStmt(expr, current_block);
+    }
+
+    llvm::Value *lval = transformExpr(expr.getLeft(), current_block);
+    llvm::Value *rval = transformExpr(expr.getRight(), current_block);
 
     if (lval->getType()->isIntegerTy() && rval->getType()->isIntegerTy()) {
       if (expr.getOperator() == "+") {
@@ -372,7 +397,7 @@ public:
         return builder.CreateSDiv(lval, rval);
       } else if (expr.getOperator() == "%") {
         return builder.CreateSRem(lval, rval);
-      } else if (expr.getOperator() == "==") {
+      } else if (expr.getOperator() == "=") {
         return builder.CreateICmpEQ(lval, rval);
       } else if (expr.getOperator() == "!=") {
         return builder.CreateICmpNE(lval, rval);
@@ -384,10 +409,6 @@ public:
         return builder.CreateICmpSGT(lval, rval);
       } else if (expr.getOperator() == "<") {
         return builder.CreateICmpSLT(lval, rval);
-      } else {
-        std::stringstream ss;
-        ss << "binary operator '" << expr.getOperator() << "' of this type not implemented";
-        throw CompilerException(nullptr, ss.str());
       }
     } else if (lval->getType()->isDoubleTy() && rval->getType()->isDoubleTy()) {
       if (expr.getOperator() == "+") {
@@ -410,26 +431,47 @@ public:
         return builder.CreateFCmpOGT(lval, rval);
       } else if (expr.getOperator() == "<") {
         return builder.CreateFCmpOLT(lval, rval);
-      } else {
-        std::stringstream ss;
-        ss << "binary operator '" << expr.getOperator() << "' of this type not implemented";
-        throw CompilerException(nullptr, ss.str());
       }
     } else if (expr.getType()->isBooleanType()) {
       if (expr.getOperator() == "&&") {
         return builder.CreateAnd(lval, rval);
       } else if (expr.getOperator() == "||") {
         return builder.CreateOr(lval, rval);
-      } else {
-        std::stringstream ss;
-        ss << "binary operator '" << expr.getOperator() << "' of this type not implemented";
-        throw CompilerException(nullptr, ss.str());
       }
-    } else {
-      std::stringstream ss;
-      ss << "binary operator '" << expr.getOperator() << "' of this type not implemented";
-      throw CompilerException(nullptr, ss.str());
     }
+
+    std::stringstream ss;
+    ss << "not implemented: binary operator '" << expr.getOperator() << "' of this type";
+    throw CompilerException(nullptr, ss.str());
+  }
+
+
+  llvm::Value* transformUnaryExpr(const UnaryExpr& expr, llvm::BasicBlock* current_block) {
+    llvm::IRBuilder<> builder{current_block};
+
+    llvm::Value *val = transformExpr(expr.getExpr(), current_block);
+
+    if (val->getType()->isIntegerTy() && val->getType()->isIntegerTy()) {
+      if (expr.getOperator() == "+") {
+        return val;
+      } else if (expr.getOperator() == "-") {
+        return builder.CreateNeg(val);
+      }
+    } else if (val->getType()->isDoubleTy() && val->getType()->isDoubleTy()) {
+      if (expr.getOperator() == "+") {
+        return val;
+      } else if (expr.getOperator() == "-") {
+        return builder.CreateFNeg(val);
+      }
+    } else if (expr.getType()->isBooleanType()) {
+      if (expr.getOperator() == "!") {
+        return builder.CreateNot(val);
+      }
+    }
+
+    std::stringstream ss;
+    ss << "not implemented: binary operator '" << expr.getOperator() << "' of this type";
+    throw CompilerException(nullptr, ss.str());
   }
 };
 

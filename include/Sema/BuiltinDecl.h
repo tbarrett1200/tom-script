@@ -13,7 +13,6 @@ public:
   static BasicDecl div_int;
   static BasicDecl mod_int;
 
-  static BasicDecl assign_int;
   static BasicDecl equ_int;
   static BasicDecl ne_int;
   static BasicDecl lt_int;
@@ -27,7 +26,6 @@ public:
   static BasicDecl div_dbl;
   static BasicDecl mod_dbl;
 
-  static BasicDecl assign_dbl;
   static BasicDecl equ_dbl;
   static BasicDecl ne_dbl;
   static BasicDecl lt_dbl;

@@ -16,6 +16,10 @@
 class CompoundStmt;
 class FunctionType;
 
+/// Represents a declaration, which can either be of a type or a variable.
+/// All declarations have a name, which can be searched for in a DeclContext,
+/// and a type, which must be included in the declaration. There is currently
+/// no automatic type deduction.
 class Decl : public TreeElement {
 public:
   enum class Kind {
@@ -53,7 +57,7 @@ public:
   virtual DeclContext* getDeclContext() = 0;
 };
 
-
+/// Represents an alias to an existing type.
 class TypeAlias : public Decl {
 private:
   DeclContext* fParentContext;
@@ -94,6 +98,7 @@ public:
   :  fName{aName}, fType{aType} {}
 };
 
+/// Represents 
 class VarDecl : public Decl {
 private:
   DeclContext* fParentContext;

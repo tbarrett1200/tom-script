@@ -43,13 +43,6 @@ BasicDecl BuiltinDecl::mod_int{
   )
 };
 
-BasicDecl BuiltinDecl::assign_int{
-  Token{Token::operator_id, StringRef{"="}}
-, FunctionType::getInstance(
-    {IntegerType::getInstance(), IntegerType::getInstance()}
-  , IntegerType::getInstance()
-  )
-};
 
 BasicDecl BuiltinDecl::ne_int{
   Token{Token::operator_id, StringRef{"!="}}
@@ -141,13 +134,6 @@ BasicDecl BuiltinDecl::mod_dbl{
   )
 };
 
-BasicDecl BuiltinDecl::assign_dbl{
-  Token{Token::operator_id, StringRef{"="}}
-, FunctionType::getInstance(
-    {DoubleType::getInstance(), DoubleType::getInstance()}
-  , DoubleType::getInstance()
-  )
-};
 
 BasicDecl BuiltinDecl::ne_dbl{
   Token{Token::operator_id, StringRef{"!="}}

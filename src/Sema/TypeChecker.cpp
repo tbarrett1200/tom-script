@@ -94,38 +94,57 @@ void TypeChecker::checkBinaryExpr(BinaryExpr &expr) {
   // first checks the types of the left and right hand side
   checkExpr(expr.getLeft());
   checkExpr(expr.getRight());
-  // asserts that the operator is defined
-  std::vector<const Type*> param_types{ expr.getLeft().getType(), expr.getRight().getType() };
-  if (Decl *decl = this->currentContext->getDecl({expr.getOperator(), param_types})) {
-    if (const FunctionType *func_type = dynamic_cast<const FunctionType*>(decl->getType())) {
-      // assert the the operator has two arguments
-      if (func_type->getParamCount() == 2) {
-        const Type* decl_left_param_type = func_type->getParam(0)->getCanonicalType();
-        const Type* expr_left_param_type = expr.getLeft().getType()->getCanonicalType();
-        // assert that the left argument matches the declaration
-        if (decl_left_param_type != expr_left_param_type)
-          throw CompilerException(nullptr, "left parameter type does not match operator");
-        const Type* decl_right_param_type = func_type->getParam(1)->getCanonicalType();
-        // assert that the right argument matches the declaration
-        const Type* expr_right_param_type = expr.getLeft().getType()->getCanonicalType();
-        if (decl_right_param_type != expr_right_param_type)
-          throw CompilerException(nullptr, "right parameter type does not match operator");
 
-        expr.setType(func_type->getReturnType());
-      } else {
+  if (expr.getOperator() == StringRef{"="}) {
+    if (expr.getLeft().isLeftValue()) {
+      const Type* ltype = expr.getLeft().getType()->getCanonicalType();
+      const Type* rtype = expr.getRight().getType()->getCanonicalType();
+      if (ltype != rtype) {
         std::stringstream ss;
-        ss <<  "not enough parameters to operator '" << expr.getOperator() << "'. expected 2 but got " << func_type->getParamCount();
-        throw CompilerException(nullptr, ss.str());
+        ss <<  "mismatched type for assignment operands";
+        throw CompilerException(expr.getOperator().start, ss.str());
       }
     } else {
       std::stringstream ss;
-      ss <<  "'" << expr.getOperator() << "' is not an operator";
-      throw CompilerException(nullptr, ss.str());
+      ss <<  "unable to assign to left hand side";
+      throw CompilerException(expr.getOperator().start, ss.str());
     }
+
   } else {
-    std::stringstream ss;
-    ss <<  "'" << expr.getOperator() << "' not declared";
-    throw CompilerException(nullptr, ss.str());
+      // asserts that the operator is defined
+      std::vector<const Type*> param_types{ expr.getLeft().getType(), expr.getRight().getType() };
+      if (Decl *decl = this->currentContext->getDecl({expr.getOperator(), param_types})) {
+        if (const FunctionType *func_type = dynamic_cast<const FunctionType*>(decl->getType())) {
+          // assert the the operator has two arguments
+          if (func_type->getParamCount() == 2) {
+            const Type* decl_left_param_type = func_type->getParam(0)->getCanonicalType();
+            const Type* expr_left_param_type = expr.getLeft().getType()->getCanonicalType();
+            // assert that the left argument matches the declaration
+            if (decl_left_param_type != expr_left_param_type)
+              throw CompilerException(nullptr, "left parameter type does not match operator");
+            const Type* decl_right_param_type = func_type->getParam(1)->getCanonicalType();
+            // assert that the right argument matches the declaration
+            const Type* expr_right_param_type = expr.getLeft().getType()->getCanonicalType();
+            if (decl_right_param_type != expr_right_param_type)
+              throw CompilerException(nullptr, "right parameter type does not match operator");
+
+            expr.setType(func_type->getReturnType());
+          } else {
+            std::stringstream ss;
+            ss <<  "not enough parameters to operator '" << expr.getOperator();
+            ss << "'. expected 2 but got " << func_type->getParamCount();
+            throw CompilerException(nullptr, ss.str());
+          }
+        } else {
+          std::stringstream ss;
+          ss <<  "'" << expr.getOperator() << "' is not an operator";
+          throw CompilerException(nullptr, ss.str());
+        }
+      } else {
+        std::stringstream ss;
+        ss <<  "'" << expr.getOperator() << "' not declared";
+        throw CompilerException(nullptr, ss.str());
+      }
   }
 }
 void TypeChecker::checkFunctionCall(FunctionCall &expr) {

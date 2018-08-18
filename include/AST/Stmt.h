@@ -16,78 +16,82 @@ class Expr;
 class LetDecl;
 class ReturnStmt;
 
+/// The base class for all statements in the program. A statement is a single
+/// logical instruction. When running, the program will execute a single
+/// statement at a time. Statements can and should have "side effects" that
+/// effect the state of the program or alter the flow.
 class Stmt : public TreeElement {
 public:
+  /// An enumeration of all possible types derived from Stmt
   enum class Kind {
     #define STMT(SELF, PARENT) SELF,
     #include "AST/Stmt.def"
     #undef STMT
   };
 
+  /// virtual destructor prevents memory leaks
   virtual ~Stmt() = default;
 
-  /**
-   * Convenience method for checking the runtime type of an Expression.
-   * Returns true if conversion to derived type is possible. Otherwise
-   * return false.
-   */
-   template<typename T> bool is() const {
-     return (dynamic_cast<T*>(this) != nullptr);
-   }
-
-   /**
-    * Convenience method for casting Expr base type to any one of its derived
-    * types. Throws a std::logic_error if conversion is not possible.
-    */
-  template<typename T> T* as() const {
-    T* casted_type = dynamic_cast<T*>(this);
-    if (casted_type != nullptr) {
-      return casted_type;
-    } else {
-      std::string error_message_prefix{"unable to cast Expr to "};
-      throw std::logic_error(error_message_prefix + typeid(T).name());
-    }
-  }
-
+  /// Return the printable name of the TreeElement, which in this case is
+  /// statement. Derived types should override this method with their own
+  /// prefix, followed by "-statement"
   virtual std::string name() const override {
     return "statement";
   };
 
+  /// Return true if this statement will cause the current function to exit
   virtual bool returns() const = 0;
 
+  /// Return the runtime type of the statement
   virtual Stmt::Kind getKind() const = 0;
 };
 
+/// A compound stmt is a single stmt which is composed of many statements.
+/// In textual form, it appears as a list of statements wrapped between "{" "}".
+/// A compound stmt has its own scope...
+///
+/// Question: Currently, a compound statement cannot appear on its own, but only
+/// as a child element of a function declaration, if stmt, or while stmt, all of
+/// which have their own scope. Does giving a compound stmt its own scope make
+/// sense?
 class CompoundStmt : public Stmt {
 private:
   DeclContext context_;
   std::vector<std::unique_ptr<Stmt>> stmts_;
 public:
-
-  DeclContext* getDeclContext() {
-    return &context_;
-  }
-
-  std::string name() const override {
-    return "compound-statement";
-  };
-
-  void setParentContext(DeclContext *parent) {
-    context_.setParentContext(parent);
-  }
-
+  /// Construct a CompoundStmt with the given list of stmts.
   CompoundStmt(std::vector<std::unique_ptr<Stmt>> stmts)
   : stmts_{std::move(stmts)} {
     assert(std::find(stmts_.begin(), stmts_.end(), nullptr) == stmts_.end()
       && "precondition: stmts must not contain nullptr");
   }
 
+  /// Return the declaration context owned by the compound stmt
+  DeclContext* getDeclContext() {
+    return &context_;
+  }
+
+  /// Return the printable name of the TreeElement
+  std::string name() const override {
+    return "compound-statement";
+  };
+
+  /// Sets the parent context of the DeclContext. This will allow children to
+  /// access declarations in higher scopes.
+  void setParentContext(DeclContext *parent) {
+    context_.setParentContext(parent);
+  }
+
+  /// Return a const reference to the enclosed stmt list
   const std::vector<std::unique_ptr<Stmt>>& getStmts() const {
     return stmts_;
   };
 
+  /// Return the runtime type, which is Stmt::Kind::CompoundStmt
   Stmt::Kind getKind() const override { return Kind::CompoundStmt;}
 
+  /// Return true if this statement will cause the current function to exit.
+  /// This is only true if any of the stmts in the list return.
   bool returns() const override {
     for (auto &stmt: stmts_) {
       if (stmt->returns()) return true;
@@ -95,6 +99,7 @@ public:
     return false;
   }
 
+  /// Return the child tree elements for walking and serialization.
   std::vector<TreeElement*> getChildren() const override {
     std::vector<TreeElement*> treeVector;
     for (auto &stmt: stmts_) {
@@ -104,6 +109,11 @@ public:
   }
 };
 
+/// Represents a statement that will only execute given if a given condition is
+/// met at runtime. The condition can either be an expression, or a nullable
+/// let declaration. If the condition is an expression, the stmt will execute if
+/// the expression evaluates to true. If the condition is a let declaration, the
+/// stmt will only execute if the let declaration is non null.
 class ConditionalStmt : public Stmt {
 private:
   DeclContext context;
@@ -112,57 +122,79 @@ private:
   std::unique_ptr<CompoundStmt> stmt_;
 
 public:
-
+  /// Construct a ConditionalStmt with the given condition and block stmt.
   ConditionalStmt(std::unique_ptr<Expr> condition, std::unique_ptr<CompoundStmt> stmt)
   : condition_{std::move(condition)}, stmt_{std::move(stmt)} {
     assert(condition_ && "precondition: condition is required");
     assert(stmt_ && "precondition: statement is required");
   }
 
+  /// Construct a ConditionalStmt with the given declaration and block stmt.
   ConditionalStmt(std::unique_ptr<LetDecl> declaration, std::unique_ptr<CompoundStmt> stmt)
   : declaration_{std::move(declaration)}, stmt_{std::move(stmt)} {
     assert(declaration_ && "precondition: declaration is required");
     assert(stmt_ && "precondition: statement is required");
   }
 
+  /// Return the declaration context owned by this statement. It will
+  /// encapsulate the declaration condition... if it exists.
   DeclContext* getDeclContext() {
     return &context;
   }
 
+  /// Return the printable name of the statement
   std::string name() const override {
     return "conditional-statement";
   };
 
+  /// Sets the parent of the declaration context, to allow children to access
+  /// higher level declarations.
   void setParentContext(DeclContext *parent) {
     context.setParentContext(parent);
   }
 
+  /// Return the declaration... which may be nullptr
   LetDecl* getDeclaration() {
     return declaration_.get();
   }
 
+  /// Return the condition... which may be nullptr
   Expr* getCondition() {
       return condition_.get();
   }
 
-  CompoundStmt* getBlock() {
-    return stmt_.get();
+  /// Return a const reference to the block
+  const CompoundStmt& getBlock() const {
+    return *stmt_;
   }
 
+  /// Return a reference to the block
+  CompoundStmt& getBlock() {
+    return *stmt_;
+  }
+
+  /// Return the runtime kind of the stmt.
   Stmt::Kind getKind() const override { return Kind::ConditionalStmt;}
 
+  /// Return false because the stmt is not guarenteed to return
   bool returns() const override {
-    return stmt_->returns();
+    return false;
   }
 
+  /// Return the child nodes for walking or serialization
   std::vector<TreeElement*> getChildren() const override;
-
 };
 
+/// Represents a logic block of conditional stmts. Many conditional stmts can
+/// be logically joined together into if, else if, else blocks. Thus, a
+/// conditional block is composed of a list of statements... which can either
+/// be a conditional stmt or a compound statement ( in the case of an else )
 class ConditionalBlock : public Stmt {
 private:
   std::vector<std::unique_ptr<Stmt>> stmts_;
 public:
+
+  /// Construct a ConditionalBlock with the given stmts
   ConditionalBlock(std::vector<std::unique_ptr<Stmt>> stmts)
   : stmts_{std::move(stmts)} {
 
@@ -174,18 +206,22 @@ public:
 
   }
 
+  /// Return the list of if, else if, and else stmts
   std::vector<std::unique_ptr<Stmt>>& getStmts() {
     return stmts_;
   }
 
+  /// Return the runtime type
   Stmt::Kind getKind() const override {
     return Stmt::Kind::ConditionalBlock;
   }
 
+  /// Return the printable name of the element
   std::string name() const override {
     return "conditional-block-statement";
   };
 
+  /// Return the child elements for traversal and serialization
   std::vector<TreeElement*> getChildren() const override {
     std::vector<TreeElement*> children;
     for (auto &stmt: stmts_) {
@@ -193,9 +229,24 @@ public:
     }
     return children;
   }
-  virtual bool returns() const override { return true; }
+
+  /// Returns true if the statement is guarenteed to return
+  virtual bool returns() const override {
+    // if a conditional block does not contain an else statement... it can not
+    // be guarenteed to return
+    if (!dynamic_cast<CompoundStmt*>(stmts_.back().get())) return false;
+    for (auto &stmt: stmts_) {
+      if (!stmt->returns()) return false;
+    }
+    return true;
+  }
+
 };
 
+/// Represents a loop that executes as long as the condition is true, and checks
+/// the condition before each iteration. The condition can either be an
+/// expression which must evaulate to tree, or a let declaration which must be
+/// non null.
 class WhileLoop : public Stmt {
 private:
   DeclContext context_;
@@ -205,22 +256,26 @@ private:
 
 public:
 
+  /// Constructs a while loop with the given declaration and block
   WhileLoop(std::unique_ptr<LetDecl> decl, std::unique_ptr<CompoundStmt> stmt)
   : decl_{std::move(decl)}, stmt_{std::move(stmt)} {
     assert(decl_ && "precondition: declaration must not be nullptr");
     assert(stmt_ && "precondition: statement is required");
   }
-
+  /// Constructs a while loop with the given condtion and block
   WhileLoop(std::unique_ptr<Expr> condition, std::unique_ptr<CompoundStmt> stmt)
   : condition_{std::move(condition)}, stmt_{std::move(stmt)} {
     assert(condition_ && "precondition: condition must not be nullptr");
     assert(stmt_ && "precondition: stmt must not be nullptr");
   }
 
+  /// A while loop is never guarenteed to execute... therefore it can never be
+  /// guarenteed to return.
   bool returns() const override {
-    return stmt_->returns();
+    return false;
   }
 
+  /// Return the runtime type of the statement
   Stmt::Kind getKind() const override { return Kind::WhileLoop;}
 
   std::vector<TreeElement*> getChildren() const override;
@@ -272,6 +327,7 @@ public:
     return expr_.get();
   }
 
+  /// Return the printable name of the stmt.
   std::string name() const override {
     return "return-statement";
   };
@@ -313,6 +369,7 @@ public:
   /// Return the child nodes for walking
   std::vector<TreeElement*> getChildren() const override;
 
+  /// Return the printable name of the stmt
   std::string name() const override {
     return "expression-statement";
   };
@@ -353,7 +410,7 @@ public:
     return false;
   }
 
-
+  /// Return the printable name of the stmt
   std::string name() const override {
     return "declaration-statement";
   };

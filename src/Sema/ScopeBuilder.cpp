@@ -17,7 +17,6 @@ void ScopeBuilder::buildCompilationUnitScope(CompilationUnit &unit) {
   global_context->addDecl(&BuiltinDecl::div_int);
   global_context->addDecl(&BuiltinDecl::mod_int);
 
-  global_context->addDecl(&BuiltinDecl::assign_int);
   global_context->addDecl(&BuiltinDecl::equ_int);
   global_context->addDecl(&BuiltinDecl::ne_int);
   global_context->addDecl(&BuiltinDecl::lt_int);
@@ -31,7 +30,6 @@ void ScopeBuilder::buildCompilationUnitScope(CompilationUnit &unit) {
   global_context->addDecl(&BuiltinDecl::div_dbl);
   global_context->addDecl(&BuiltinDecl::mod_dbl);
 
-  global_context->addDecl(&BuiltinDecl::assign_dbl);
   global_context->addDecl(&BuiltinDecl::equ_dbl);
   global_context->addDecl(&BuiltinDecl::ne_dbl);
   global_context->addDecl(&BuiltinDecl::lt_dbl);
@@ -139,6 +137,6 @@ void ScopeBuilder::buildConditionalStmtScope(class ConditionalStmt &cond_stmt) {
     cond_scope->addDecl(let_decl);
     let_decl->setParentContext(cond_scope);
   }
-  cond_stmt.getBlock()->setParentContext(cond_scope);
-  buildCompoundStmtScope(*cond_stmt.getBlock());
+  cond_stmt.getBlock().setParentContext(cond_scope);
+  buildCompoundStmtScope(cond_stmt.getBlock());
 }

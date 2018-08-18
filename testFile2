@@ -6,13 +6,6 @@ func factorial(num: Double) -> Double {
   }
 }
 
-func super_factorial(num: Double) -> Double {
- if num < 2.0 {
-  return 1.0
- } else {
-  return factorial(num) * super_factorial(num-1.0)
- }
-}
 
 func pow(a: Double, b: Double) -> Double {
  if b == 0.0 {
@@ -24,19 +17,14 @@ func pow(a: Double, b: Double) -> Double {
  }
 }
 
-func hyper_factorial(num: Double) -> Double {
- if num == 1.0 {
-  return 1.0
- } else {
-  return pow(num, num) * hyper_factorial(num-1.0)
- }
-}
-
 func sin(angle: Double) -> Double {
   var result: Double = 0.0
   var n: Double = 1.0
   while n < 10.0 {
-    result = result + pow(2.0-1.0, n - 1.0) * pow(angle, 2.0*n-1.0)/factorial(2.0*n-1.0)
+    let a: Double = pow(2.0 - 1.0, n - 1.0)
+    let b: Double = pow(angle, 2.0 * n - 1.0)
+    let c: Double = factorial(2.0 * n - 1.0)
+    result = result + a * b / c
     n = n + 1.0
   }
   return result

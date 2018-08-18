@@ -6,7 +6,6 @@
 #include "Basic/Token.h"
 #include "Basic/SourceCode.h"
 
-#include "AST/ASTVisitor.h"
 #include "AST/TreeElement.h"
 
 
@@ -109,16 +108,7 @@ public:
     return fRange;
   }
 
-  /**
-   * Implements double dispatch for the visitor pattern to be implemented.
-   * C++ does not check the runtime type of an expression when selecting
-   * which function to use, so in order to implement runtime-type specific
-   * processing of the tree, double dispatch is used. In order to use a visitor
-   * on an expression tree, simply call t->accept(visitor);
-   */
-  virtual void accept(ASTVisitor& t) const {
-     t.visit(*this);
-  }
+
 
   /**
    * Returns the type of the expression. This should never return null, as all
@@ -168,9 +158,6 @@ public:
   }
 
 
-  virtual void accept(ASTVisitor& t) const override {
-     t.visit(*this);
-  }
 
 };
 
@@ -204,9 +191,6 @@ public:
     return false;
   }
 
-  virtual void accept(ASTVisitor& t) const override {
-     t.visit(*this);
-  }
 
 };
 
@@ -242,10 +226,6 @@ public:
     }
   }
 
-  virtual void accept(ASTVisitor& t) const override {
-     t.visit(*this);
-  }
-
 };
 
 class DoubleExpr: public Expr {
@@ -254,9 +234,6 @@ private:
 
 public:
 
-  virtual void accept(ASTVisitor& t) const override {
-     t.visit(*this);
-  }
   /* Returns a vector of children for easy traversal */
   StringRef lexeme() const {
     return token_.lexeme();
@@ -307,10 +284,6 @@ public:
     return "identifier-expression";
   };
 
-  virtual void accept(ASTVisitor& t) const override {
-     t.visit(*this);
-  }
-
 };
 
 
@@ -346,7 +319,7 @@ public:
     return "unary-expression";
   };
 
-  StringRef getOperator() {
+  StringRef getOperator() const {
     return op_.lexeme();
   }
 
@@ -358,10 +331,6 @@ public:
     return *expr_;
   }
 
-
-  virtual void accept(ASTVisitor& t) const override {
-     t.visit(*this);
-  }
 
 };
 
@@ -408,9 +377,6 @@ public:
     }
   }
 
-  virtual void accept(ASTVisitor& t) const override {
-     t.visit(*this);
-  }
 
   const Expr& getLeft() const {
     return *left_;
@@ -452,9 +418,6 @@ public:
     return "function-call-expression";
   };
 
-  virtual void accept(ASTVisitor& t) const override {
-     t.visit(*this);
-  }
   std::vector<TreeElement*> getChildren() const override {
     std::vector<TreeElement*> children;
     for (auto &arg: arguments_) {
@@ -492,9 +455,7 @@ public:
     return "list-expression";
   };
 
-  virtual void accept(ASTVisitor& t) const override {
-     t.visit(*this);
-  }
+
 
   const std::vector<std::unique_ptr<Expr>>& getElements() const {
     return elements_;
@@ -529,9 +490,6 @@ public:
     throw std::logic_error("accessor not implemented");
   }
 
-  virtual void accept(ASTVisitor& t) const override {
-     t.visit(*this);
-  }
 
 };
 
@@ -560,10 +518,6 @@ public:
 
   TupleExpr(std::vector<std::unique_ptr<Expr>> list) : elements_{std::move(list)} {
     throw std::logic_error("tuple not implemented");
-  }
-
-  virtual void accept(ASTVisitor& t) const override {
-     t.visit(*this);
   }
 
 };
