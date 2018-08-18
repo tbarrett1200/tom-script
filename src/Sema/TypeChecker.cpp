@@ -82,7 +82,6 @@ void TypeChecker::checkUnaryExpr(UnaryExpr &expr) {
         throw CompilerException(nullptr, "parameter type does not match operator");
 
       expr.setType(func_type.getReturnType());
-
     } else {
       std::stringstream ss;
       ss <<  "not enough parameters to operator '" << expr.getOperator() << "'. expected 1 but got " << func_type.getParamCount();
@@ -142,7 +141,9 @@ void TypeChecker::checkBinaryExpr(BinaryExpr &expr) {
         }
       } else {
         std::stringstream ss;
-        ss <<  "'" << expr.getOperator() << "' not declared";
+        ss <<  "'" << expr.getOperator() << "' not declared for ";
+        ss << expr.getLeft().getType()->toString() << " and ";
+        ss << expr.getRight().getType()->toString();
         throw CompilerException(nullptr, ss.str());
       }
   }

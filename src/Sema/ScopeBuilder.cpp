@@ -16,6 +16,7 @@ void ScopeBuilder::buildCompilationUnitScope(CompilationUnit &unit) {
   global_context->addDecl(&BuiltinDecl::mul_int);
   global_context->addDecl(&BuiltinDecl::div_int);
   global_context->addDecl(&BuiltinDecl::mod_int);
+  global_context->addDecl(&BuiltinDecl::neg_int);
 
   global_context->addDecl(&BuiltinDecl::equ_int);
   global_context->addDecl(&BuiltinDecl::ne_int);
@@ -36,6 +37,10 @@ void ScopeBuilder::buildCompilationUnitScope(CompilationUnit &unit) {
   global_context->addDecl(&BuiltinDecl::lte_dbl);
   global_context->addDecl(&BuiltinDecl::gt_dbl);
   global_context->addDecl(&BuiltinDecl::gte_dbl);
+  global_context->addDecl(&BuiltinDecl::neg_dbl);
+
+  global_context->addDecl(&BuiltinDecl::int_to_double);
+  global_context->addDecl(&BuiltinDecl::double_to_int);
 
   DeclContext* unitContext = unit.getDeclContext();
   unitContext->setParentContext(global_context);

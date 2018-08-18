@@ -11,6 +11,15 @@ BasicDecl BuiltinDecl::add_int{
   )
 };
 
+BasicDecl BuiltinDecl::neg_int{
+  Token{Token::operator_id, StringRef{"-"}}
+, FunctionType::getInstance(
+    {IntegerType::getInstance()}
+  , IntegerType::getInstance()
+  )
+};
+
+
 BasicDecl BuiltinDecl::sub_int{
   Token{Token::operator_id, StringRef{"-"}}
 , FunctionType::getInstance(
@@ -180,5 +189,31 @@ BasicDecl BuiltinDecl::lte_dbl{
 , FunctionType::getInstance(
     {DoubleType::getInstance(), DoubleType::getInstance()}
   , BooleanType::getInstance()
+  )
+};
+
+BasicDecl BuiltinDecl::neg_dbl{
+  Token{Token::operator_id, StringRef{"-"}}
+, FunctionType::getInstance(
+    {DoubleType::getInstance()}
+  , DoubleType::getInstance()
+  )
+};
+
+
+BasicDecl BuiltinDecl::int_to_double{
+  Token{Token::operator_id, StringRef{"Double"}}
+, FunctionType::getInstance(
+    {IntegerType::getInstance()}
+  , DoubleType::getInstance()
+  )
+};
+
+
+BasicDecl BuiltinDecl::double_to_int{
+  Token{Token::operator_id, StringRef{"Int"}}
+, FunctionType::getInstance(
+    {DoubleType::getInstance()}
+  , IntegerType::getInstance()
   )
 };

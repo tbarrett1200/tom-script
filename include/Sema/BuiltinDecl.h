@@ -12,6 +12,7 @@ public:
   static BasicDecl mul_int;
   static BasicDecl div_int;
   static BasicDecl mod_int;
+  static BasicDecl neg_int;
 
   static BasicDecl equ_int;
   static BasicDecl ne_int;
@@ -25,6 +26,7 @@ public:
   static BasicDecl mul_dbl;
   static BasicDecl div_dbl;
   static BasicDecl mod_dbl;
+  static BasicDecl neg_dbl;
 
   static BasicDecl equ_dbl;
   static BasicDecl ne_dbl;
@@ -32,5 +34,8 @@ public:
   static BasicDecl lte_dbl;
   static BasicDecl gt_dbl;
   static BasicDecl gte_dbl;
+
+  static BasicDecl int_to_double;
+  static BasicDecl double_to_int;
 };
 #endif

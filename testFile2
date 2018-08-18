@@ -6,7 +6,6 @@ func factorial(num: Double) -> Double {
   }
 }
 
-
 func pow(a: Double, b: Double) -> Double {
  if b == 0.0 {
   return 1.0
@@ -32,13 +31,13 @@ func sin(angle: Double) -> Double {
 
 func cos(angle: Double) -> Double {
   var result: Double = 0.0
-  var n: Double = 1.0
-  while n < 10.0 {
-    let a: Double = pow(1.0 - 2.0, n)
-    let b: Double = pow(angle, 2.0 * n)
-    let c: Double = factorial(2.0 * n)
+  var n: Int = 1
+  while n < 10 {
+    let a: Double = pow(-1.0, Double(n))
+    let b: Double = pow(angle, 2.0 * Double(n))
+    let c: Double = factorial(2.0 * Double(n))
     result = result + a * b / c
-    n = n + 1.0
+    n = n + 1
   }
   return result
 }
@@ -48,5 +47,5 @@ func cos(angle: Double) -> Double {
   }
 
 func main() -> Double {
-  return tan(3.14)
+  return cos(1.0)
 }

@@ -184,6 +184,16 @@ public:
   llvm::Value* transformFunctionCall(const FunctionCall& call, llvm::BasicBlock* current_block) {
     llvm::IRBuilder<> builder{current_block};
 
+    if (call.getFunctionName() == StringRef{"Double"}) {
+      llvm::Value *arg1 = transformExpr(*call.getArguments()[0], current_block);
+      llvm::Type *t = transformType(*DoubleType::getInstance());
+      return builder.CreateSIToFP(arg1, t);
+    } else if (call.getFunctionName() == StringRef{"Int"}) {
+      llvm::Value *arg1 = transformExpr(*call.getArguments()[0], current_block);
+      llvm::Type *t = transformType(*IntegerType::getInstance());
+      return builder.CreateFPToSI(arg1, t);
+    }
+
     //  return named_values_[identifierExpr.getLexeme()];
     llvm::Function *CalleeF = module_->getFunction(call.getFunctionName().str());
     if (!CalleeF) {
@@ -230,6 +240,8 @@ public:
       return llvm::ConstantInt::get(transformType(*expr.getType()), dynamic_cast<const BoolExpr&>(expr).getBool()?1:0);
     } else if (dynamic_cast<const BinaryExpr*>(&expr)) {
       return transformBinaryExpr(dynamic_cast<const BinaryExpr&>(expr),current_block);
+    } else if (dynamic_cast<const UnaryExpr*>(&expr)) {
+      return transformUnaryExpr(dynamic_cast<const UnaryExpr&>(expr),current_block);
     } else if (dynamic_cast<const IdentifierExpr*>(&expr)) {
       return transformIdentifierExpr(dynamic_cast<const IdentifierExpr&>(expr),current_block);
     } else if (dynamic_cast<const FunctionCall*>(&expr)) {
