@@ -21,7 +21,7 @@ func sin(angle: Double) -> Double {
   var result: Double = 0.0
   var n: Double = 1.0
   while n < 10.0 {
-    let a: Double = pow(2.0 - 1.0, n - 1.0)
+    let a: Double = pow(1.0 - 2.0, n - 1.0)
     let b: Double = pow(angle, 2.0 * n - 1.0)
     let c: Double = factorial(2.0 * n - 1.0)
     result = result + a * b / c
@@ -30,6 +30,23 @@ func sin(angle: Double) -> Double {
   return result
 }
 
+func cos(angle: Double) -> Double {
+  var result: Double = 0.0
+  var n: Double = 1.0
+  while n < 10.0 {
+    let a: Double = pow(1.0 - 2.0, n)
+    let b: Double = pow(angle, 2.0 * n)
+    let c: Double = factorial(2.0 * n)
+    result = result + a * b / c
+    n = n + 1.0
+  }
+  return result
+}
+
+  func tan (angle: Double) -> Double {
+    return sin(angle)/cos(angle)
+  }
+
 func main() -> Double {
-  return sin(1.0)
+  return tan(3.14)
 }
