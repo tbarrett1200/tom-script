@@ -1,3 +1,11 @@
+func abs (num: Double) -> Double {
+  if num > 0.0 {
+    return num
+  } else {
+    return -num
+  }
+}
+
 func factorial(num: Double) -> Double {
   if num < 2.0 {
     return 1.0
@@ -47,5 +55,7 @@ func cos(angle: Double) -> Double {
   }
 
 func main() -> Double {
-  return cos(1.0)
+  if 0.0 == 1.0 then return 0.0
+  else if 1.0 == 1.0 then return 2.0
+  return 1.0
 }

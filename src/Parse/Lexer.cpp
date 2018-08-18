@@ -25,6 +25,8 @@ Token Lexer::lexIdentifier()  {
     return Token(Token::kw_if, str_ref);
   } else if (str_ref == StringRef{"else"}) {
     return Token(Token::kw_else, str_ref);
+  } else if (str_ref == StringRef{"then"}) {
+    return Token(Token::kw_then, str_ref);
   } else if (str_ref == StringRef{"while"}) {
     return Token(Token::kw_while, str_ref);
   } else if (str_ref == StringRef{"return"}) {

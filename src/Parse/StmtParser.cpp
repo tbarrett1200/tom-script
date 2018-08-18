@@ -43,8 +43,15 @@ std::unique_ptr<ConditionalStmt> Parser::parseConditionalStmt() {
     return std::make_unique<ConditionalStmt>(std::move(let_decl), std::move(stmt));
   } else {
     auto expr = parseExpr();
-    std::unique_ptr<CompoundStmt> stmt = parseCompoundStmt();
-    return std::make_unique<ConditionalStmt>(std::move(expr), std::move(stmt));
+    if (consumeToken(Token::kw_then)) {
+      std::vector<std::unique_ptr<Stmt>> stmts;
+      stmts.push_back(parseStmt());
+      std::unique_ptr<CompoundStmt> stmt = std::make_unique<CompoundStmt>(std::move(stmts));
+      return std::make_unique<ConditionalStmt>(std::move(expr), std::move(stmt));
+    } else {
+      std::unique_ptr<CompoundStmt> stmt = parseCompoundStmt();
+      return std::make_unique<ConditionalStmt>(std::move(expr), std::move(stmt));
+    }
   }
 }
 

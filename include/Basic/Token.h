@@ -12,7 +12,7 @@ public:
   enum {
     unknown, eof, identifier, l_brace, l_paren, l_square, r_brace, r_paren,
     r_square, comma, semi, colon, backslash, integer_literal, double_literal, string_literal, operator_id,
-    kw_var, kw_let, kw_func, kw_typedef, kw_if, kw_else,  kw_true, kw_false, kw_while, kw_return, kw_typealias, new_line
+    kw_var, kw_let, kw_func, kw_typedef, kw_if, kw_else, kw_then, kw_true, kw_false, kw_while, kw_return, kw_typealias, new_line
   };
   Token(int type, const char *loc, int length): type_{type}, lexeme_{loc, length} {}
   Token(int type, StringRef str): type_{type}, lexeme_{str} {}
