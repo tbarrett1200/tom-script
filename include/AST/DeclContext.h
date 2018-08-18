@@ -5,21 +5,37 @@
 #include <vector>
 
 #include "Basic/SourceCode.h"
+#include "Basic/CompilerException.h"
 
-struct DeclContextKey {
-  StringRef name;
-  std::vector<const class Type*> params;
-  bool operator<(const DeclContextKey& key) const {
-    if (name.str() == key.name.str()) return params < key.params;
-    else return name.str() < key.name.str();
+class Decl;
+
+class FunctionSignature {
+private:
+  StringRef name_;
+  std::vector<const class Type*> params_;
+public:
+  FunctionSignature(StringRef name, std::vector<const class Type*> params)
+  : name_{name}, params_{std::move(params)} {}
+
+  StringRef name() const {
+    return name_;
+  }
+
+  const std::vector<const class Type*>& params() const {
+    return params_;
+  }
+
+  bool operator==(const FunctionSignature& sig2) {
+    return name_ == sig2.name_
+        && params_ == sig2.params_;
   }
 };
 
 class DeclContext {
 private:
   static DeclContext globalContext;
-  DeclContext *fParent = nullptr;
-  std::map<DeclContextKey, class Decl*> fDecls;
+  DeclContext *parent_ = nullptr;
+  std::multimap<StringRef, class Decl*> decls_;
 public:
   DeclContext() = default;
 
@@ -28,51 +44,34 @@ public:
   }
 
   DeclContext* getParentContext() const {
-    return fParent;
+    return parent_;
   }
 
-  const std::map<DeclContextKey, class Decl*>& getDeclMap() const {
-    return fDecls;
+  const std::multimap<StringRef, class Decl*>& getDeclMap() const {
+    return decls_;
   }
 
   void setParentContext(DeclContext *parent) {
-    fParent = parent;
+    parent_ = parent;
   }
 
   void addDecl(class Decl* d);
 
   Decl* getDecl(StringRef name) {
-    auto decl_iterator = fDecls.find({name, {}});
-    if (decl_iterator != fDecls.end()) {
-      return decl_iterator->second;
-    } else if (fParent == nullptr) {
+    auto candidate_iterator = decls_.equal_range(name);
+    auto candidate_count = std::distance(candidate_iterator.first, candidate_iterator.second);
+    if (candidate_count > 1) {
+      std::stringstream ss;
+      ss << "ambigious lookup of '" << name << "'";
+      throw CompilerException(name.start, ss.str());
+    } else if (candidate_count == 1) {
+      return candidate_iterator.first->second;
+    } else if (parent_ == nullptr) {
       return nullptr;
-    } else if (Decl* decl = fParent->getDecl(name)) {
-      return decl;
-    } else return nullptr;
+    } else return parent_->getDecl(name);
   }
 
-  Decl* getDecl(StringRef name, std::vector<const class Type*> params) {
-    auto decl_iterator = fDecls.find({name, params});
-    if (decl_iterator != fDecls.end()) {
-      return decl_iterator->second;
-    } else if (fParent == nullptr) {
-      return nullptr;
-    } else if (Decl* decl = fParent->getDecl(name, params)) {
-      return decl;
-    } else return nullptr;
-  }
-
-  template <typename T> T* getDecl(StringRef name) {
-    auto decl_iterator = fDecls.find({name, {}});
-    if (decl_iterator != fDecls.end()) {
-      T* derivedDecl = dynamic_cast<T*>(decl_iterator->second);
-      if (derivedDecl) return derivedDecl;
-    } else if (fParent) {
-      return fParent->getDecl<T>(name);
-    } else return nullptr;
-  }
-
+  Decl* getDecl(const FunctionSignature &signature);
 
 };
 #endif

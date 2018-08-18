@@ -45,7 +45,6 @@ public:
     return dynamic_cast<T*>(this);
   }
 
-
   virtual void setParentContext(DeclContext *parent) = 0;
 
   /// Returns a the top-most active context for this declaration
