@@ -98,7 +98,7 @@ public:
   :  fName{aName}, fType{aType} {}
 };
 
-/// Represents 
+/// Represents
 class VarDecl : public Decl {
 private:
   DeclContext* fParentContext;
@@ -144,6 +144,46 @@ public:
 
   VarDecl(Token n, const Type* t, std::unique_ptr<Expr> e)
   : fName{n}, fType{t}, fExpr{std::move(e)} {}
+};
+
+
+/// Represents
+class UninitializedVarDecl : public Decl {
+private:
+  DeclContext* fParentContext;
+  Token fName;
+  const Type* fType;
+
+public:
+
+  Decl::Kind getKind() const override {
+    return Decl::Kind::UninitializedVarDecl;
+  }
+  StringRef getName() const override {
+    return fName.lexeme();
+  }
+  const Type* getType() const override {
+    return fType;
+  }
+
+  virtual const DeclContext* getDeclContext() const override {
+    return fParentContext;
+  }
+
+  virtual DeclContext* getDeclContext() override {
+    return fParentContext;
+  }
+
+  std::string name() const override {
+    return "uninitialized-var-declaration";
+  };
+
+  virtual void setParentContext(DeclContext *parent) override {
+    fParentContext = parent;
+  }
+
+  UninitializedVarDecl(Token n, const Type* t)
+  : fName{n}, fType{t} {}
 };
 
 

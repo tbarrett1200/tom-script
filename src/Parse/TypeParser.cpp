@@ -79,6 +79,12 @@ const ListType* Parser::parseListType() {
   return ListType::getInstance(type);
 }
 
+const PointerType* Parser::parsePointerType() {
+  expectToken(Token::operator_id, "*");
+  auto type = parseType();
+  return PointerType::getInstance(type);
+}
+
 const MapType* Parser::parseMapType() {
   expectToken(Token::l_square, "left square bracket");
   auto keyType = parseType();

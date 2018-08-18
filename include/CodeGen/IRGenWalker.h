@@ -95,6 +95,12 @@ public:
     named_values_[var_decl.getName()] = std::make_shared<VariableValue>(true, nullptr, alloca);;
   }
 
+  void transformUninitializedVarDecl(const UninitializedVarDecl& var_decl, llvm::BasicBlock* current_block) {
+    llvm::IRBuilder<> builder{current_block};
+    llvm::AllocaInst *alloca = builder.CreateAlloca(transformType(*var_decl.getType()), 0, var_decl.getName().str());
+    named_values_[var_decl.getName()] = std::make_shared<VariableValue>(true, nullptr, alloca);;
+  }
+
   void transformDeclStmt(const DeclStmt& declStmt, llvm::BasicBlock* current_block) {
     const Decl* decl = dynamic_cast<const Decl*>(declStmt.getDecl());
     switch (decl->getKind()) {
@@ -103,6 +109,9 @@ public:
         break;
       case Decl::Kind::VarDecl:
         transformVarDecl(dynamic_cast<const VarDecl&>(*decl), current_block);
+        break;
+      case Decl::Kind::UninitializedVarDecl:
+        transformUninitializedVarDecl(dynamic_cast<const UninitializedVarDecl&>(*decl), current_block);
         break;
       case Decl::Kind::FuncDecl:
         throw CompilerException(nullptr, "nested function declarations not current supported");
