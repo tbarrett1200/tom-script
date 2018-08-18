@@ -50,12 +50,12 @@ func cos(angle: Double) -> Double {
   return result
 }
 
-  func tan (angle: Double) -> Double {
-    return sin(angle)/cos(angle)
-  }
+func tan(angle: Double) -> Double {
+  return sin(angle)/cos(angle)
+}
 
 func main() -> Double {
-  if false then return 0.0
+  if 5 == 5 then return 0.0
   else if false then return 2.0
   else return 1.0
 }

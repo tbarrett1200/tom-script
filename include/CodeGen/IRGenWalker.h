@@ -427,7 +427,7 @@ public:
         return builder.CreateSDiv(lval, rval);
       } else if (expr.getOperator() == "%") {
         return builder.CreateSRem(lval, rval);
-      } else if (expr.getOperator() == "=") {
+      } else if (expr.getOperator() == "==") {
         return builder.CreateICmpEQ(lval, rval);
       } else if (expr.getOperator() == "!=") {
         return builder.CreateICmpNE(lval, rval);
