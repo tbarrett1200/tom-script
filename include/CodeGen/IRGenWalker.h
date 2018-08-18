@@ -260,27 +260,36 @@ public:
     }
   }
 
-  llvm::BasicBlock* transformCompoundStmt(CompoundStmt& tree, llvm::BasicBlock *current_block) {
+  llvm::BasicBlock* transformStmt(Stmt& stmt, llvm::BasicBlock *current_block) {
+    if (ReturnStmt* ret_stmt = dynamic_cast<ReturnStmt*>(&stmt)) {
+      transformReturnStmt(*ret_stmt, current_block);
+      return current_block;
+    } else if (DeclStmt* decl_stmt = dynamic_cast<DeclStmt*>(&stmt)) {
+      transformDeclStmt(*decl_stmt, current_block);
+      return current_block;
+    } else if (ExprStmt *expr_stmt = dynamic_cast<ExprStmt*>(&stmt)) {
+      transformExpr(*expr_stmt->getExpr(), current_block);
+      return current_block;
+    } else if (ConditionalBlock* cond_block = dynamic_cast<ConditionalBlock*>(&stmt)) {
+      return transformConditionalBlock(*cond_block, current_block);
+    } else if (WhileLoop *while_loop = dynamic_cast<WhileLoop*>(&stmt)) {
+      return transformWhileLoop(*while_loop, current_block);
+    } else if (CompoundStmt *comp_stmt = dynamic_cast<CompoundStmt*>(&stmt)) {
+      return transformCompoundStmt(*comp_stmt, current_block);
+    } else {
+      throw std::logic_error("unsupported statement type");
+    }
+  }
 
+  llvm::BasicBlock* transformCompoundStmt(CompoundStmt& tree, llvm::BasicBlock *current_block) {
     for (auto it = tree.getStmts().begin(); it != tree.getStmts().end(); it++) {
       Stmt* stmt = it->get();
-      if (ReturnStmt* ret_stmt = dynamic_cast<ReturnStmt*>(stmt)) {
-        transformReturnStmt(*ret_stmt, current_block);
-        return current_block;
-      } else if (DeclStmt* decl_stmt = dynamic_cast<DeclStmt*>(stmt)) {
-        transformDeclStmt(*decl_stmt, current_block);
-      } else if (ExprStmt *expr_stmt = dynamic_cast<ExprStmt*>(stmt)) {
-        transformExpr(*expr_stmt->getExpr(), current_block);
-      } else if (ConditionalBlock* cond_block = dynamic_cast<ConditionalBlock*>(stmt)) {
-        current_block = transformConditionalBlock(*cond_block, current_block);
-      } else if (WhileLoop *while_loop = dynamic_cast<WhileLoop*>(stmt)) {
-        current_block = transformWhileLoop(*while_loop, current_block);
-      } else {
-        throw std::logic_error("unsupported statement type");
-      }
+      current_block = transformStmt(*stmt, current_block);
     }
     return current_block;
   }
+
+
 
   llvm::BasicBlock* transformConditionalBlock(
     ConditionalBlock& tree,
@@ -307,7 +316,7 @@ public:
         if_cond = next_block;
       } else {
         if_cond->setName("else");
-        llvm::BasicBlock *else_exit = transformCompoundStmt(dynamic_cast<CompoundStmt&>(*stmt), if_cond);
+        llvm::BasicBlock *else_exit = transformStmt(*stmt, if_cond);
         if (!else_exit->getTerminator()) {
           llvm::IRBuilder<> else_exit_builder{else_exit};
           else_exit_builder.CreateBr(if_exit);

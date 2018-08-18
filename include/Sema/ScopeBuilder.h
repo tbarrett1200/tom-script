@@ -34,6 +34,8 @@ public:
    */
   void buildFunctionScope(class FuncDecl&);
 
+  // does stuff
+  void buildStmtScope(class Stmt& stmt, class DeclContext *parent);
   /**
    * Recursivly builds the lexical scope for a block stmt with the following
    * steps.

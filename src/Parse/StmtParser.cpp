@@ -63,8 +63,7 @@ std::unique_ptr<ConditionalBlock> Parser::parseConditionalBlock()  {
       if (consumeToken(Token::kw_if)) {
         stmts.push_back(parseConditionalStmt());
       } else {
-        stmts.push_back(parseCompoundStmt());
-        break;
+        stmts.push_back(parseStmt());
       }
     }
   }

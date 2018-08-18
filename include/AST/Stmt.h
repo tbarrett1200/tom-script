@@ -198,11 +198,11 @@ public:
   ConditionalBlock(std::vector<std::unique_ptr<Stmt>> stmts)
   : stmts_{std::move(stmts)} {
 
-    assert( std::find_if_not(stmts_.begin(), stmts_.end(), [](auto &stmt) {
-      return dynamic_cast<ConditionalStmt*>(stmt.get()) != nullptr
-          || dynamic_cast<CompoundStmt*>(stmt.get()) != nullptr;
-      }) == stmts_.end()
-    && "precondition: stmts must contain only ConditionalStmt or CompoundStmt");
+    // assert( std::find_if_not(stmts_.begin(), stmts_.end(), [](auto &stmt) {
+    //   return dynamic_cast<ConditionalStmt*>(stmt.get()) != nullptr
+    //       || dynamic_cast<CompoundStmt*>(stmt.get()) != nullptr;
+    //   }) == stmts_.end()
+    // && "precondition: stmts must contain only ConditionalStmt or CompoundStmt");
 
   }
 
@@ -234,7 +234,7 @@ public:
   virtual bool returns() const override {
     // if a conditional block does not contain an else statement... it can not
     // be guarenteed to return
-    if (!dynamic_cast<CompoundStmt*>(stmts_.back().get())) return false;
+    if (dynamic_cast<ConditionalStmt*>(stmts_.back().get())) return false;
     for (auto &stmt: stmts_) {
       if (!stmt->returns()) return false;
     }

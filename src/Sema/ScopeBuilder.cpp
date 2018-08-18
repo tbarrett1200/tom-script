@@ -66,43 +66,49 @@ void ScopeBuilder::buildFunctionScope(FuncDecl &func) {
   buildCompoundStmtScope(func.getBlockStmt());
 }
 
+void ScopeBuilder::buildStmtScope(Stmt& stmt, DeclContext *parent) {
+  if (DeclStmt *decl_stmt = dynamic_cast<DeclStmt*>(&stmt)) {
+    Decl* decl = decl_stmt->getDecl();
+    decl->setParentContext(parent);
+    parent->addDecl(decl);
+    if (LetDecl *let_decl = dynamic_cast<LetDecl*>(decl)) {
+      if (Expr *expr = &let_decl->getExpr()) {
+        TypeChecker{parent}.checkExpr(*expr);
+      }
+    } else if (VarDecl *let_decl = dynamic_cast<VarDecl*>(decl)) {
+      if (Expr *expr = &let_decl->getExpr()) {
+        TypeChecker{parent}.checkExpr(*expr);
+      }
+    }
+  } else if (ExprStmt* expr_stmt = dynamic_cast<ExprStmt*>(&stmt)) {
+    TypeChecker{parent}.checkExpr(*expr_stmt->getExpr());
+  } else if (WhileLoop *loop = dynamic_cast<WhileLoop*>(&stmt)) {
+    loop->setParentContext(parent);
+    buildWhileLoopScope(*loop);
+  } else if (ReturnStmt *ret_stmt = dynamic_cast<ReturnStmt*>(&stmt)) {
+    if (Expr *expr = ret_stmt->getExpr()) {
+      TypeChecker{parent}.checkExpr(*expr);
+    }
+  } else if (ConditionalBlock *cond_stmt = dynamic_cast<ConditionalBlock*>(&stmt)) {
+    for (auto &stmt: cond_stmt->getStmts()) {
+      if (ConditionalStmt *cond_stmt = dynamic_cast<ConditionalStmt*>(stmt.get())) {
+        cond_stmt->setParentContext(parent);
+        buildConditionalStmtScope(*cond_stmt);
+      } else if (CompoundStmt *block_stmt = dynamic_cast<CompoundStmt*>(stmt.get())) {
+        block_stmt->setParentContext(parent);
+        buildCompoundStmtScope(*block_stmt);
+      } else {
+        buildStmtScope(*stmt, parent);
+      }
+    }
+  }
+}
+
 void ScopeBuilder::buildCompoundStmtScope(CompoundStmt &block) {
   DeclContext *block_scope = block.getDeclContext();
   for (auto &stmt: block.getStmts()) {
-    if (DeclStmt *decl_stmt = dynamic_cast<DeclStmt*>(stmt.get())) {
-      Decl* decl = decl_stmt->getDecl();
-      decl->setParentContext(block_scope);
-      block_scope->addDecl(decl);
-      if (LetDecl *let_decl = dynamic_cast<LetDecl*>(decl)) {
-        if (Expr *expr = &let_decl->getExpr()) {
-          TypeChecker{block_scope}.checkExpr(*expr);
-        }
-      } else if (VarDecl *let_decl = dynamic_cast<VarDecl*>(decl)) {
-        if (Expr *expr = &let_decl->getExpr()) {
-          TypeChecker{block_scope}.checkExpr(*expr);
-        }
-      }
-    } else if (ExprStmt* expr_stmt = dynamic_cast<ExprStmt*>(stmt.get())) {
-      TypeChecker{block_scope}.checkExpr(*expr_stmt->getExpr());
-    } else if (WhileLoop *loop = dynamic_cast<WhileLoop*>(stmt.get())) {
-      loop->setParentContext(block_scope);
-      buildWhileLoopScope(*loop);
-    } else if (ReturnStmt *ret_stmt = dynamic_cast<ReturnStmt*>(stmt.get())) {
-      if (Expr *expr = ret_stmt->getExpr()) {
-        TypeChecker{block_scope}.checkExpr(*expr);
-      }
-    } else if (ConditionalBlock *cond_stmt = dynamic_cast<ConditionalBlock*>(stmt.get())) {
-      for (auto &stmt: cond_stmt->getStmts()) {
-        if (ConditionalStmt *cond_stmt = dynamic_cast<ConditionalStmt*>(stmt.get())) {
-          cond_stmt->setParentContext(block_scope);
-          buildConditionalStmtScope(*cond_stmt);
-        } else if (CompoundStmt *block_stmt = dynamic_cast<CompoundStmt*>(stmt.get())) {
-          block_stmt->setParentContext(block_scope);
-          buildCompoundStmtScope(*block_stmt);
-        }
-      }
-    }
-   }
+    buildStmtScope(*stmt, block_scope);
+  }
 }
 
 void ScopeBuilder::buildWhileLoopScope(class WhileLoop &while_loop) {
