@@ -12,6 +12,8 @@ const Type* Parser::parseType() {
   switch(token_.type()) {
     case Token::l_paren: return parseTupleOrFunctionType();
     case Token::identifier: return parseTypeIdentifier();
+    case Token::operator_id:
+      if (token_.lexeme() == StringRef{"*"}) return parsePointerType();
     case Token::l_square: return parseListOrMapType();
     default: throw CompilerException(token_.location(),  "error: unable to parse type");
   }

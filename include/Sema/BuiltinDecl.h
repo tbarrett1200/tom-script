@@ -37,5 +37,6 @@ public:
 
   static BasicDecl int_to_double;
   static BasicDecl double_to_int;
+
 };
 #endif

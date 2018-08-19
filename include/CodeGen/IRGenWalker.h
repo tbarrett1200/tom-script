@@ -74,6 +74,9 @@ public:
       return llvm::ArrayType::get(transformType(*list_type.element_type()), list_type.size());
     } else if (type.getKind() == Type::Kind::CharacterType) {
       return llvm::Type::getInt8Ty(context_);
+    } else if (type.getKind() == Type::Kind::PointerType) {
+      const PointerType &ptr_type = dynamic_cast<const PointerType&>(type);
+      return llvm::PointerType::getUnqual(transformType(*ptr_type.getReferencedType()));
     } else {
       throw std::logic_error(type.toString() + " not supported by codegen");
     }
@@ -314,6 +317,8 @@ public:
       return transformFunctionCall(dynamic_cast<const FunctionCall&>(expr),current_block);
     } else if (dynamic_cast<const ListExpr*>(&expr)) {
       return transformListExpr(dynamic_cast<const ListExpr&>(expr),current_block);
+    } else if (const StringExpr *string_expr = dynamic_cast<const StringExpr*>(&expr)) {
+      return llvm::ConstantDataArray::getString(context_, string_expr->getString());
     } else if (const AccessorExpr *accessor_expr = dynamic_cast<const AccessorExpr*>(&expr)) {
       return builder.CreateLoad(transformLeftValueAccessorExpr(*accessor_expr, current_block));
     } else {
@@ -542,7 +547,14 @@ public:
   llvm::Value* transformUnaryExpr(const UnaryExpr& expr, llvm::BasicBlock* current_block) {
     llvm::IRBuilder<> builder{current_block};
 
+
+    // assignment is special
+    if (expr.getOperator() == StringRef{"&"}) {
+      return transformLeftValueExpr(expr.getExpr(), current_block);
+    }
+
     llvm::Value *val = transformExpr(expr.getExpr(), current_block);
+
 
     if (val->getType()->isIntegerTy() && val->getType()->isIntegerTy()) {
       if (expr.getOperator() == "+") {

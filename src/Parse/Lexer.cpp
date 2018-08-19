@@ -92,9 +92,10 @@ auto  Lexer::lexStringLiteral() -> Token {
     throw std::logic_error("error: expected '\"' while lexing string literal");
   } else source_iterator++;
 
-  while (source_iterator != source->end() || *source_iterator == '"') {
+  while (source_iterator != source->end() && *source_iterator != '"') {
     source_iterator++;
   }
+
   if (source_iterator == source->end()) {
     throw std::logic_error("error: expected '\"' while lexing string literal");
   } else source_iterator++;

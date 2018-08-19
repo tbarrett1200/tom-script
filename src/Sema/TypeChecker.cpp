@@ -80,22 +80,34 @@ void TypeChecker::checkIdentifierExpr(IdentifierExpr &expr) {
 }
 void TypeChecker::checkUnaryExpr(UnaryExpr &expr) {
   checkExpr(expr.getExpr());
-  std::vector<const Type*> param_types{ expr.getExpr().getType() };
-  if (Decl *decl = this->currentContext->getDecl(FunctionSignature(expr.getOperator(), param_types))) {
-    const FunctionType& func_type = dynamic_cast<const FunctionType&>(*decl->getType());
-    if (func_type.getParamCount() == 1) {
-      const Type* decl_param_type = func_type.getParam(0)->getCanonicalType();
-      const Type* expr_param_type = expr.getExpr().getType()->getCanonicalType();
-      if (decl_param_type != expr_param_type)
-        throw CompilerException(nullptr, "parameter type does not match operator");
 
-      expr.setType(func_type.getReturnType());
+  if (expr.getOperator() == StringRef{"&"}) {
+    if (expr.getExpr().isLeftValue()) {
+      const Type* ltype = expr.getExpr().getType()->getCanonicalType();
+      expr.setType(PointerType::getInstance(ltype));
     } else {
       std::stringstream ss;
-      ss <<  "not enough parameters to operator '" << expr.getOperator() << "'. expected 1 but got " << func_type.getParamCount();
-      throw CompilerException(nullptr, ss.str());
+      ss <<  "unable to reference r-value";
+      throw CompilerException(expr.getOperator().start, ss.str());
     }
-  } else throw CompilerException(nullptr, "operator not declared");
+  } else {
+    std::vector<const Type*> param_types{ expr.getExpr().getType() };
+    if (Decl *decl = this->currentContext->getDecl(FunctionSignature(expr.getOperator(), param_types))) {
+      const FunctionType& func_type = dynamic_cast<const FunctionType&>(*decl->getType());
+      if (func_type.getParamCount() == 1) {
+        const Type* decl_param_type = func_type.getParam(0)->getCanonicalType();
+        const Type* expr_param_type = expr.getExpr().getType()->getCanonicalType();
+        if (decl_param_type != expr_param_type)
+          throw CompilerException(nullptr, "parameter type does not match operator");
+
+        expr.setType(func_type.getReturnType());
+      } else {
+        std::stringstream ss;
+        ss <<  "not enough parameters to operator '" << expr.getOperator() << "'. expected 1 but got " << func_type.getParamCount();
+        throw CompilerException(nullptr, ss.str());
+      }
+    } else throw CompilerException(nullptr, "operator not declared");
+  }
 }
 void TypeChecker::checkBinaryExpr(BinaryExpr &expr) {
   // first checks the types of the left and right hand side
@@ -194,8 +206,9 @@ void TypeChecker::checkFunctionCall(FunctionCall &expr) {
   }
 }
 void TypeChecker::checkStringExpr(StringExpr &expr) {
-  throw CompilerException(nullptr, "string expression not implemented");
+  expr.setType(ListType::getInstance(CharacterType::getInstance(), expr.getString().size()));
 }
+
 void TypeChecker::checkListExpr(ListExpr &expr) {
   if (expr.elements().size() == 0) {
     throw CompilerException(nullptr, "list must have at least one element");

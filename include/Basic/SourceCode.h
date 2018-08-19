@@ -82,8 +82,8 @@ public:
       file.seekg(0, file.beg);
       // copies contents of file into string
       contents_.assign(
-        std::istreambuf_iterator<char>{file}
-      , std::istreambuf_iterator<char>{}
+        std::istreambuf_iterator<char>{file},
+        std::istreambuf_iterator<char>{}
       );
       file.close();
       initialize_line_starts();

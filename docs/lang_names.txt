@@ -7,3 +7,4 @@ Equinox - equal length of day and night
 Polarity - Opposite signs
 Nebula - Cloud
 Zenith - point of the sky that is directly overhead
+Bulat

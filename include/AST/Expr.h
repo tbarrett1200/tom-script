@@ -123,43 +123,6 @@ public:
 };
 
 
-class StringExpr: public Expr {
-private:
-  Token token_;
-
-public:
-
-  StringRef lexeme() const {
-    return token_.lexeme();
-  }
-
-  Expr::Kind getKind() const override { return Kind::StringExpr; }
-
-  bool isLeftValue() const override {
-    return false;
-  }
-
-  std::string getString() const {
-    std::string str = token_.lexeme().str();
-    return str.substr(1, str.size()-2);
-  }
-
-
-  std::string name() const override {
-    return "string-literal-expression";
-  };
-
-  StringExpr(Token t) : token_{t} {
-    throw std::logic_error("string not implemented");
-
-    if (t.isNot(Token::string_literal)) {
-      throw std::domain_error("StringExpr requires a token of type string_literal");
-    }
-  }
-
-
-
-};
 
 class IntegerExpr: public Expr  {
 private:
@@ -501,6 +464,39 @@ public:
 
   std::vector<std::unique_ptr<Expr>>& elements() {
     return elements_;
+  }
+};
+
+
+class StringExpr: public Expr {
+private:
+  Token token_;
+
+public:
+
+  StringRef lexeme() const {
+    return token_.lexeme();
+  }
+
+  Expr::Kind getKind() const override { return Kind::StringExpr; }
+
+  bool isLeftValue() const override {
+    return false;
+  }
+
+  std::string getString() const {
+    std::string str = token_.lexeme().str();
+    return str.substr(1, str.size()-2);
+  }
+
+  std::string name() const override {
+    return "string-literal-expression";
+  };
+
+  StringExpr(Token t) : token_{t} {
+    if (t.isNot(Token::string_literal)) {
+      throw std::domain_error("StringExpr requires a token of type string_literal");
+    }
   }
 };
 
