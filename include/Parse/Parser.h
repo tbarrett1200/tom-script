@@ -286,6 +286,8 @@ public:
 
   std::unique_ptr<BoolExpr> parseBoolExpr();
 
+  unique_ptr<CharacterExpr> parseCharacterExpr();
+
   /**
    *
    */

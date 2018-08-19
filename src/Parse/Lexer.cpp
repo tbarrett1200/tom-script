@@ -100,6 +100,21 @@ auto  Lexer::lexStringLiteral() -> Token {
   return Token(Token::string_literal, loc, current_loc() - loc);
 }
 
+
+Token  Lexer::lexCharacterLiteral() {
+  const char *loc = current_loc();
+
+  if (*source_iterator != '\'') {
+    throw std::logic_error("error: expected '\"' while lexing string literal");
+  } else source_iterator++;
+  source_iterator++;
+  if (*source_iterator != '\'') {
+    throw std::logic_error("error: expected '\"' while lexing string literal");
+  } else source_iterator++;
+
+  return Token(Token::character_literal, loc, current_loc() - loc);
+}
+
 void  Lexer::lexSlashStarComment() {
   while (source_iterator != source->end()) {
     if (*source_iterator == '*') {
@@ -299,6 +314,9 @@ Token Lexer::next() {
     case '0': case '1': case '2': case '3': case '4':
     case '5': case '6': case '7': case '8': case '9':
       return lexNumber();
+
+    case '\'':
+      return lexCharacterLiteral();
 
     case '"':
       return lexStringLiteral();

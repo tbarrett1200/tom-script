@@ -103,6 +103,8 @@ unique_ptr<Expr> Parser::parseValueExpr() {
     return parseIntegerExpr();
   case Token::l_square:
     return parseListExpr();
+  case Token::character_literal:
+    return parseCharacterExpr();
   case Token::kw_true:
   case Token::kw_false:
     return parseBoolExpr();
@@ -210,4 +212,10 @@ unique_ptr<ListExpr> Parser::parseListExpr() {
 unique_ptr<StringExpr> Parser::parseStringExpr() {
   auto token = expectToken(Token::string_literal, "string literal");
   return make_unique<StringExpr>(token);
+}
+
+
+std::unique_ptr<CharacterExpr> Parser::parseCharacterExpr() {
+  auto token = expectToken(Token::character_literal, "character literal");
+  return make_unique<CharacterExpr>(token);
 }

@@ -72,6 +72,8 @@ public:
     } else if (type.getKind() == Type::Kind::ListType) {
       const ListType &list_type = dynamic_cast<const ListType&>(type);
       return llvm::ArrayType::get(transformType(*list_type.element_type()), list_type.size());
+    } else if (type.getKind() == Type::Kind::CharacterType) {
+      return llvm::Type::getInt8Ty(context_);
     } else {
       throw std::logic_error(type.toString() + " not supported by codegen");
     }
@@ -223,6 +225,11 @@ public:
       llvm::Type* type = transformType(*DoubleType::getInstance());
       for (auto &element: list.elements()) {
           elements.push_back(llvm::ConstantFP::get(type, (dynamic_cast<const DoubleExpr&>(*element).getDouble())));
+      }
+    } else if (list_type->element_type()->getKind() == Type::Kind::CharacterType) {
+      llvm::Type* type = transformType(*CharacterType::getInstance());
+      for (auto &element: list.elements()) {
+          elements.push_back(llvm::ConstantInt::get(type, (dynamic_cast<const CharacterExpr&>(*element).getChar())));
       }
     } else {
       throw CompilerException(nullptr, "array initializer only allowed for literals");

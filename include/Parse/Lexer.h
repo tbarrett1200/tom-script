@@ -16,7 +16,7 @@ private:
   Token lexNumber();
   Token lexStringLiteral();
   Token lexPunctuation();
-  Token lexCharLiteral();
+  Token lexCharacterLiteral();
   Token lexOperatorIdentifier();
   void lexSlashStarComment();
   void lexSlashSlashComment();

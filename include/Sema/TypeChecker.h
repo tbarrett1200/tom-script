@@ -20,6 +20,7 @@ public:
    * linked, then this method returns true. Otherwise it returns false.
    */
   void checkExpr(class Expr &expr);
+  void checkCharacterExpr(class CharacterExpr &expr);
   void checkStringExpr(class StringExpr &expr);
   void checkIntegerExpr(class IntegerExpr &expr);
   void checkDoubleExpr(class DoubleExpr &expr);

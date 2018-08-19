@@ -32,6 +32,14 @@ const IntegerType* IntegerType::getInstance() {
   return &IntegerType::singleton;
 }
 
+
+CharacterType CharacterType::singleton;
+
+const CharacterType* CharacterType::getInstance() {
+  return &CharacterType::singleton;
+}
+
+
 //----------------------------------------------------------------------------//
 // IntegerType
 //----------------------------------------------------------------------------//

@@ -1,0 +1,8 @@
+func hello() -> [Character, 5] {
+  return ['H','e','l','l','o']
+}
+
+func main() -> Character {
+  var array: [Character, 5] = hello()
+  return array.0
+}

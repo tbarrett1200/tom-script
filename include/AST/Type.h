@@ -87,6 +87,28 @@ public:
 };
 
 
+
+/// A type which represents an integer
+class CharacterType: public Type {
+  /// Singleton instance of IntegerType
+  static CharacterType singleton;
+
+  /// Construct IntegerType type
+  CharacterType() = default;
+public:
+
+  /// Return the singleton instance of IntegerType. Type equality can be done
+  /// by pointer comparison becase all IntegerType have the same pointer.
+  static const CharacterType* getInstance();
+
+  /// Return runtime type, which is Type::Kind::IntegerType
+  Type::Kind getKind() const override { return Type::Kind::CharacterType; }
+
+  /// Return a string representation of the IntegerType as "Int"
+  std::string toString() const override { return "Character"; }
+};
+
+
 /// A type which represents a boolean
 class BooleanType: public Type {
 private:

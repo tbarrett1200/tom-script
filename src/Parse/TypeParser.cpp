@@ -22,6 +22,7 @@ const Type* Parser::parseTypeIdentifier() {
   if (token.lexeme() == StringRef{"Int"}) return IntegerType::getInstance();
   else if (token.lexeme()== StringRef{"Boolean"}) return BooleanType::getInstance();
   else if (token.lexeme()== StringRef{"Double"}) return DoubleType::getInstance();
+  else if (token.lexeme()== StringRef{"Character"}) return CharacterType::getInstance();
   else {
     std::stringstream ss;
     ss << "error: unrecognized type identifier " << token.lexeme();

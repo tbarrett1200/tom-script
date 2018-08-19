@@ -47,6 +47,9 @@ void TypeChecker::checkExpr(Expr &expr) {
     case Expr::Kind::TupleExpr:
       checkTupleExpr(dynamic_cast<TupleExpr&>(expr));
       break;
+    case Expr::Kind::CharacterExpr:
+      checkCharacterExpr(dynamic_cast<CharacterExpr&>(expr));
+      break;
     case Expr::Kind::AccessorExpr:
       checkAccessorExpr(dynamic_cast<AccessorExpr&>(expr));
       break;
@@ -58,6 +61,11 @@ void TypeChecker::checkIntegerExpr(IntegerExpr &expr) {
 void TypeChecker::checkDoubleExpr(DoubleExpr &expr) {
   expr.setType(DoubleType::getInstance());
 }
+
+void TypeChecker::checkCharacterExpr(CharacterExpr &expr) {
+  expr.setType(CharacterType::getInstance());
+}
+
 void TypeChecker::checkBoolExpr(BoolExpr &expr) {
   expr.setType(BooleanType::getInstance());
 }

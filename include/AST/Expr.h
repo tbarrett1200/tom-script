@@ -228,6 +228,40 @@ public:
 
 };
 
+class CharacterExpr: public Expr {
+private:
+  Token token_;
+
+public:
+
+  /* Returns a vector of children for easy traversal */
+  StringRef lexeme() const {
+    return token_.lexeme();
+  }
+
+  Expr::Kind getKind() const override { return Kind::CharacterExpr; }
+
+  bool isLeftValue() const override {
+    return false;
+  }
+
+  std::string name() const override {
+    return "character-literal-expression";
+  };
+
+  double getChar() const {
+    return *(token_.lexeme().start + 1);
+  }
+
+  CharacterExpr(Token t) : token_{t} {
+    if (t.isNot(Token::character_literal)) {
+      throw std::domain_error("CharacterExpr requires a token of type character_literal");
+    }
+  }
+
+};
+
+
 class DoubleExpr: public Expr {
 private:
   Token token_;
