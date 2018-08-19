@@ -78,15 +78,26 @@ void ScopeBuilder::buildStmtScope(Stmt& stmt, DeclContext *parent) {
     if (LetDecl *let_decl = dynamic_cast<LetDecl*>(decl)) {
       if (Expr *expr = &let_decl->getExpr()) {
         TypeChecker{parent}.checkExpr(*expr);
-        if (let_decl->getType() != let_decl->getExpr().getType()) {
-          throw CompilerException(nullptr, "let declaration type does not match expression");
+        if (!expr->getType()) {
+          throw CompilerException(nullptr, "nullptr type " + expr->name());
+        }
+        if (let_decl->getType() != expr->getType()) {
+          std::stringstream ss;
+          ss << "let declaration type(" << let_decl->getType()->toString();
+          ss << ") does not match expression type (" << expr->getType()->toString() << ")";
+          throw CompilerException(nullptr, ss.str());
         }
       }
     } else if (VarDecl *let_decl = dynamic_cast<VarDecl*>(decl)) {
       if (Expr *expr = &let_decl->getExpr()) {
         TypeChecker{parent}.checkExpr(*expr);
-        if (let_decl->getType() != let_decl->getExpr().getType()) {
-          throw CompilerException(nullptr, "var declaration type does not match expression");
+        if (!expr->getType()) {
+          throw CompilerException(nullptr, "nullptr type " + expr->name());
+        }
+        if (let_decl->getType() != expr->getType()) {
+          std::stringstream ss;
+          ss << "var declaration type(" << let_decl->getType()->toString();
+          ss << ") does not match expression type (" << expr->getType()->toString() << ")";
         }
       }
     }

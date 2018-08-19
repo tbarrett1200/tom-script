@@ -167,8 +167,8 @@ void TypeChecker::checkFunctionCall(FunctionCall &expr) {
             ss << "improper argument types passed to function '" << expr.getFunctionName() << "'";
             throw CompilerException(nullptr, ss.str());
           }
-          expr.setType(func_type->getReturnType());
         }
+        expr.setType(func_type->getReturnType());
       } else {
         std::stringstream ss;
         ss << "wrong number of arguments passed to function '" << expr.getFunctionName() << "'";
