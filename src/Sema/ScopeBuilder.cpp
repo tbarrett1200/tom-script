@@ -58,12 +58,16 @@ void ScopeBuilder::buildCompilationUnitScope(CompilationUnit &unit) {
 }
 
 void ScopeBuilder::buildFunctionScope(FuncDecl &func) {
+  function_ = &func;
   DeclContext *functionScope = func.getDeclContext();
   for (auto &param: func.getParams()) {
     functionScope->addDecl(param.get());
   }
   func.getBlockStmt().getDeclContext()->setParentContext(functionScope);
   buildCompoundStmtScope(func.getBlockStmt());
+  if (!func.getBlockStmt().returns()) {
+    throw CompilerException(func.getName().start, "function is not guarenteed to return");
+  }
 }
 
 void ScopeBuilder::buildStmtScope(Stmt& stmt, DeclContext *parent) {
@@ -88,6 +92,10 @@ void ScopeBuilder::buildStmtScope(Stmt& stmt, DeclContext *parent) {
   } else if (ReturnStmt *ret_stmt = dynamic_cast<ReturnStmt*>(&stmt)) {
     if (Expr *expr = ret_stmt->getExpr()) {
       TypeChecker{parent}.checkExpr(*expr);
+      const Type* ret_type = dynamic_cast<const FunctionType*>(function_->getType())->getReturnType();
+      if (expr->getType()->getCanonicalType() != ret_type->getCanonicalType()) {
+        throw CompilerException(nullptr, "type of returned expression does not match declaration");
+      }
     }
   } else if (ConditionalBlock *cond_stmt = dynamic_cast<ConditionalBlock*>(&stmt)) {
     for (auto &stmt: cond_stmt->getStmts()) {

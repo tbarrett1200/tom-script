@@ -2,6 +2,9 @@
 #define SEMA_SCOPE_BUILDER_H
 
 class ScopeBuilder {
+private:
+  const class FuncDecl* function_;
+
 public:
   /**
    * Recursively builds the lexical scope for the entire compilation

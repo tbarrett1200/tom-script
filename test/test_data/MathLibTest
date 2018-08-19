@@ -55,7 +55,6 @@ func tan(angle: Double) -> Double {
 }
 
 func main() -> Double {
-  if 5 == 5 then return 0.0
-  else if false then return 2.0
-  else return 1.0
+  if 1 == 1 then return Double(1)
+  return Double(0)
 }

@@ -178,7 +178,7 @@ public:
 
   /// Return false because the stmt is not guarenteed to return
   bool returns() const override {
-    return false;
+    return stmt_->returns();
   }
 
   /// Return the child nodes for walking or serialization
@@ -235,9 +235,11 @@ public:
     // if a conditional block does not contain an else statement... it can not
     // be guarenteed to return
     if (dynamic_cast<ConditionalStmt*>(stmts_.back().get())) return false;
+
     for (auto &stmt: stmts_) {
       if (!stmt->returns()) return false;
     }
+
     return true;
   }
 
