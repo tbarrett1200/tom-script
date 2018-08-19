@@ -78,10 +78,16 @@ void ScopeBuilder::buildStmtScope(Stmt& stmt, DeclContext *parent) {
     if (LetDecl *let_decl = dynamic_cast<LetDecl*>(decl)) {
       if (Expr *expr = &let_decl->getExpr()) {
         TypeChecker{parent}.checkExpr(*expr);
+        if (let_decl->getType() != let_decl->getExpr().getType()) {
+          throw CompilerException(nullptr, "let declaration type does not match expression");
+        }
       }
     } else if (VarDecl *let_decl = dynamic_cast<VarDecl*>(decl)) {
       if (Expr *expr = &let_decl->getExpr()) {
         TypeChecker{parent}.checkExpr(*expr);
+        if (let_decl->getType() != let_decl->getExpr().getType()) {
+          throw CompilerException(nullptr, "var declaration type does not match expression");
+        }
       }
     }
   } else if (ExprStmt* expr_stmt = dynamic_cast<ExprStmt*>(&stmt)) {

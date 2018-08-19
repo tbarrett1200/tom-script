@@ -447,20 +447,19 @@ public:
     return false;
   }
 
-  ListExpr(std::vector<std::unique_ptr<Expr>>&& d): elements_{std::move(d)} {
-    throw std::logic_error("list not implemented");
-  }
+  ListExpr(std::vector<std::unique_ptr<Expr>> d): elements_{std::move(d)} {}
 
   std::string name() const override {
     return "list-expression";
   };
 
-
-
-  const std::vector<std::unique_ptr<Expr>>& getElements() const {
+  const std::vector<std::unique_ptr<Expr>>& elements() const {
     return elements_;
   }
 
+  std::vector<std::unique_ptr<Expr>>& elements() {
+    return elements_;
+  }
 };
 
 class AccessorExpr: public Expr {

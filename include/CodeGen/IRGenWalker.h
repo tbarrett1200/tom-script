@@ -209,6 +209,27 @@ public:
     return function_;
   }
 
+  llvm::Value* transformListExpr(const ListExpr& list, llvm::BasicBlock* current_block) {
+    const ListType* list_type = dynamic_cast<const ListType*>(list.getType());
+    llvm::ArrayType *array_type =  llvm::ArrayType::get(transformType(*list_type->element_type()), list.elements().size());
+    std::vector<llvm::Constant*> elements;
+
+    if (list_type->element_type()->isIntegerType()) {
+      llvm::Type* type = transformType(*IntegerType::getInstance());
+      for (auto &element: list.elements()) {
+        elements.push_back(llvm::ConstantInt::get(type, (uint64_t)(dynamic_cast<const IntegerExpr&>(*element).getInt()), true));
+      }
+    } else if (list_type->element_type()->isDoubleType()) {
+      llvm::Type* type = transformType(*DoubleType::getInstance());
+      for (auto &element: list.elements()) {
+          elements.push_back(llvm::ConstantFP::get(type, (dynamic_cast<const DoubleExpr&>(*element).getDouble())));
+      }
+    } else {
+      throw CompilerException(nullptr, "array initializer only allowed for literals");
+    }
+
+    return llvm::ConstantArray::get(array_type, elements);
+  }
 
   llvm::Value* transformFunctionCall(const FunctionCall& call, llvm::BasicBlock* current_block) {
     llvm::IRBuilder<> builder{current_block};
@@ -277,6 +298,8 @@ public:
       return transformIdentifierExpr(dynamic_cast<const IdentifierExpr&>(expr),current_block);
     } else if (dynamic_cast<const FunctionCall*>(&expr)) {
       return transformFunctionCall(dynamic_cast<const FunctionCall&>(expr),current_block);
+    } else if (dynamic_cast<const ListExpr*>(&expr)) {
+      return transformListExpr(dynamic_cast<const ListExpr&>(expr),current_block);
     } else if (const AccessorExpr *accessor_expr = dynamic_cast<const AccessorExpr*>(&expr)) {
       return builder.CreateLoad(transformLeftValueAccessorExpr(*accessor_expr, current_block));
     } else {

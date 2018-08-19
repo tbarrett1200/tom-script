@@ -127,7 +127,7 @@ void compileAST(CompilationUnit& unit) {
       if (printIR) TheModule->print(ir_stream, nullptr);
       auto moduleHandle = TheJIT->addModule(std::move(TheModule));
       auto mainFunctionSymbol = TheJIT->findSymbol("main");
-      double (*mainFunction)() = (double (*)())(intptr_t)cantFail(mainFunctionSymbol.getAddress());
+      int (*mainFunction)() = (int (*)())(intptr_t)cantFail(mainFunctionSymbol.getAddress());
 
       std::cout << "program returned successfully with value " << mainFunction() << std::endl;
       TheJIT->removeModule(moduleHandle);

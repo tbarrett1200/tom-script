@@ -189,8 +189,22 @@ void TypeChecker::checkStringExpr(StringExpr &expr) {
   throw CompilerException(nullptr, "string expression not implemented");
 }
 void TypeChecker::checkListExpr(ListExpr &expr) {
-  throw CompilerException(nullptr, "list expression not implemented");
+  if (expr.elements().size() == 0) {
+    throw CompilerException(nullptr, "list must have at least one element");
+  }
+
+  const Type *element_type = nullptr;
+  for (auto &element: expr.elements()) {
+    checkExpr(*element);
+    if (element_type) {
+      if (element->getType()->getCanonicalType() != element_type) {
+        throw CompilerException(nullptr, "list must be composed of elements of a single type");
+      }
+    } else element_type = element->getType()->getCanonicalType();
+  }
+  expr.setType(ListType::getInstance(element_type, expr.elements().size()));
 }
+
 void TypeChecker::checkTupleExpr(TupleExpr &expr) {
   throw CompilerException(nullptr, "tuple expression not implemented");
 }
