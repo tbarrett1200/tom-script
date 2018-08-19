@@ -189,9 +189,6 @@ Token Lexer::lexOperatorIdentifier() {
     case '~':
       source_iterator++;
       break;
-    case '.':
-      source_iterator++;
-      break;
     case '?':
       source_iterator++;
       break;
@@ -232,6 +229,9 @@ Token Lexer::lexPunctuation() {
   case ',':
     tok = Token(Token::comma, current_loc(), 1);
     break;
+  case '.':
+    tok = Token(Token::dot, current_loc(), 1);
+    break;
   case ';':
     tok = Token(Token::semi, current_loc(), 1);
     break;
@@ -265,7 +265,7 @@ Token Lexer::next() {
     // Punctuation Characters
     case '\n': case '{': case '[': case '(':
     case '}': case ']': case ')': case ',':
-    case ';': case ':': case '\\':
+    case ';': case ':': case '\\': case '.':
       return lexPunctuation();
 
     case '/':
@@ -282,7 +282,7 @@ Token Lexer::next() {
       return lexOperatorIdentifier();
 
     case '=': case '-': case '+': case '*': case '<': case '>': case '%':
-    case '&': case '|':  case '^': case '~': case '.': case '?': case '!':
+    case '&': case '|':  case '^': case '~':  case '?': case '!':
       return lexOperatorIdentifier();
 
     case 'A': case 'B': case 'C': case 'D': case 'E': case 'F': case 'G':

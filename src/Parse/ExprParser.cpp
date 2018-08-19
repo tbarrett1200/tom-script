@@ -20,7 +20,7 @@ unique_ptr<Expr> Parser::parseExpr(int precedence) {
   if (token_.is(Token::l_paren)) return parseTupleExpr();
 
   switch(precedence) {
-    case 0: return parseValueExpr();
+    case 0: return parseAccessorExpr();
     case 1: return parseUnaryExpr();
     default: return parseBinaryExpr(precedence);
   }
@@ -119,13 +119,21 @@ unique_ptr<Expr> Parser::parseValueExpr() {
   }
 }
 
+std::unique_ptr<Expr> Parser::parseAccessorExpr() {
+  std::unique_ptr<Expr> expr = parseValueExpr();
+  if (acceptToken(Token::dot)) {
+    consume();
+    std::unique_ptr<IntegerExpr> index = parseIntegerExpr();
+    return std::make_unique<AccessorExpr>(std::move(expr), std::move(index));
+  } else return expr;
+}
 
 unique_ptr<Expr> Parser::parseUnaryExpr() {
   if (!OperatorTable::level(1).contains(token_.lexeme())) {
-    return parseValueExpr();
+    return parseAccessorExpr();
   } else {
     auto op = parseOperator(1);
-    auto expr = parseValueExpr();
+    auto expr = parseAccessorExpr();
     return std::make_unique<UnaryExpr>(op, std::move(expr));
   }
 }

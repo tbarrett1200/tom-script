@@ -55,6 +55,17 @@ func tan(angle: Double) -> Double {
 }
 
 func main() -> Double {
-  if 1 == 1 then return Double(1)
-  return Double(0)
+  var array: [Double, 10]
+  array.0 = 0.0
+  array.1 = 1.0
+  array.2 = 2.0
+  array.3 = 3.0
+  array.4 = 4.0
+  array.5 = 5.0
+  array.6 = 6.0
+  array.7 = 7.0
+  array.8 = 8.0
+  array.9 = 9.0
+
+  return array.7
 }

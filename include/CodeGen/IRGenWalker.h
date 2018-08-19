@@ -69,8 +69,11 @@ public:
       return llvm::Type::getInt1Ty(context_);
     } else if (type.isDoubleType()) {
       return llvm::Type::getDoubleTy(context_);
+    } else if (type.getKind() == Type::Kind::ListType) {
+      const ListType &list_type = dynamic_cast<const ListType&>(type);
+      return llvm::ArrayType::get(transformType(*list_type.element_type()), list_type.size());
     } else {
-      throw std::logic_error("only integer, boolean, and double types are currently supported");
+      throw std::logic_error(type.toString() + " not supported by codegen");
     }
   }
 
@@ -139,12 +142,29 @@ public:
     }
   }
 
+  llvm::Value* transformLeftValueAccessorExpr(const AccessorExpr &accessor, llvm::BasicBlock* current_block) {
+    llvm::IRBuilder<> builder{current_block};
+
+    llvm::Value* aggregate_loc = transformLeftValueExpr(
+      accessor.identifier()
+    , current_block
+    );
+
+    llvm::Type* index_type = transformType(*IntegerType::getInstance());
+    llvm::Value* element_index_0 = llvm::ConstantInt::get(index_type, 0, true);
+    llvm::Value* element_index_1 = llvm::ConstantInt::get(index_type, accessor.index(), true);
+    std::array<llvm::Value*,2> indices = {{element_index_0, element_index_1}};
+    return builder.CreateGEP(aggregate_loc, indices);
+  }
+
   llvm::Value* transformLeftValueExpr(const Expr& expr, llvm::BasicBlock* current_block) {
+
     if (expr.isLeftValue()) {
       switch (expr.getKind()) {
         case Expr::Kind::IdentifierExpr:
           return transformLeftValueIdentifierExpr(dynamic_cast<const IdentifierExpr&>(expr), current_block);
-          break;
+        case Expr::Kind::AccessorExpr:
+          return transformLeftValueAccessorExpr(dynamic_cast<const AccessorExpr&>(expr), current_block);
         default:
           std::stringstream ss;
           ss << "codegen: unimplemented: unable to reference '" << expr.name() << "'";
@@ -241,6 +261,8 @@ public:
   }
 
   llvm::Value* transformExpr(const Expr& expr, llvm::BasicBlock* current_block) {
+    llvm::IRBuilder<> builder{current_block};
+
     if (dynamic_cast<const IntegerExpr*>(&expr)) {
       return llvm::ConstantInt::get(transformType(*expr.getType()), (uint64_t)(dynamic_cast<const IntegerExpr&>(expr).getInt()), true);
     } else if (dynamic_cast<const DoubleExpr*>(&expr)) {
@@ -255,6 +277,8 @@ public:
       return transformIdentifierExpr(dynamic_cast<const IdentifierExpr&>(expr),current_block);
     } else if (dynamic_cast<const FunctionCall*>(&expr)) {
       return transformFunctionCall(dynamic_cast<const FunctionCall&>(expr),current_block);
+    } else if (const AccessorExpr *accessor_expr = dynamic_cast<const AccessorExpr*>(&expr)) {
+      return builder.CreateLoad(transformLeftValueAccessorExpr(*accessor_expr, current_block));
     } else {
       throw std::logic_error("unable to transform expr of this type");
     }

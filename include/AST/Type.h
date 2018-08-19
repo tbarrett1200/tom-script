@@ -404,6 +404,7 @@ public:
 class ListType : public Type {
 private:
   const Type* element_type_;
+  const int size_;
 
   /// Singleton instances of active List types
   static std::vector<std::unique_ptr<ListType>> instances;
@@ -411,14 +412,14 @@ private:
 public:
 
   /// Constructs a ListType with the given element type
-  ListType(const Type* element_type) : element_type_{element_type} {}
+  ListType(const Type* element_type, int size) : element_type_{element_type}, size_{size} {}
 
   /// Return a pointer to a ListType instance with the given key and value types.
   /// It is guarenteed that all ListType with the same key and value types will
   /// have the same address, so that ListType can be compared by pointer for
   /// equality.
-  static const ListType* getInstance(const Type* type) {
-    const ListType list_type{type};
+  static const ListType* getInstance(const Type* type, int size) {
+    const ListType list_type{type, size};
     auto it = std::find_if(instances.begin(), instances.end()
     , [&list_type](auto &type){
       return list_type == *type;
@@ -442,11 +443,17 @@ public:
   Type::Kind getKind() const override { return Kind::ListType; }
 
   /// Return a const pointer to the element type
-  const Type* getElementType() const { return element_type_; }
+  const Type* element_type() const { return element_type_; }
+
+  /// Return a const pointer to the element type
+  int size() const { return size_; }
+
 
   /// Return a string representation of the list type as "[<element-type>]"
   std::string toString() const override {
-    return "[" + element_type_->toString() + "]";
+    std::stringstream ss;
+    ss << "[" << element_type_->toString() << ", " << size_ << "]";
+    return ss.str();
   }
 };
 

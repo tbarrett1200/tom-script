@@ -195,5 +195,10 @@ void TypeChecker::checkTupleExpr(TupleExpr &expr) {
   throw CompilerException(nullptr, "tuple expression not implemented");
 }
 void TypeChecker::checkAccessorExpr(AccessorExpr &expr) {
-  throw CompilerException(nullptr, "accessor expression not implemented");
+  checkExpr(expr.identifier());
+  if (expr.identifier().getType()->getKind() == Type::Kind::ListType) {
+    expr.setType(dynamic_cast<const ListType*>(expr.identifier().getType())->element_type());
+  } else {
+    throw CompilerException(nullptr, "accessors only valid on lists");
+  }
 }

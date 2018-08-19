@@ -268,6 +268,7 @@ public:
    */
   std::unique_ptr<Expr> parseInfixRight(int precedence);
 
+  std::unique_ptr<Expr> parseAccessorExpr();
   /**
    *
    */

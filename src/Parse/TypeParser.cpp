@@ -75,8 +75,10 @@ const Type* Parser::parseTupleOrFunctionType() {
 const ListType* Parser::parseListType() {
   expectToken(Token::l_square, "left square bracket");
   auto type = parseType();
+  expectToken(Token::comma, "comma");
+  auto size = parseIntegerExpr();
   expectToken(Token::r_square, "right square bracket");
-  return ListType::getInstance(type);
+  return ListType::getInstance(type, size->getInt());
 }
 
 const PointerType* Parser::parsePointerType() {
@@ -102,6 +104,8 @@ const Type* Parser::parseListOrMapType() {
     expectToken(Token::r_square, "right square bracket");
     return MapType::getInstance(keyType, valueType);
   }
+  expectToken(Token::comma, "comma");
+  auto size = parseIntegerExpr();
   expectToken(Token::r_square, "right square bracket");
-  return ListType::getInstance(keyType);
+  return ListType::getInstance(keyType, size->getInt());
 }

@@ -465,13 +465,13 @@ public:
 
 class AccessorExpr: public Expr {
 private:
-  std::unique_ptr<IdentifierExpr> id_;
+  std::unique_ptr<Expr> aggregate_;
   std::unique_ptr<IntegerExpr> index_;
 
 public:
 
   std::vector<TreeElement*> getChildren() const override {
-    return {id_.get(), index_.get()};
+    return {aggregate_.get(), index_.get()};
   }
 
   Expr::Kind getKind() const override {
@@ -486,10 +486,19 @@ public:
     return "accessor-expression";
   };
 
-  AccessorExpr(std::unique_ptr<IdentifierExpr> a, std::unique_ptr<IntegerExpr> b): id_{std::move(a)}, index_{std::move(b)} {
-    throw std::logic_error("accessor not implemented");
+  const Expr& identifier() const {
+    return *aggregate_;
   }
 
+  Expr& identifier() {
+    return *aggregate_;
+  }
+
+  int index() const {
+    return index_->getInt();
+  }
+
+  AccessorExpr(std::unique_ptr<Expr> a, std::unique_ptr<IntegerExpr> b): aggregate_{std::move(a)}, index_{std::move(b)} {}
 
 };
 

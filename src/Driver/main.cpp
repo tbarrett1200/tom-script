@@ -43,6 +43,7 @@
 bool printAST = false;
 bool printScope = false;
 bool printIR = false;
+bool Onone = false;
 
 void compileAST(CompilationUnit& unit);
 
@@ -59,6 +60,8 @@ int main(int argc, char const *argv[]) {
       printIR = true;
     } else if (argv[i] == std::string("--printScope")) {
       printScope = true;
+    } else if (argv[i] == std::string("--Onone")) {
+      Onone = true;
     }
   }
 
@@ -116,7 +119,7 @@ void compileAST(CompilationUnit& unit) {
         const FuncDecl *funcDecl = dynamic_cast<const FuncDecl*>(declStmt->getDecl());
         llvmFunction = transformer.transformFunction(*funcDecl);
         verifyFunction(*llvmFunction);
-        TheFPM->run(*llvmFunction);
+        if (!Onone) TheFPM->run(*llvmFunction);
       }
 
       std::error_code err_code;
