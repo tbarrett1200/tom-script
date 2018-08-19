@@ -21,6 +21,7 @@ std::unique_ptr<Decl> Parser::parseDecl() {
   case Token::kw_var: return parseVarDecl();
   case Token::kw_let: return parseLetDecl();
   case Token::kw_func: return parseFuncDecl();
+  case Token::kw_extern: return parseExternFuncDecl();
   case Token::kw_typealias: return parseTypeAlias();
   default: throw CompilerException(token_.location(),  "error: unable to parse decl");
   }
@@ -81,4 +82,13 @@ std::unique_ptr<FuncDecl> Parser::parseFuncDecl() {
   auto type = parseType();
   auto stmt = parseCompoundStmt();
   return std::make_unique<FuncDecl>(name, std::move(param), type, std::move(stmt));
+}
+
+
+std::unique_ptr<ExternFuncDecl> Parser::parseExternFuncDecl() {
+  expectToken(Token::kw_extern, "extern");
+  expectToken(Token::kw_func, "func");
+  auto name = expectToken(Token::identifier, "identifier");
+  auto type = parseFunctionType();
+  return std::make_unique<ExternFuncDecl>(name, std::move(type));
 }

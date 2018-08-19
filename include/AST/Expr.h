@@ -250,7 +250,15 @@ public:
   };
 
   double getChar() const {
-    return *(token_.lexeme().start + 1);
+    char first = *(token_.lexeme().start + 1);
+    if (first == '\\') {
+      char second = *(token_.lexeme().start + 2);
+      switch (second) {
+        case 'n': return '\n';
+        case '0': return '\0';
+        default: throw std::logic_error("this escape not supported");
+      }
+    } else return first;
   }
 
   CharacterExpr(Token t) : token_{t} {

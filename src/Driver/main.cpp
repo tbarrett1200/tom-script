@@ -119,10 +119,15 @@ int compile_to_object_code(CompilationUnit& unit) {
  llvm::Function *llvmFunction;
 
  for (auto &stmt: unit.stmts()) {
-   const DeclStmt *declStmt = dynamic_cast<const DeclStmt*>(stmt.get());
-   const FuncDecl *funcDecl = dynamic_cast<const FuncDecl*>(declStmt->getDecl());
-   llvmFunction = transformer.transformFunction(*funcDecl);
-   verifyFunction(*llvmFunction);
+   if (const DeclStmt *declStmt = dynamic_cast<const DeclStmt*>(stmt.get())) {
+     if (const FuncDecl *func_decl = dynamic_cast<const FuncDecl*>(declStmt->getDecl())) {
+       llvmFunction = transformer.transformFunction(*func_decl);
+     } else if (const ExternFuncDecl *func_decl = dynamic_cast<const ExternFuncDecl*>(declStmt->getDecl())) {
+       llvmFunction = transformer.transformExternalFunctionDecl(*func_decl);
+     } else throw CompilerException(nullptr, "only func decl allowed in top level code");
+     verifyFunction(*llvmFunction);
+   } else throw CompilerException(nullptr, "only func decl allowed in top level code");
+
  }
 
  auto TargetTriple = llvm::sys::getDefaultTargetTriple();

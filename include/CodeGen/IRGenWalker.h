@@ -191,6 +191,11 @@ public:
     }
   }
 
+  llvm::Function* transformExternalFunctionDecl(const ExternFuncDecl &extern_func) {
+    llvm::FunctionType* type = transformFunctionType(*extern_func.getFunctionType());
+    return llvm::Function::Create(type, llvm::Function::ExternalLinkage, extern_func.getName().str(), module_);
+  }
+
   llvm::Function* transformFunction(const FuncDecl &func) {
     currentContext = func.getDeclContext();
 
@@ -295,7 +300,9 @@ public:
       return llvm::ConstantInt::get(transformType(*expr.getType()), (uint64_t)(dynamic_cast<const IntegerExpr&>(expr).getInt()), true);
     } else if (dynamic_cast<const DoubleExpr*>(&expr)) {
       return llvm::ConstantFP::get(transformType(*expr.getType()), (dynamic_cast<const DoubleExpr&>(expr).getDouble()));
-    }  else if (dynamic_cast<const BoolExpr*>(&expr)) {
+    } else if (dynamic_cast<const CharacterExpr*>(&expr)) {
+      return llvm::ConstantInt::get(transformType(*expr.getType()), (dynamic_cast<const CharacterExpr&>(expr).getChar()));
+    } else if (dynamic_cast<const BoolExpr*>(&expr)) {
       return llvm::ConstantInt::get(transformType(*expr.getType()), dynamic_cast<const BoolExpr&>(expr).getBool()?1:0);
     } else if (dynamic_cast<const BinaryExpr*>(&expr)) {
       return transformBinaryExpr(dynamic_cast<const BinaryExpr&>(expr),current_block);
@@ -310,7 +317,9 @@ public:
     } else if (const AccessorExpr *accessor_expr = dynamic_cast<const AccessorExpr*>(&expr)) {
       return builder.CreateLoad(transformLeftValueAccessorExpr(*accessor_expr, current_block));
     } else {
-      throw std::logic_error("unable to transform expr of this type");
+      std::stringstream ss;
+      ss << "unimplemented: unable to transform " << expr.name();
+      throw CompilerException(nullptr, ss.str());
     }
   }
 

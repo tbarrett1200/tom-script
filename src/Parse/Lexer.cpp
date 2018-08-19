@@ -35,6 +35,8 @@ Token Lexer::lexIdentifier()  {
     return Token(Token::kw_true, str_ref);
   } else if (str_ref == StringRef{"false"}) {
     return Token(Token::kw_false, str_ref);
+  } else if (str_ref == StringRef{"extern"}) {
+    return Token(Token::kw_extern, str_ref);
   } else if (str_ref == StringRef{"typedef"}) {
     return Token(Token::kw_typedef, str_ref);
   } else if (str_ref == StringRef{"typealias"}) {
@@ -107,7 +109,16 @@ Token  Lexer::lexCharacterLiteral() {
   if (*source_iterator != '\'') {
     throw std::logic_error("error: expected '\"' while lexing string literal");
   } else source_iterator++;
-  source_iterator++;
+  if (*source_iterator == '\\') {
+    source_iterator++;
+    switch (*source_iterator) {
+      case 'n':
+      case '0':
+        source_iterator++;
+        break;
+      default: throw CompilerException(&*source_iterator, "invalid character escape");
+    }
+  } else source_iterator++;
   if (*source_iterator != '\'') {
     throw std::logic_error("error: expected '\"' while lexing string literal");
   } else source_iterator++;

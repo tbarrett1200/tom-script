@@ -379,4 +379,42 @@ public:
   }
 };
 
+class ExternFuncDecl : public Decl {
+private:
+  DeclContext* parent_context_;
+  Token name_;
+  const FunctionType *type_;
+public:
+
+  ExternFuncDecl(Token name, const FunctionType *type): name_{name}, type_{type} {}
+
+  Decl::Kind getKind() const override {
+    return Decl::Kind::BasicDecl;
+  }
+
+  StringRef getName() const override {
+    return name_.lexeme();
+  }
+
+  const Type* getType() const override {
+    return type_;
+  }
+
+  const FunctionType *getFunctionType() const {
+    return type_;
+  }
+
+  virtual const DeclContext* getDeclContext() const override {
+    return parent_context_;
+  }
+
+  virtual DeclContext* getDeclContext() override {
+    return parent_context_;
+  }
+
+  virtual void setParentContext(DeclContext *parent) override {
+    parent_context_ = parent;
+  }
+};
+
 #endif

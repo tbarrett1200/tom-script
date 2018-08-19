@@ -212,6 +212,8 @@ public:
    */
   std::unique_ptr<ParamDecl> parseParamDecl();
 
+  std::unique_ptr<ExternFuncDecl> parseExternFuncDecl();
+
   /**
    *
    */
