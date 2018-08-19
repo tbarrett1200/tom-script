@@ -20,8 +20,15 @@
 #include "llvm/IR/Module.h"
 #include "llvm/IR/Type.h"
 #include "llvm/IR/Verifier.h"
+
+#include "llvm/Support/FileSystem.h"
+#include "llvm/Support/Host.h"
+#include "llvm/Support/raw_ostream.h"
+#include "llvm/Support/TargetRegistry.h"
 #include "llvm/Support/TargetSelect.h"
 #include "llvm/Target/TargetMachine.h"
+#include "llvm/Target/TargetOptions.h"
+
 #include "llvm/Transforms/Scalar.h"
 #include "llvm/Transforms/Scalar/GVN.h"
 
@@ -44,8 +51,10 @@ bool printAST = false;
 bool printScope = false;
 bool printIR = false;
 bool Onone = false;
+bool JIT = false;
 
 void compileAST(CompilationUnit& unit);
+int compile_to_object_code(CompilationUnit& unit);
 
 int main(int argc, char const *argv[]) {
   if (argc < 2) {
@@ -62,6 +71,8 @@ int main(int argc, char const *argv[]) {
       printScope = true;
     } else if (argv[i] == std::string("--Onone")) {
       Onone = true;
+    } else if (argv[i] == std::string("--JIT")) {
+      JIT = true;
     }
   }
 
@@ -82,14 +93,86 @@ int main(int argc, char const *argv[]) {
       myfile.close();
     }
     if (printScope) ASTScopePrinter(std::cout).traverse(unit.get());
-    compileAST(*unit);
+    if (JIT) compileAST(*unit); else return compile_to_object_code(*unit);
   } catch (CompilerException e) {
       ErrorReporter{std::cout, *SourceManager::currentSource}.report(e);
   }
   return 0;
 }
 
+// instructions for compilation
+// 1 ./bin/tomscript test/test_data/MathLibTest
+// 2 ld output.o -e _main -macosx_version_min 10.13 -lSystem
+// 3 ./a.out
+int compile_to_object_code(CompilationUnit& unit) {
+  // Initialize the target registry etc.
+ llvm::InitializeAllTargetInfos();
+ llvm::InitializeAllTargets();
+ llvm::InitializeAllTargetMCs();
+ llvm::InitializeAllAsmParsers();
+ llvm::InitializeAllAsmPrinters();
 
+ llvm::LLVMContext TheContext;
+ std::unique_ptr<llvm::Module> TheModule = llvm::make_unique<llvm::Module>("test", TheContext);
+
+ LLVMTransformer transformer{TheContext, TheModule.get()};
+ llvm::Function *llvmFunction;
+
+ for (auto &stmt: unit.stmts()) {
+   const DeclStmt *declStmt = dynamic_cast<const DeclStmt*>(stmt.get());
+   const FuncDecl *funcDecl = dynamic_cast<const FuncDecl*>(declStmt->getDecl());
+   llvmFunction = transformer.transformFunction(*funcDecl);
+   verifyFunction(*llvmFunction);
+ }
+
+ auto TargetTriple = llvm::sys::getDefaultTargetTriple();
+ TheModule->setTargetTriple(TargetTriple);
+
+ std::string Error;
+ auto Target = llvm::TargetRegistry::lookupTarget(TargetTriple, Error);
+
+ // Print an error and exit if we couldn't find the requested target.
+ // This generally occurs if we've forgotten to initialise the
+ // TargetRegistry or we have a bogus target triple.
+ if (!Target) {
+   llvm::errs() << Error;
+   return 1;
+ }
+
+ auto CPU = "generic";
+ auto Features = "";
+
+ llvm::TargetOptions opt;
+ auto RM = llvm::Optional<llvm::Reloc::Model>();
+ auto TheTargetMachine =
+     Target->createTargetMachine(TargetTriple, CPU, Features, opt, RM);
+
+ TheModule->setDataLayout(TheTargetMachine->createDataLayout());
+
+ auto Filename = "./output.o";
+ std::error_code EC;
+ llvm::raw_fd_ostream dest(Filename, EC, llvm::sys::fs::F_None);
+
+ if (EC) {
+   llvm::errs() << "Could not open file: " << EC.message();
+   return 1;
+ }
+
+ llvm::legacy::PassManager pass;
+ auto FileType = llvm::TargetMachine::CGFT_ObjectFile;
+
+ if (TheTargetMachine->addPassesToEmitFile(pass, dest, FileType)) {
+   llvm::errs() << "TheTargetMachine can't emit a file of this type";
+   return 1;
+ }
+
+ pass.run(*TheModule);
+ dest.flush();
+
+ llvm::outs() << "Wrote " << Filename << "\n";
+
+ return 0;
+}
 
 void compileAST(CompilationUnit& unit) {
     llvm::InitializeNativeTarget();
