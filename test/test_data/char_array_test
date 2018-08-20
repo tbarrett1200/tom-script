@@ -1,9 +1,14 @@
 extern func puts(*Character) -> Int
 extern func putchar(Character) -> Int
 extern func strlen(*Character) -> Int
+extern func strcmp(*Character, *Character) -> Int
 
-func main() -> Int {
-  var stack_string: [Character, 8] = "Hello World"
-  puts(&stack_string.0)
-  return strlen(&stack_string.0)
+func main() -> Boolean {
+  var string1: [Character, 12] = "Hello World"
+  var string2: [Character, 12] = "Hello World"
+
+  puts(&string1.0)
+  puts(&string2.0)
+
+  return strcmp(&string1.0, &string2.0) == 0
 }

@@ -206,7 +206,7 @@ void TypeChecker::checkFunctionCall(FunctionCall &expr) {
   }
 }
 void TypeChecker::checkStringExpr(StringExpr &expr) {
-  expr.setType(ListType::getInstance(CharacterType::getInstance(), expr.getString().size()));
+  expr.setType(ListType::getInstance(CharacterType::getInstance(), expr.getString().size() + 1));
 }
 
 void TypeChecker::checkListExpr(ListExpr &expr) {

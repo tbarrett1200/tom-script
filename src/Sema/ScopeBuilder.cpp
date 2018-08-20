@@ -98,6 +98,7 @@ void ScopeBuilder::buildStmtScope(Stmt& stmt, DeclContext *parent) {
           std::stringstream ss;
           ss << "var declaration type(" << let_decl->getType()->toString();
           ss << ") does not match expression type (" << expr->getType()->toString() << ")";
+          throw CompilerException(nullptr, ss.str());
         }
       }
     }
