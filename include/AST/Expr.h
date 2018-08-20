@@ -59,8 +59,6 @@ public:
     #undef EXPR
   };
 
-
-
   // Virtual destructor in base class ensures safe leak-free destruction
   virtual ~Expr() = default;
 

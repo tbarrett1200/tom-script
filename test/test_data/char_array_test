@@ -3,7 +3,7 @@ extern func putchar(Character) -> Int
 extern func strlen(*Character) -> Int
 
 func main() -> Int {
-  var stack_string: [Character, 12] = "Hello World"
+  var stack_string: [Character, 8] = "Hello World"
   puts(&stack_string.0)
   return strlen(&stack_string.0)
 }

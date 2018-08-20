@@ -458,7 +458,7 @@ public:
   /// constructing a new instance. Otherwise, ListTypes should be compared for
   /// pointer equality.
   bool operator==(const ListType &type) const {
-    return element_type_ == type.element_type_;
+    return element_type_ == type.element_type_ && size_ == type.size_;
   };
 
   /// Return the runtime type of the Type, which is Type::Kind::ListType

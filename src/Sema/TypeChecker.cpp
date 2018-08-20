@@ -231,9 +231,27 @@ void TypeChecker::checkTupleExpr(TupleExpr &expr) {
 }
 void TypeChecker::checkAccessorExpr(AccessorExpr &expr) {
   checkExpr(expr.identifier());
+  const Type *aggregate_type = expr.identifier().getType();
+  switch(aggregate_type->getKind()) {
+    case Type::Kind::ListType: {
+      const ListType *list_type = dynamic_cast<const ListType*>(aggregate_type);
+      expr.setType(list_type->element_type());
+      if (list_type->size() <= expr.index()) {
+        std::stringstream ss;
+        ss << "illegal attempt to access index " << expr.index();
+        ss << " of array of size " << list_type->size();
+        throw CompilerException(nullptr, ss.str());
+      }
+      break;
+    }
+    default: {
+      std::stringstream ss;
+      ss << "illegal element access of type " << aggregate_type->toString() << ". ";
+      ss << "element accessors may only be used on aggregate data types, such as an array";
+      throw CompilerException(nullptr, ss.str());
+    }
+  }
   if (expr.identifier().getType()->getKind() == Type::Kind::ListType) {
-    expr.setType(dynamic_cast<const ListType*>(expr.identifier().getType())->element_type());
   } else {
-    throw CompilerException(nullptr, "accessors only valid on lists");
   }
 }
