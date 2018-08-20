@@ -54,6 +54,7 @@ void TypeChecker::checkExpr(Expr &expr) {
       checkAccessorExpr(dynamic_cast<AccessorExpr&>(expr));
       break;
   }
+  if (!expr.getType()) throw std::logic_error(expr.name() + " did not properly set type");
 }
 void TypeChecker::checkIntegerExpr(IntegerExpr &expr) {
   expr.setType(IntegerType::getInstance());
@@ -90,6 +91,15 @@ void TypeChecker::checkUnaryExpr(UnaryExpr &expr) {
       ss <<  "unable to reference r-value";
       throw CompilerException(expr.getOperator().start, ss.str());
     }
+  } else if (expr.getOperator() == StringRef{"*"}) {
+    if (expr.getExpr().getType()->getKind() == Type::Kind::PointerType) {
+      const PointerType* type = dynamic_cast<const PointerType*>(expr.getExpr().getType());
+      expr.setType(ReferenceType::getInstance(type->getReferencedType()));
+    } else {
+      std::stringstream ss;
+      ss <<  "dereference operator only valid for pointer types";
+      throw CompilerException(expr.getOperator().start, ss.str());
+    }
   } else {
     std::vector<const Type*> param_types{ expr.getExpr().getType() };
     if (Decl *decl = this->currentContext->getDecl(FunctionSignature(expr.getOperator(), param_types))) {
@@ -118,6 +128,7 @@ void TypeChecker::checkBinaryExpr(BinaryExpr &expr) {
     if (expr.getLeft().isLeftValue()) {
       const Type* ltype = expr.getLeft().getType()->getCanonicalType();
       const Type* rtype = expr.getRight().getType()->getCanonicalType();
+      expr.setType(expr.getRight().getType());
       if (ltype != rtype) {
         std::stringstream ss;
         ss <<  "mismatched type for assignment operands";
@@ -128,7 +139,6 @@ void TypeChecker::checkBinaryExpr(BinaryExpr &expr) {
       ss <<  "unable to assign to left hand side";
       throw CompilerException(expr.getOperator().start, ss.str());
     }
-
   } else {
       // asserts that the operator is defined
       std::vector<const Type*> param_types{ expr.getLeft().getType(), expr.getRight().getType() };
@@ -201,7 +211,12 @@ void TypeChecker::checkFunctionCall(FunctionCall &expr) {
     }
   } else {
     std::stringstream ss;
-    ss << "function '" << expr.getFunctionName() << "' not declared";
+    ss << "function '" << expr.getFunctionName() << "' not declared with parameters (";
+    for (auto param: param_types) {
+      ss << param->toString() << ", ";
+    }
+    ss.seekp((int)ss.tellp()-2);
+    ss << ").";
     throw CompilerException(nullptr, ss.str());
   }
 }
@@ -232,6 +247,12 @@ void TypeChecker::checkTupleExpr(TupleExpr &expr) {
 void TypeChecker::checkAccessorExpr(AccessorExpr &expr) {
   checkExpr(expr.identifier());
   const Type *aggregate_type = expr.identifier().getType();
+
+  if (aggregate_type->getKind() == Type::Kind::ReferenceType) {
+    const ReferenceType *ref_type = dynamic_cast<const ReferenceType*>(aggregate_type);
+    aggregate_type = ref_type->getReferencedType();
+  }
+
   switch(aggregate_type->getKind()) {
     case Type::Kind::ListType: {
       const ListType *list_type = dynamic_cast<const ListType*>(aggregate_type);
@@ -250,8 +271,5 @@ void TypeChecker::checkAccessorExpr(AccessorExpr &expr) {
       ss << "element accessors may only be used on aggregate data types, such as an array";
       throw CompilerException(nullptr, ss.str());
     }
-  }
-  if (expr.identifier().getType()->getKind() == Type::Kind::ListType) {
-  } else {
   }
 }

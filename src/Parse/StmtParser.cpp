@@ -18,6 +18,7 @@ std::unique_ptr<Stmt> Parser::parseStmt()  {
     case Token::identifier:
     case Token::integer_literal:
     case Token::double_literal:
+    case Token::operator_id:
     case Token::string_literal:
     case Token::l_paren: return parseExprStmt();
     default:

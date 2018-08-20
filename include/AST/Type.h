@@ -242,7 +242,7 @@ public:
 
   const Type* getReferencedType() const { return ref_type_; }
   /// Return a string representation of the IntegerType as "*<ref_type>"
-  std::string toString() const override { return "*" + ref_type_->toString(); }
+  std::string toString() const override { return "&" + ref_type_->toString(); }
 
 };
 

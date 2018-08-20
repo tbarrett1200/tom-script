@@ -17,8 +17,6 @@ std::vector<int> exprStartTokens = {
 
 
 unique_ptr<Expr> Parser::parseExpr(int precedence) {
-  if (token_.is(Token::l_paren)) return parseTupleExpr();
-
   switch(precedence) {
     case 0: return parseAccessorExpr();
     case 1: return parseUnaryExpr();
@@ -52,14 +50,9 @@ Token Parser::parseOperator(int precedence) {
   } else throw CompilerException(tok.location(),  "error: expected operator");
 }
 
-std::unique_ptr<Expr> Parser::parseIdentifierOrFunctionCallOrAccessor() {
+std::unique_ptr<Expr> Parser::parseIdentifierOrFunctionCall() {
   auto id = parseIdentifier();
-  if (acceptToken(Token::l_square)) {
-    expectToken(Token::l_square, "[");
-    auto index = parseIntegerExpr();
-    expectToken(Token::r_square, "]");
-    return std::make_unique<AccessorExpr>(std::move(id), std::move(index));
-  } else if (acceptToken(Token::l_paren)) {
+  if (acceptToken(Token::l_paren)) {
     auto args = parseFunctionArguments();
     return make_unique<FunctionCall>(std::move(id), std::move(args));
   } else {
@@ -85,7 +78,8 @@ unique_ptr<Expr> Parser::parseTupleExpr() {
   if (acceptToken(Token::colon)) throw CompilerException(token_.location(),  "error: expected labeled tuple member");
   std::vector<std::unique_ptr<Expr>> list = parseExprList();
   expectToken(Token::r_paren, "right parenthesis");
-  return make_unique<TupleExpr>(move(list));
+  if (list.size() == 1) return std::move(list[0]);
+  else return make_unique<TupleExpr>(move(list));
 }
 
 unique_ptr<FunctionCall> Parser::parseFunctionCall() {
@@ -98,7 +92,7 @@ unique_ptr<FunctionCall> Parser::parseFunctionCall() {
 unique_ptr<Expr> Parser::parseValueExpr() {
   switch (token_.type()) {
   case Token::identifier:
-    return parseIdentifierOrFunctionCallOrAccessor();
+    return parseIdentifierOrFunctionCall();
   case Token::integer_literal:
     return parseIntegerExpr();
   case Token::l_square:
@@ -123,9 +117,10 @@ unique_ptr<Expr> Parser::parseValueExpr() {
 
 std::unique_ptr<Expr> Parser::parseAccessorExpr() {
   std::unique_ptr<Expr> expr = parseValueExpr();
-  if (acceptToken(Token::dot)) {
-    consume();
-    std::unique_ptr<IntegerExpr> index = parseIntegerExpr();
+  if (acceptToken(Token::l_square)) {
+    expectToken(Token::l_square, "[");
+    auto index = parseIntegerExpr();
+    expectToken(Token::r_square, "]");
     return std::make_unique<AccessorExpr>(std::move(expr), std::move(index));
   } else return expr;
 }
@@ -213,7 +208,6 @@ unique_ptr<StringExpr> Parser::parseStringExpr() {
   auto token = expectToken(Token::string_literal, "string literal");
   return make_unique<StringExpr>(token);
 }
-
 
 std::unique_ptr<CharacterExpr> Parser::parseCharacterExpr() {
   auto token = expectToken(Token::character_literal, "character literal");

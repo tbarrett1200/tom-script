@@ -78,26 +78,53 @@ void ScopeBuilder::buildStmtScope(Stmt& stmt, DeclContext *parent) {
     if (LetDecl *let_decl = dynamic_cast<LetDecl*>(decl)) {
       if (Expr *expr = &let_decl->getExpr()) {
         TypeChecker{parent}.checkExpr(*expr);
-        if (!expr->getType()) {
-          throw CompilerException(nullptr, "nullptr type " + expr->name());
+
+        if (let_decl->getType()->getKind() == Type::Kind::ReferenceType) {
+          const ReferenceType *ref_type = dynamic_cast<const ReferenceType*>(let_decl->getType());
+          if (ref_type->getReferencedType() == expr->getType()) {
+            if (expr->isLeftValue()) return;
+            else {
+              std::stringstream ss;
+              ss << let_decl->getName() << " is declared as a`";
+              ss << let_decl->getType()->toString() << "` but initialized as r-value`";
+              ss << expr->getType()->toString() << "`";
+              throw CompilerException(nullptr, ss.str());
+            }
+          }
         }
+
         if (let_decl->getType() != expr->getType()) {
           std::stringstream ss;
-          ss << "let declaration type(" << let_decl->getType()->toString();
-          ss << ") does not match expression type (" << expr->getType()->toString() << ")";
+          ss << let_decl->getName() << " is declared as `";
+          ss << let_decl->getType()->toString() << "` but initialized as `";
+          ss << expr->getType()->toString() << "`";
           throw CompilerException(nullptr, ss.str());
         }
       }
-    } else if (VarDecl *let_decl = dynamic_cast<VarDecl*>(decl)) {
-      if (Expr *expr = &let_decl->getExpr()) {
+    } else if (VarDecl *var_decl = dynamic_cast<VarDecl*>(decl)) {
+
+      if (Expr *expr = &var_decl->getExpr()) {
         TypeChecker{parent}.checkExpr(*expr);
-        if (!expr->getType()) {
-          throw CompilerException(nullptr, "nullptr type " + expr->name());
+
+        if (var_decl->getType()->getKind() == Type::Kind::ReferenceType) {
+          const ReferenceType *ref_type = dynamic_cast<const ReferenceType*>(var_decl->getType());
+          if (ref_type->getReferencedType() == expr->getType()) {
+            if (expr->isLeftValue()) return;
+            else {
+              std::stringstream ss;
+              ss << var_decl->getName() << " is declared as a`";
+              ss << var_decl->getType()->toString() << "` but initialized as r-value`";
+              ss << expr->getType()->toString() << "`";
+              throw CompilerException(nullptr, ss.str());
+            }
+          }
         }
-        if (let_decl->getType() != expr->getType()) {
+
+        if (var_decl->getType() != expr->getType()) {
           std::stringstream ss;
-          ss << "var declaration type(" << let_decl->getType()->toString();
-          ss << ") does not match expression type (" << expr->getType()->toString() << ")";
+          ss << var_decl->getName() << " is declared as `";
+          ss << var_decl->getType()->toString() << "` but initialized as `";
+          ss << expr->getType()->toString() << "`";
           throw CompilerException(nullptr, ss.str());
         }
       }

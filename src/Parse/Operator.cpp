@@ -7,7 +7,7 @@ OperatorTable::OperatorTable(std::vector<PrecedenceGroup> groups) {
 
 OperatorTable* OperatorTable::globalInstance = new OperatorTable({
   {"Prefix", Associativity::none, Fixity::prefix, false, {
-    "+","-","!","&"
+    "+","-","!","&","*"
   }},
   {"BitwiseShift", Associativity::none, Fixity::infix, false, {
     "<<",">>"

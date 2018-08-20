@@ -12,10 +12,10 @@ $(shell mkdir -p $(DIR))
 $(shell mkdir bin > /dev/null)
 
 CXX = clang++
-CXXFLAGS = -std=c++1z -c -g -Wall -I../include -I/usr/local/opt/llvm/include
+CXXFLAGS = -std=c++14 -c -g -Wall -I../include -I/usr/local/opt/llvm/include
 
 all: $(OBJ)
-	clang++ -std=c++1z -g $^ $(SRC_OBJ) `llvm-config --cxxflags --ldflags --system-libs --libs core mcjit native` -lpthread -lgtest -lgtest_main -o bin/test
+	clang++ -std=c++14 -g $^ $(SRC_OBJ) `llvm-config --cxxflags --ldflags --system-libs --libs core mcjit native` -lpthread -lgtest -lgtest_main -o bin/test
 
 obj/%.o: src/%.cpp
 	$(CXX) $< $(CXXFLAGS) -o $@

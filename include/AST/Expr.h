@@ -308,9 +308,7 @@ public:
 
   Expr::Kind getKind() const override { return Kind::UnaryExpr; }
 
-  bool isLeftValue() const override {
-    return false;
-  }
+  bool isLeftValue() const override;
 
   UnaryExpr(Token o, std::unique_ptr<Expr> e) : op_{std::move(o)}, expr_{std::move(e)} {
     if (!expr_) {

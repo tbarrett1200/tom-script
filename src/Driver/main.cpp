@@ -102,7 +102,7 @@ int main(int argc, char const *argv[]) {
 
 // instructions for compilation
 // 1 ./bin/tomscript test/test_data/MathLibTest
-// 2 ld output.o -e _main -macosx_version_min 10.13 -lSystem
+// 2 ld output.o -e _main -macosx_version_min 10.13 -lSystem -lc
 // 3 ./a.out
 int compile_to_object_code(CompilationUnit& unit) {
   // Initialize the target registry etc.
@@ -157,6 +157,10 @@ int compile_to_object_code(CompilationUnit& unit) {
  auto Filename = "./output.o";
  std::error_code EC;
  llvm::raw_fd_ostream dest(Filename, EC, llvm::sys::fs::F_None);
+
+ std::error_code err_code;
+ llvm::raw_fd_ostream ir_stream{llvm::StringRef{"/Users/thomasbarrett/Desktop/app/tree.txt"}, err_code,  llvm::sys::fs::F_None };
+ if (printIR) TheModule->print(ir_stream, nullptr);
 
  if (EC) {
    llvm::errs() << "Could not open file: " << EC.message();

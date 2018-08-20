@@ -14,6 +14,7 @@ const Type* Parser::parseType() {
     case Token::identifier: return parseTypeIdentifier();
     case Token::operator_id:
       if (token_.lexeme() == StringRef{"*"}) return parsePointerType();
+      else if (token_.lexeme() == StringRef{"&"}) return parseReferenceType();
     case Token::l_square: return parseListOrMapType();
     default: throw CompilerException(token_.location(),  "error: unable to parse type");
   }
@@ -88,6 +89,12 @@ const PointerType* Parser::parsePointerType() {
   expectToken(Token::operator_id, "*");
   auto type = parseType();
   return PointerType::getInstance(type);
+}
+
+const ReferenceType* Parser::parseReferenceType() {
+  expectToken(Token::operator_id, "&");
+  auto type = parseType();
+  return ReferenceType::getInstance(type);
 }
 
 const MapType* Parser::parseMapType() {

@@ -3,12 +3,13 @@ extern func putchar(Character) -> Int
 extern func strlen(*Character) -> Int
 extern func strcmp(*Character, *Character) -> Int
 
-func main() -> Boolean {
+
+func main() -> Int {
   var string1: [Character, 12] = "Hello World"
-  var string2: [Character, 12] = "Hello World"
+  var string2: &[Character, 12] = string1
+  string1[0] = 'B'
+  putchar(string1[0])
+  putchar(string2[0])
 
-  puts(&string1.0)
-  puts(&string2.0)
-
-  return strcmp(&string1.0, &string2.0) == 0
+  return 0
 }

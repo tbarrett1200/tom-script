@@ -148,6 +148,8 @@ public:
   /**
    *
    */
+  const ReferenceType* parseReferenceType();
+
   const TupleType* parseTupleType();
   /**
    *
@@ -310,7 +312,7 @@ public:
    * Looks ahead in the token stream and returns either a function call,
    * identifier, or accessor expression depending on the context.
    */
-  std::unique_ptr<Expr> parseIdentifierOrFunctionCallOrAccessor();
+  std::unique_ptr<Expr> parseIdentifierOrFunctionCall();
 
   /**
    * Parses a comma seperated list of expression. This is similar to argument
