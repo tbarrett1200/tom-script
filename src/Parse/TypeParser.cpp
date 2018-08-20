@@ -22,10 +22,10 @@ const Type* Parser::parseType() {
 
 const Type* Parser::parseTypeIdentifier() {
   auto token = expectToken(Token::identifier, "type identifier");
-  if (token.lexeme() == StringRef{"Int"}) return IntegerType::getInstance();
-  else if (token.lexeme()== StringRef{"Boolean"}) return BooleanType::getInstance();
-  else if (token.lexeme()== StringRef{"Double"}) return DoubleType::getInstance();
-  else if (token.lexeme()== StringRef{"Character"}) return CharacterType::getInstance();
+  if (token.lexeme() == StringRef{"i64"}) return IntegerType::getInstance();
+  else if (token.lexeme()== StringRef{"bool"}) return BooleanType::getInstance();
+  else if (token.lexeme()== StringRef{"f64"}) return DoubleType::getInstance();
+  else if (token.lexeme()== StringRef{"char"}) return CharacterType::getInstance();
   else {
     std::stringstream ss;
     ss << "error: unrecognized type identifier " << token.lexeme();

@@ -565,7 +565,7 @@ llvm::Value* LLVMTransformer::transformUnaryExpr(const UnaryExpr& expr, llvm::Ba
   if (expr.getOperator() == StringRef{"&"}) {
     return transformLeftValueExpr(expr.getExpr(), current_block);
   } else if (expr.getOperator() == StringRef{"*"}) {
-    return transformExpr(expr.getExpr(), current_block);
+    return builder.CreateLoad(transformExpr(expr.getExpr(), current_block));
   }
 
   llvm::Value *val = transformExpr(expr.getExpr(), current_block);

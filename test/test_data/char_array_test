@@ -1,15 +1,27 @@
-extern func puts(*Character) -> Int
-extern func putchar(Character) -> Int
-extern func strlen(*Character) -> Int
-extern func strcmp(*Character, *Character) -> Int
+extern func puts(&char) -> i64
 
+func main() -> i64 {
 
-func main() -> Int {
-  var string1: [Character, 12] = "Hello World"
-  var string2: &[Character, 12] = string1
+  // creates an array of characters on the stack
+  var string1: [char, 12] = "Hello World"
+
+  // creates a reference to the initial array
+  var string2: &[char, 12] = &string1
+
+  // creates a copy of the initial array by assignment
+  var string3: [char, 12] = string1
+
+  // creates a copy of the initial array by dereferencing
+  var string4: [char, 12] = *string2
+
+  // changes a character in the string
   string1[0] = 'B'
-  putchar(string1[0])
-  putchar(string2[0])
+
+  // prints out all three strings
+  puts(&string1[0])
+  puts(&string2[0])
+  puts(&string3[0])
+  puts(&string4[0])
 
   return 0
 }

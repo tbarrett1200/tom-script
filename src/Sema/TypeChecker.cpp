@@ -85,7 +85,7 @@ void TypeChecker::checkUnaryExpr(UnaryExpr &expr) {
   if (expr.getOperator() == StringRef{"&"}) {
     if (expr.getExpr().isLeftValue()) {
       const Type* ltype = expr.getExpr().getType()->getCanonicalType();
-      expr.setType(PointerType::getInstance(ltype));
+      expr.setType(ReferenceType::getInstance(ltype));
     } else {
       std::stringstream ss;
       ss <<  "unable to reference r-value";
@@ -94,7 +94,10 @@ void TypeChecker::checkUnaryExpr(UnaryExpr &expr) {
   } else if (expr.getOperator() == StringRef{"*"}) {
     if (expr.getExpr().getType()->getKind() == Type::Kind::PointerType) {
       const PointerType* type = dynamic_cast<const PointerType*>(expr.getExpr().getType());
-      expr.setType(ReferenceType::getInstance(type->getReferencedType()));
+      expr.setType(type->getReferencedType());
+    } else if (expr.getExpr().getType()->getKind() == Type::Kind::ReferenceType) {
+      const ReferenceType* type = dynamic_cast<const ReferenceType*>(expr.getExpr().getType());
+      expr.setType(type->getReferencedType());
     } else {
       std::stringstream ss;
       ss <<  "dereference operator only valid for pointer types";

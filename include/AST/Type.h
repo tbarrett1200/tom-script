@@ -83,7 +83,7 @@ public:
   Type::Kind getKind() const override { return Type::Kind::IntegerType; }
 
   /// Return a string representation of the IntegerType as "Int"
-  std::string toString() const override { return "Int"; }
+  std::string toString() const override { return "i64"; }
 };
 
 
@@ -105,7 +105,7 @@ public:
   Type::Kind getKind() const override { return Type::Kind::CharacterType; }
 
   /// Return a string representation of the IntegerType as "Int"
-  std::string toString() const override { return "Character"; }
+  std::string toString() const override { return "char"; }
 };
 
 
@@ -128,7 +128,7 @@ public:
   Type::Kind getKind() const override { return Type::Kind::BooleanType; }
 
   /// Return a string representation of the BooleanType as "BooleanType"
-  std::string toString() const override { return "Boolean"; }
+  std::string toString() const override { return "bool"; }
 };
 
 /// A type which represents a double
@@ -149,7 +149,7 @@ public:
   Type::Kind getKind() const override { return Kind::DoubleType; }
 
   /// Return a string representation of the DoubleType as "Double"
-  std::string toString() const override { return "Double"; }
+  std::string toString() const override { return "f64"; }
 
 };
 
