@@ -37,6 +37,8 @@ public:
    */
   void buildFunctionScope(class FuncDecl&);
 
+  void buildGlobalScope();
+
   // does stuff
   void buildStmtScope(class Stmt& stmt, class DeclContext *parent);
   /**

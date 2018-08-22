@@ -37,6 +37,14 @@ llvm::FunctionType* LLVMTransformer::transformFunctionType(const FunctionType &t
   }
 }
 
+llvm::StructType* LLVMTransformer::transformStructType(const TupleType &type) {
+  std::vector<llvm::Type*> element_types;
+  for (auto element: type.elements()) {
+    element_types.push_back(transformType(*element));
+  }
+  return llvm::StructType::create(element_types);
+}
+
 llvm::Type* LLVMTransformer::transformType(const Type &type) {
   if (type.isIntegerType()) {
     return llvm::Type::getInt64Ty(context_);
@@ -55,8 +63,13 @@ llvm::Type* LLVMTransformer::transformType(const Type &type) {
   } else if (type.getKind() == Type::Kind::ReferenceType) {
     const ReferenceType &ptr_type = dynamic_cast<const ReferenceType&>(type);
     return llvm::PointerType::getUnqual(transformType(*ptr_type.getReferencedType()));
+  } else if (type.getKind() == Type::Kind::SliceType) {
+    const SliceType &slice_type = dynamic_cast<const SliceType&>(type);
+    return llvm::PointerType::getUnqual(transformType(*slice_type.element()));
+  } else if (type.getKind() == Type::Kind::TupleType) {
+    return transformStructType(dynamic_cast<const TupleType&>(type));
   } else {
-    throw std::logic_error(type.toString() + " not supported by codegen");
+    throw std::logic_error(type.toString() + " type not supported by codegen");
   }
 }
 
@@ -79,11 +92,7 @@ void LLVMTransformer::transformLetDecl(const LetDecl& let_decl, llvm::BasicBlock
 void LLVMTransformer::transformVarDecl(const VarDecl& var_decl, llvm::BasicBlock* current_block) {
   llvm::IRBuilder<> builder{current_block};
   llvm::AllocaInst *alloca = builder.CreateAlloca(transformType(*var_decl.getType()), 0, var_decl.getName().str());
-  if (var_decl.getType()->getKind() == Type::Kind::ReferenceType) {
-    builder.CreateStore(transformLeftValueExpr(var_decl.getExpr(),current_block), alloca);
-  } else {
-    builder.CreateStore(transformExpr(var_decl.getExpr(),current_block), alloca);
-  }
+  builder.CreateStore(transformExpr(var_decl.getExpr(),current_block), alloca);
   named_values_[var_decl.getName()] = alloca;
 }
 
@@ -113,96 +122,57 @@ void LLVMTransformer::transformDeclStmt(const DeclStmt& declStmt, llvm::BasicBlo
   }
 }
 
-
-llvm::Value* LLVMTransformer::transformLeftValueIdentifierExpr(const IdentifierExpr& id_expr, llvm::BasicBlock* current_block) {
+llvm::Value* LLVMTransformer::transformIdentifierExprReference(const IdentifierExpr& id_expr, llvm::BasicBlock* current_block) {
   auto map_it = named_values_.find(id_expr.lexeme());
   if (map_it != named_values_.end()) {
     return map_it->second;
   } else {
     std::stringstream ss;
-    ss << "codegen: something went wrong: unable to find " << id_expr.name();
+    ss << "codegen: unexpected: llvm::Value* not found" << id_expr.name();
     throw CompilerException(nullptr, ss.str());
   }
 }
 
-llvm::Value* LLVMTransformer::transformLeftValueAccessorExpr(const AccessorExpr &accessor, llvm::BasicBlock* current_block) {
+llvm::Value* LLVMTransformer::transformAccessorExprReference(const AccessorExpr &accessor, llvm::BasicBlock* current_block) {
   llvm::IRBuilder<> builder{current_block};
 
-  const Type* aggregate_type = accessor.identifier().getType();
+  llvm::Value* aggregate_loc = transformExprReference(
+    accessor.identifier()
+  , current_block
+  );
 
-  if (const ListType *list_type = dynamic_cast<const ListType*>(aggregate_type)) {
-    const Type* element_type = list_type->element_type();
-
-    llvm::Value* aggregate_loc = transformLeftValueExpr(
-      accessor.identifier()
-    , current_block
-    );
-
-    llvm::Type* index_type = transformType(*IntegerType::getInstance());
-    llvm::Value* element_index_0 = llvm::ConstantInt::get(index_type, 0, true);
-    llvm::Value* element_index_1 = llvm::ConstantInt::get(index_type, accessor.index(), true);
-    std::array<llvm::Value*,2> indices{{element_index_0, element_index_1}};
-    return builder.CreateGEP(aggregate_loc, indices);
-
-  } else if (const ReferenceType *ref_type = dynamic_cast<const ReferenceType*>(aggregate_type)) {
-    // guard to make sure reference is of proper type
-    if (ref_type->getReferencedType()->getKind() != Type::Kind::ListType) {
-      std::stringstream ss;
-      ss << "codegen: unchecked: unable to access element of " << ref_type->toString();
-      throw CompilerException(nullptr, ss.str());
-    }
-
-    const ListType *list_type = dynamic_cast<const ListType*>(ref_type->getReferencedType());
-    const Type* element_type = list_type->element_type();
-
-    // access the pointer value
-    llvm::Value* aggregate_loc = transformExpr(
-      accessor.identifier()
-    , current_block
-    );
-
-    llvm::Type* index_type = transformType(*IntegerType::getInstance());
-    llvm::Value* element_index_0 = llvm::ConstantInt::get(index_type, 0, true);
-    llvm::Value* element_index_1 = llvm::ConstantInt::get(index_type, accessor.index(), true);
-    std::array<llvm::Value*,2> indices = {{element_index_0, element_index_1}};
-    return builder.CreateGEP(aggregate_loc, indices);
-
-  } else {
-    throw CompilerException(nullptr, "codegen: unchecked: illegal accessor expr");
-  }
+  llvm::Type* index_type = llvm::Type::getInt32Ty(context_);
+  llvm::Value* element_index_0 = llvm::ConstantInt::get(index_type, 0, true);
+  llvm::Value* element_index_1 = llvm::ConstantInt::get(index_type, accessor.index(), true);
+  std::array<llvm::Value*,2> indices{{element_index_0, element_index_1}};
+  return builder.CreateGEP(aggregate_loc, indices);
 }
 
-llvm::Value* LLVMTransformer::transformLeftValueExpr(const Expr& expr, llvm::BasicBlock* current_block) {
+llvm::Value* LLVMTransformer::transformExprReference(const Expr& expr, llvm::BasicBlock* current_block) {
+  llvm::IRBuilder<> builder{current_block};
 
+  // expressions of reference type are computed directly
   if (expr.getType()->getKind() == Type::Kind::ReferenceType) {
+    const ReferenceType *ref_type = dynamic_cast<const ReferenceType*>(expr.getType());
     return transformExpr(expr, current_block);
   }
 
-  if (expr.isLeftValue()) {
-    switch (expr.getKind()) {
-      case Expr::Kind::IdentifierExpr:
-        return transformLeftValueIdentifierExpr(dynamic_cast<const IdentifierExpr&>(expr), current_block);
-      case Expr::Kind::AccessorExpr:
-        return transformLeftValueAccessorExpr(dynamic_cast<const AccessorExpr&>(expr), current_block);
-      default:
-        std::stringstream ss;
-        ss << "codegen: unimplemented: unable to reference '" << expr.name() << "'";
-        throw CompilerException(nullptr, ss.str());
-    }
-  } else {
-    throw CompilerException(nullptr, "unable to reference r-value expression");
+  switch (expr.getKind()) {
+    case Expr::Kind::IdentifierExpr:
+      return transformIdentifierExprReference(dynamic_cast<const IdentifierExpr&>(expr), current_block);
+    case Expr::Kind::AccessorExpr:
+      return transformAccessorExprReference(dynamic_cast<const AccessorExpr&>(expr), current_block);
+    default:
+      std::stringstream ss;
+      ss << "codegen: unimplemented: unable to reference '" << expr.name() << "'";
+      throw CompilerException(nullptr, ss.str());
   }
 }
 
 llvm::Value* LLVMTransformer::transformAssignmentStmt(const BinaryExpr& bin_expr, llvm::BasicBlock* current_block) {
   llvm::IRBuilder<> builder{current_block};
-  if (bin_expr.getLeft().getType()->getKind() == Type::Kind::ReferenceType) {
-    llvm::Value *lval = transformLeftValueExpr(bin_expr.getLeft(), current_block);
-    llvm::Value *rval = transformLeftValueExpr(bin_expr.getRight(), current_block);
-    builder.CreateStore(rval, lval);
-    return rval;
-  } else if (bin_expr.getLeft().isLeftValue()) {
-    llvm::Value *lval = transformLeftValueExpr(bin_expr.getLeft(), current_block);
+   if (bin_expr.getLeft().isLeftValue()) {
+    llvm::Value *lval = transformExprReference(bin_expr.getLeft(), current_block);
     llvm::Value *rval = transformExpr(bin_expr.getRight(), current_block);
     builder.CreateStore(rval, lval);
     return rval;
@@ -238,30 +208,22 @@ llvm::Function* LLVMTransformer::transformFunction(const FuncDecl &func) {
   return function_;
 }
 
-llvm::Value* LLVMTransformer::transformListExpr(const ListExpr& list, llvm::BasicBlock* current_block) {
+llvm::Constant* LLVMTransformer::transformConstantTupleExpr(const TupleExpr& tuple_expr) {
+  std::vector<llvm::Constant*> elements;
+  for (auto &element: tuple_expr.elements()) {
+    elements.push_back(transformConstant(*element));
+  }
+  return llvm::ConstantStruct::get(transformStructType(*dynamic_cast<const TupleType*>(tuple_expr.type())), elements);
+}
+
+llvm::Constant* LLVMTransformer::transformConstantListExpr(const ListExpr& list) {
   const ListType* list_type = dynamic_cast<const ListType*>(list.getType());
   llvm::ArrayType *array_type =  llvm::ArrayType::get(transformType(*list_type->element_type()), list.elements().size());
   std::vector<llvm::Constant*> elements;
 
-  if (list_type->element_type()->isIntegerType()) {
-    llvm::Type* type = transformType(*IntegerType::getInstance());
-    for (auto &element: list.elements()) {
-      elements.push_back(llvm::ConstantInt::get(type, (uint64_t)(dynamic_cast<const IntegerExpr&>(*element).getInt()), true));
-    }
-  } else if (list_type->element_type()->isDoubleType()) {
-    llvm::Type* type = transformType(*DoubleType::getInstance());
-    for (auto &element: list.elements()) {
-        elements.push_back(llvm::ConstantFP::get(type, (dynamic_cast<const DoubleExpr&>(*element).getDouble())));
-    }
-  } else if (list_type->element_type()->getKind() == Type::Kind::CharacterType) {
-    llvm::Type* type = transformType(*CharacterType::getInstance());
-    for (auto &element: list.elements()) {
-        elements.push_back(llvm::ConstantInt::get(type, (dynamic_cast<const CharacterExpr&>(*element).getChar())));
-    }
-  } else {
-    throw CompilerException(nullptr, "array initializer only allowed for literals");
+  for (auto &element: list.elements()) {
+    elements.push_back(transformConstant(*element));
   }
-
   return llvm::ConstantArray::get(array_type, elements);
 }
 
@@ -310,6 +272,24 @@ llvm::Value* LLVMTransformer::transformIdentifierExpr(const IdentifierExpr& expr
   }
 }
 
+llvm::Constant* LLVMTransformer::transformConstant(const Expr& expr) {
+  if (dynamic_cast<const IntegerExpr*>(&expr)) {
+    return llvm::ConstantInt::get(transformType(*expr.getType()), (uint64_t)(dynamic_cast<const IntegerExpr&>(expr).getInt()), true);
+  } else if (dynamic_cast<const DoubleExpr*>(&expr)) {
+    return llvm::ConstantFP::get(transformType(*expr.getType()), (dynamic_cast<const DoubleExpr&>(expr).getDouble()));
+  } else if (dynamic_cast<const CharacterExpr*>(&expr)) {
+    return llvm::ConstantInt::get(transformType(*expr.getType()), (dynamic_cast<const CharacterExpr&>(expr).getChar()));
+  } else if (dynamic_cast<const BoolExpr*>(&expr)) {
+    return llvm::ConstantInt::get(transformType(*expr.getType()), dynamic_cast<const BoolExpr&>(expr).getBool()?1:0);
+  } else if (dynamic_cast<const ListExpr*>(&expr)) {
+    return transformConstantListExpr(dynamic_cast<const ListExpr&>(expr));
+  } else if (const TupleExpr *tuple_expr = dynamic_cast<const TupleExpr*>(&expr)) {
+    return transformConstantTupleExpr(*tuple_expr);
+  } else {
+    throw CompilerException(nullptr, "array initializer only allowed for literals");
+  }
+}
+
 llvm::Value* LLVMTransformer::transformExpr(const Expr& expr, llvm::BasicBlock* current_block) {
   llvm::IRBuilder<> builder{current_block};
 
@@ -330,11 +310,13 @@ llvm::Value* LLVMTransformer::transformExpr(const Expr& expr, llvm::BasicBlock* 
   } else if (dynamic_cast<const FunctionCall*>(&expr)) {
     return transformFunctionCall(dynamic_cast<const FunctionCall&>(expr),current_block);
   } else if (dynamic_cast<const ListExpr*>(&expr)) {
-    return transformListExpr(dynamic_cast<const ListExpr&>(expr),current_block);
+    return transformConstantListExpr(dynamic_cast<const ListExpr&>(expr));
   } else if (const StringExpr *string_expr = dynamic_cast<const StringExpr*>(&expr)) {
     return llvm::ConstantDataArray::getString(context_, string_expr->getString());
   } else if (const AccessorExpr *accessor_expr = dynamic_cast<const AccessorExpr*>(&expr)) {
-    return builder.CreateLoad(transformLeftValueAccessorExpr(*accessor_expr, current_block));
+    return builder.CreateLoad(transformAccessorExprReference(*accessor_expr, current_block));
+  } else if (const TupleExpr *tuple_expr = dynamic_cast<const TupleExpr*>(&expr)) {
+    return transformConstantTupleExpr(*tuple_expr);
   } else {
     std::stringstream ss;
     ss << "unimplemented: unable to transform " << expr.name();
@@ -563,7 +545,7 @@ llvm::Value* LLVMTransformer::transformUnaryExpr(const UnaryExpr& expr, llvm::Ba
   llvm::IRBuilder<> builder{current_block};
 
   if (expr.getOperator() == StringRef{"&"}) {
-    return transformLeftValueExpr(expr.getExpr(), current_block);
+    return transformExprReference(expr.getExpr(), current_block);
   } else if (expr.getOperator() == StringRef{"*"}) {
     return builder.CreateLoad(transformExpr(expr.getExpr(), current_block));
   }

@@ -9,7 +9,7 @@
 #include "AST/Decl.h"
 #include "AST/Expr.h"
 
-void ScopeBuilder::buildCompilationUnitScope(CompilationUnit &unit) {
+void ScopeBuilder::buildGlobalScope() {
   DeclContext* global_context = DeclContext::getGlobalContext();
   global_context->addDecl(&BuiltinDecl::add_int);
   global_context->addDecl(&BuiltinDecl::sub_int);
@@ -41,9 +41,12 @@ void ScopeBuilder::buildCompilationUnitScope(CompilationUnit &unit) {
 
   global_context->addDecl(&BuiltinDecl::int_to_double);
   global_context->addDecl(&BuiltinDecl::double_to_int);
+}
 
+void ScopeBuilder::buildCompilationUnitScope(CompilationUnit &unit) {
+  buildGlobalScope();
   DeclContext* unitContext = unit.getDeclContext();
-  unitContext->setParentContext(global_context);
+  unitContext->setParentContext(DeclContext::getGlobalContext());
   for (auto &stmt: unit.stmts()) {
     if (DeclStmt *decl_stmt = dynamic_cast<DeclStmt*>(stmt.get())) {
       Decl* decl = decl_stmt->getDecl();

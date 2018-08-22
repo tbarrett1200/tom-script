@@ -63,6 +63,7 @@ const BooleanType* BooleanType::getInstance() {
 //----------------------------------------------------------------------------//
 
 std::vector<std::unique_ptr<PointerType>> PointerType::instances;
+std::vector<std::unique_ptr<SliceType>> SliceType::instances;
 std::vector<std::unique_ptr<ReferenceType>> ReferenceType::instances;
 std::vector<std::unique_ptr<TypeIdentifier>> TypeIdentifier::instances;
 std::vector<std::unique_ptr<TupleType>> TupleType::instances;

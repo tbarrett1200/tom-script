@@ -26,6 +26,9 @@ public:
   void checkDoubleExpr(class DoubleExpr &expr);
   void checkListExpr(class ListExpr &expr);
   void checkIdentifierExpr(class IdentifierExpr &expr);
+  void checkAssignmentExpr(class BinaryExpr &expr);
+  void checkReferenceExpr(class UnaryExpr &expr);
+  void checkDereferenceExpr(class UnaryExpr &expr);
   void checkTupleExpr(class TupleExpr &expr);
   void checkAccessorExpr(class AccessorExpr &expr);
   void checkBoolExpr(class BoolExpr &expr);

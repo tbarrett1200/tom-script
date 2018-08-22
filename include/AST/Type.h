@@ -30,6 +30,10 @@ public:
     return dynamic_cast<const T*>(this);
   }
 
+  template<typename T> bool is() const {
+    return (dynamic_cast<const T*>(this)!=nullptr);
+  }
+
   /**
    * Returns the kind of the derived type, which makes it easy to check the
    * actual type at runtime. Although built-in checks such as dynamic_cast
@@ -294,6 +298,57 @@ public:
 };
 
 /// A type which represents a tuple
+class SliceType : public Type {
+private:
+  const Type* element_;
+
+  /// Singleton instances of active TupleType types
+  static std::vector<std::unique_ptr<SliceType>> instances;
+
+public:
+  /// Construct TupleType with the given element vector
+  SliceType(const Type* e) : element_{e} {}
+
+  const Type* element() const {
+      return element_;
+  }
+
+  /// Return a pointer to a TupleType instance with the given key and value
+  /// types. It is guarenteed that all TupleType with the same key and value
+  /// types will have the same address, so that TupleType can be compared by
+  /// pointer for equality.
+  static const SliceType* getInstance(const Type *element) {
+    const SliceType slice_type{element};
+    auto it = std::find_if(instances.begin(), instances.end(), [&slice_type](auto &type){
+      return slice_type == *type;
+    });
+    if (it != instances.end()) {
+      return it->get();
+    } else {
+      instances.push_back(std::make_unique<SliceType>(element));
+      return instances.back().get();
+    }
+  }
+
+  /// Compares fields for equality. This should only be necessary when
+  /// constructing a new instance. Otherwise, TupleType should be compared for
+  /// pointer equality.
+  bool operator==(const SliceType &type) const {
+    return element_ == type.element_;
+  };
+
+  /// Return runtime type, which is Type::Kind::TupleType
+  Type::Kind getKind() const override { return Kind::SliceType; }
+
+  /// Return a string representation of the TupleType as "(<elements>)"
+  std::string toString() const override {
+    return "&[" + element_->toString() + "]";
+  }
+
+};
+
+
+/// A type which represents a tuple
 class TupleType : public Type {
 private:
   std::vector<const Type*> elements_;
@@ -304,6 +359,10 @@ private:
 public:
   /// Construct TupleType with the given element vector
   TupleType(std::vector<const Type*> e) : elements_{std::move(e)} {}
+
+  const std::vector<const Type*>& elements() const {
+      return elements_;
+  }
 
   /// Return a pointer to a TupleType instance with the given key and value
   /// types. It is guarenteed that all TupleType with the same key and value
@@ -469,7 +528,6 @@ public:
 
   /// Return a const pointer to the element type
   int size() const { return size_; }
-
 
   /// Return a string representation of the list type as "[<element-type>]"
   std::string toString() const override {

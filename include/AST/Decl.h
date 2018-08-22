@@ -51,6 +51,18 @@ public:
 
   virtual void setParentContext(DeclContext *parent) = 0;
 
+  template <typename T> bool is() const {
+    return dynamic_cast<T*>(this);
+  }
+
+  template <typename T> const T* as() const {
+    return dynamic_cast<T*>(this);
+  }
+
+  template <typename T> T* as() const {
+    return dynamic_cast<T*>(this);
+  }
+
   /// Returns a the top-most active context for this declaration
   virtual const DeclContext* getDeclContext() const = 0;
   /// Returns a the top-most active context for this declaration
@@ -341,7 +353,6 @@ public:
   const std::vector<std::unique_ptr<ParamDecl>>& getParams() const {
     return fParams;
   };
-
 };
 
 class BasicDecl : public Decl {

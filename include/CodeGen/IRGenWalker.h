@@ -26,16 +26,6 @@
 #include <vector>
 #include <map>
 
-// class VariableValue {
-// public:
-//   bool fIsAlloca;
-//   llvm::Value* fValue;
-//   llvm::AllocaInst* fAlloca;
-//   VariableValue(const VariableValue&) = default;
-//   VariableValue(bool isAlloca, llvm::Value* value, llvm::AllocaInst *alloca)
-//   : fIsAlloca{isAlloca}, fValue{value}, fAlloca{alloca} {}
-// };
-
 class LLVMTransformer {
 private:
   llvm::LLVMContext& context_;
@@ -52,6 +42,8 @@ public:
 
   llvm::FunctionType* transformFunctionType(const FunctionType &type);
 
+  llvm::StructType* transformStructType(const TupleType &type);
+
   llvm::Type* transformType(const Type &type);
 
   void transformReturnStmt(const ReturnStmt& stmt, llvm::BasicBlock* current_block);
@@ -60,23 +52,28 @@ public:
 
   void transformVarDecl(const VarDecl& var_decl, llvm::BasicBlock* current_block);
 
+
   void transformUninitializedVarDecl(const UninitializedVarDecl& var_decl, llvm::BasicBlock* current_block);
 
   void transformDeclStmt(const DeclStmt& declStmt, llvm::BasicBlock* current_block);
 
-  llvm::Value* transformLeftValueIdentifierExpr(const IdentifierExpr& id_expr, llvm::BasicBlock* current_block);
+  llvm::Value* transformIdentifierExprReference(const IdentifierExpr& id_expr, llvm::BasicBlock* current_block);
 
-  llvm::Value* transformLeftValueAccessorExpr(const AccessorExpr &accessor, llvm::BasicBlock* current_block);
+  llvm::Value* transformAccessorExprReference(const AccessorExpr &accessor, llvm::BasicBlock* current_block);
 
-  llvm::Value* transformLeftValueExpr(const Expr& expr, llvm::BasicBlock* current_block);
+  llvm::Value* transformExprReference(const Expr& expr, llvm::BasicBlock* current_block);
 
   llvm::Value* transformAssignmentStmt(const BinaryExpr& bin_expr, llvm::BasicBlock* current_block);
+
+  llvm::Constant* transformConstant(const Expr& expr);
+
+  llvm::Constant* transformConstantListExpr(const ListExpr& list);
+
+  llvm::Constant* transformConstantTupleExpr(const TupleExpr& list);
 
   llvm::Function* transformExternalFunctionDecl(const ExternFuncDecl &extern_func);
 
   llvm::Function* transformFunction(const FuncDecl &func);
-
-  llvm::Value* transformListExpr(const ListExpr& list, llvm::BasicBlock* current_block);
 
   llvm::Value* transformFunctionCall(const FunctionCall& call, llvm::BasicBlock* current_block);
 

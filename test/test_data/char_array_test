@@ -1,4 +1,8 @@
-extern func puts(&char) -> i64
+extern func print_i64(i64) -> i64
+extern func print_f64(f64) -> i64
+extern func print_char(char) -> i64
+extern func print_str(&char) -> i64
+extern func println(&char) -> i64
 
 func main() -> i64 {
 
@@ -18,10 +22,10 @@ func main() -> i64 {
   string1[0] = 'B'
 
   // prints out all three strings
-  puts(&string1[0])
-  puts(&string2[0])
-  puts(&string3[0])
-  puts(&string4[0])
-
+  println(&string1[0])
+  println(&string2[0])
+  println(&string3[0])
+  println(&string4[0])
+  print_i64(5)
   return 0
 }

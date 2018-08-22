@@ -6,6 +6,7 @@
 #include "Basic/Token.h"
 #include "Basic/SourceCode.h"
 
+#include "AST/Type.h"
 #include "AST/TreeElement.h"
 
 
@@ -18,7 +19,7 @@ private:
    * in all cases. A public accessor is available to get the type, and a
    * protected setter is available to set the type at construction time.
    */
-   const class Type *fType;
+   const class Type *type_;
 
   /*
    * The location in text where this expression was parsed from. This is useful
@@ -42,7 +43,7 @@ public:
    * all expressions should have a type.
    */
   void setType(const class Type *aType) {
-    fType = aType;
+    type_ = aType;
   };
 
   virtual std::string name() const override {
@@ -71,18 +72,27 @@ public:
      return (dynamic_cast<T*>(this) != nullptr);
    }
 
+   template<typename T> bool isType() const {
+     assert(type_ && "may only be called after type deduction");
+     return type_ && dynamic_cast<const T*>(type_->getCanonicalType());
+   }
+
+   template<typename T> bool isReferenceTo() const {
+      if (const ReferenceType *ref_type = type_->as<ReferenceType>()) {
+        return ref_type->getReferencedType()->getCanonicalType()->is<T>();
+      } else return false;
+    }
+
    /**
     * Convenience method for casting Expr base type to any one of its derived
     * types. Throws a std::logic_error if conversion is not possible.
     */
   template<typename T> T* as() const {
-    T* casted_type = dynamic_cast<T*>(this);
-    if (casted_type != nullptr) {
-      return casted_type;
-    } else {
-      std::string error_message_prefix{"unable to cast Expr to "};
-      throw std::logic_error(error_message_prefix + typeid(T).name());
-    }
+    return dynamic_cast<T*>(this);
+  }
+
+  template<typename T> const T* as() const {
+    return dynamic_cast<const T*>(this);
   }
 
   /**
@@ -114,10 +124,12 @@ public:
    * constructor.
    */
   const class Type* getType() const {
-    return fType;
+    return type_;
   };
 
-
+  const class Type* type() const {
+    return type_;
+  };
 };
 
 
@@ -558,8 +570,11 @@ public:
     return "tuple-expression";
   };
 
+  const std::vector<std::unique_ptr<Expr>>& elements() const {
+    return elements_;
+  }
+
   TupleExpr(std::vector<std::unique_ptr<Expr>> list) : elements_{std::move(list)} {
-    throw std::logic_error("tuple not implemented");
   }
 
 };

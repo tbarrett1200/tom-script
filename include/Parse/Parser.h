@@ -148,7 +148,7 @@ public:
   /**
    *
    */
-  const ReferenceType* parseReferenceType();
+  const Type* parseReferenceOrSliceType();
 
   const TupleType* parseTupleType();
   /**
