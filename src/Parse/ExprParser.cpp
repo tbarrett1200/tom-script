@@ -119,7 +119,7 @@ std::unique_ptr<Expr> Parser::parseAccessorExpr() {
   std::unique_ptr<Expr> expr = parseValueExpr();
   if (acceptToken(Token::l_square)) {
     expectToken(Token::l_square, "[");
-    auto index = parseIntegerExpr();
+    auto index = parseExpr();
     expectToken(Token::r_square, "]");
     return std::make_unique<AccessorExpr>(std::move(expr), std::move(index));
   } else return expr;

@@ -124,6 +124,8 @@ int compile_to_object_code(CompilationUnit& unit) {
        llvmFunction = transformer.transformFunction(*func_decl);
      } else if (const ExternFuncDecl *func_decl = dynamic_cast<const ExternFuncDecl*>(declStmt->getDecl())) {
        llvmFunction = transformer.transformExternalFunctionDecl(*func_decl);
+     } else if (const StructDecl *struct_decl = dynamic_cast<const StructDecl*>(declStmt->getDecl())) {
+       //transformer.transformStructDecl(*struct_decl);
      } else throw CompilerException(nullptr, "only func decl allowed in top level code");
      verifyFunction(*llvmFunction);
    } else throw CompilerException(nullptr, "only func decl allowed in top level code");

@@ -1,6 +1,8 @@
 extern func puts(&[char]) -> i64
+extern func putchar(char) -> i64
 
 func main() -> i64 {
+
   let a: i64 = 5
   let b: f64 = 5.0
   let c: [i64, 5] = [1, 2, 3, 4, 5]
@@ -9,6 +11,8 @@ func main() -> i64 {
   let f: i64 = e[0]
   let g: &(i64, i64) = &e
   let h: [char, 13] = "Hello World!"
+  let i: &[char] = &h
+  let j: char = h[3]
   puts(&h)
-  return g[0]
+  return 0
 }

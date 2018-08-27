@@ -1,0 +1,13 @@
+func index_of(list: &[i64], size: i64, element: i64) -> i64 {
+  var index: i64 = 0
+  while index < size {
+    if list[index] == element then return index
+    index = index + 1
+  }
+   return -1
+}
+
+func main() -> i64 {
+  var array: [i64, 10] = [123, 45, 5, 11, 56, 494, 1, 56, 3, 16]
+  return index_of(&array, 10, 123)
+}

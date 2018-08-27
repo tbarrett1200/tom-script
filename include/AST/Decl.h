@@ -42,6 +42,8 @@ public:
     };
   }
 
+  virtual const char* location() const = 0;
+
   virtual ~Decl() = default;
   virtual const Type* getType() const = 0;
 
@@ -90,6 +92,10 @@ public:
     return fType;
   }
 
+  const char* location() const override {
+      return fName.location();
+  }
+
   virtual const DeclContext* getDeclContext() const override {
     return fParentContext;
   }
@@ -122,6 +128,10 @@ public:
 
   Expr& getExpr() const {
     return *fExpr;
+  }
+
+  const char* location() const override {
+      return fName.location();
   }
 
   std::vector<TreeElement*> getChildren() const override {
@@ -178,6 +188,10 @@ public:
     return fType;
   }
 
+  const char* location() const override {
+      return fName.location();
+  }
+
   virtual const DeclContext* getDeclContext() const override {
     return fParentContext;
   }
@@ -209,6 +223,10 @@ public:
 
   std::vector<TreeElement*> getChildren() const override {
     return {fExpr.get()};
+  }
+
+  const char* location() const override {
+      return fName.location();
   }
 
   Decl::Kind getKind() const override {
@@ -263,6 +281,10 @@ public:
     return fName.lexeme();
   }
 
+  const char* location() const override {
+      return fName.location();
+  }
+
   const Type* getType() const override {
     return fType;
   }
@@ -284,6 +306,51 @@ public:
   }
 
 };
+
+
+class StructDecl : public Decl {
+private:
+  DeclContext* parent_context_;
+  Token name_;
+  const StructType* type_;
+public:
+
+  StructDecl(Token name, const StructType *type)
+  : name_{name}, type_{type} {}
+
+  Decl::Kind getKind() const override {
+    return Decl::Kind::StructDecl;
+  }
+  StringRef getName() const override {
+    return name_.lexeme();
+  }
+
+  const char* location() const override {
+      return name_.location();
+  }
+
+  const Type* getType() const override {
+    return type_;
+  }
+
+  std::string name() const override {
+    return "struct-declaration";
+  };
+
+  virtual const DeclContext* getDeclContext() const override {
+    return parent_context_;
+  }
+
+  virtual DeclContext* getDeclContext() override {
+    return parent_context_;
+  }
+
+  virtual void setParentContext(DeclContext *parent) override {
+    parent_context_ = parent;
+  }
+
+};
+
 
 /// A named, explicitly typed function
 class FuncDecl : public Decl {
@@ -307,6 +374,10 @@ public:
       paramTypes.push_back(param->getType());
     }
     fType = FunctionType::getInstance(paramTypes, fReturnType);
+  }
+
+  const char* location() const override {
+      return fName.location();
   }
 
   CompoundStmt& getBlockStmt() const {
@@ -372,6 +443,10 @@ public:
     return name_.lexeme();
   }
 
+  const char* location() const override {
+      return name_.location();
+  }
+
   const Type* getType() const override {
     return type_;
   }
@@ -405,6 +480,10 @@ public:
 
   StringRef getName() const override {
     return name_.lexeme();
+  }
+
+  const char* location() const override {
+      return name_.location();
   }
 
   const Type* getType() const override {

@@ -136,6 +136,7 @@ public:
     assert(stmt_ && "precondition: statement is required");
   }
 
+
   /// Return the declaration context owned by this statement. It will
   /// encapsulate the declaration condition... if it exists.
   DeclContext* getDeclContext() {

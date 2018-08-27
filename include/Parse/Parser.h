@@ -150,6 +150,8 @@ public:
    */
   const Type* parseReferenceOrSliceType();
 
+  const StructType* parseStructType();
+
   const TupleType* parseTupleType();
   /**
    *
@@ -208,6 +210,11 @@ public:
    *
    */
   std::unique_ptr<FuncDecl> parseFuncDecl();
+
+  /**
+   *
+   */
+  std::unique_ptr<StructDecl> parseStructDecl();
 
   /**
    *

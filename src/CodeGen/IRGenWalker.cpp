@@ -82,6 +82,8 @@ void LLVMTransformer::transformReturnStmt(const ReturnStmt& stmt, llvm::BasicBlo
   }
 }
 
+
+
 void LLVMTransformer::transformLetDecl(const LetDecl& let_decl, llvm::BasicBlock* current_block) {
   llvm::IRBuilder<> builder{current_block};
   llvm::AllocaInst *alloca = builder.CreateAlloca(transformType(*let_decl.getType()), 0, let_decl.getName().str());
@@ -142,18 +144,34 @@ llvm::Value* LLVMTransformer::transformAccessorExprReference(const AccessorExpr 
   );
 
   llvm::Type* index_type = llvm::Type::getInt32Ty(context_);
-  llvm::Value* element_index_0 = llvm::ConstantInt::get(index_type, 0, true);
-  llvm::Value* element_index_1 = llvm::ConstantInt::get(index_type, accessor.index(), true);
-  std::array<llvm::Value*,2> indices{{element_index_0, element_index_1}};
-  return builder.CreateGEP(aggregate_loc, indices);
+
+  if (accessor.identifier().isType<SliceType>()) {
+    llvm::Value* element_index_1 = builder.CreateSExtOrTrunc(
+      transformExpr(accessor.index(), current_block)
+    , index_type
+    );
+    std::array<llvm::Value*,1> indices{{element_index_1}};
+    return builder.CreateGEP(aggregate_loc, indices);
+  } else {
+    llvm::Value* element_index_0 = llvm::ConstantInt::get(index_type, 0);
+    llvm::Value* element_index_1 = builder.CreateSExtOrTrunc(
+      transformExpr(accessor.index(), current_block)
+    , index_type
+    );
+    std::array<llvm::Value*,2> indices{{element_index_0, element_index_1}};
+    return builder.CreateGEP(aggregate_loc, indices);
+  }
+
 }
+
 
 llvm::Value* LLVMTransformer::transformExprReference(const Expr& expr, llvm::BasicBlock* current_block) {
   llvm::IRBuilder<> builder{current_block};
 
   // expressions of reference type are computed directly
   if (expr.getType()->getKind() == Type::Kind::ReferenceType) {
-    const ReferenceType *ref_type = dynamic_cast<const ReferenceType*>(expr.getType());
+    return transformExpr(expr, current_block);
+  } else if (expr.getType()->getKind() == Type::Kind::SliceType) {
     return transformExpr(expr, current_block);
   }
 
@@ -264,7 +282,11 @@ llvm::Value* LLVMTransformer::transformIdentifierExpr(const IdentifierExpr& expr
   auto map_it = named_values_.find(expr.lexeme());
   if (map_it != named_values_.end()) {
     llvm::IRBuilder<> builder{current_block};
-    return builder.CreateLoad(map_it->second);
+    if (expr.isLeftValue()) {
+      return builder.CreateLoad(map_it->second);
+    } else {
+      return map_it->second;
+    }
   } else {
     std::stringstream ss;
     ss << "unable to access '" << expr.lexeme() << "' during codegen";

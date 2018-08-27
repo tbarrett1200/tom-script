@@ -37,6 +37,8 @@ Token Lexer::lexIdentifier()  {
     return Token(Token::kw_false, str_ref);
   } else if (str_ref == StringRef{"extern"}) {
     return Token(Token::kw_extern, str_ref);
+  } else if (str_ref == StringRef{"struct"}) {
+    return Token(Token::kw_struct, str_ref);
   } else if (str_ref == StringRef{"typedef"}) {
     return Token(Token::kw_typedef, str_ref);
   } else if (str_ref == StringRef{"typealias"}) {
@@ -144,7 +146,6 @@ void  Lexer::lexSlashStarComment() {
 void  Lexer::lexSlashSlashComment() {
   while (source_iterator != source->end()) {
     if (*source_iterator == '\n') {
-      source_iterator++;
       return;
     } else {
       source_iterator++;

@@ -14,6 +14,7 @@ std::unique_ptr<Stmt> Parser::parseStmt()  {
     case Token::kw_let:
     case Token::kw_func:
     case Token::kw_extern:
+    case Token::kw_struct:
     case Token::kw_typealias: return parseDeclStmt();
     case Token::identifier:
     case Token::integer_literal:

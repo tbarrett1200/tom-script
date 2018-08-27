@@ -57,6 +57,8 @@ public:
 
   void transformDeclStmt(const DeclStmt& declStmt, llvm::BasicBlock* current_block);
 
+  void transformStructDecl(const StructDecl& struct_decl);
+
   llvm::Value* transformIdentifierExprReference(const IdentifierExpr& id_expr, llvm::BasicBlock* current_block);
 
   llvm::Value* transformAccessorExprReference(const AccessorExpr &accessor, llvm::BasicBlock* current_block);

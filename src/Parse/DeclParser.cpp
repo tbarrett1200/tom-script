@@ -22,6 +22,7 @@ std::unique_ptr<Decl> Parser::parseDecl() {
   case Token::kw_let: return parseLetDecl();
   case Token::kw_func: return parseFuncDecl();
   case Token::kw_extern: return parseExternFuncDecl();
+  case Token::kw_struct: return parseStructDecl();
   case Token::kw_typealias: return parseTypeAlias();
   default: throw CompilerException(token_.location(),  "error: unable to parse decl");
   }
@@ -32,6 +33,13 @@ std::unique_ptr<TypeAlias> Parser::parseTypeAlias() {
   if (!consumeOperator("=")) throw CompilerException(token_.location(),  "expected '='");
   auto type = parseType();
   return std::make_unique<TypeAlias>(name, type);
+}
+
+std::unique_ptr<StructDecl> Parser::parseStructDecl() {
+  expectToken(Token::kw_struct, "struct");
+  auto name = expectToken(Token::identifier, "identifier");
+  auto type = parseStructType();
+  return std::make_unique<StructDecl>(name, type);
 }
 
 std::unique_ptr<Decl> Parser::parseVarDecl() {

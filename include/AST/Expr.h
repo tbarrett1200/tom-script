@@ -60,6 +60,8 @@ public:
     #undef EXPR
   };
 
+  virtual const char* location() const = 0;
+
   // Virtual destructor in base class ensures safe leak-free destruction
   virtual ~Expr() = default;
 
@@ -150,6 +152,10 @@ public:
     return token_.lexeme();
   }
 
+  const char* location() const override {
+      return token_.location();
+  }
+
   std::string name() const override {
     return "integer-literal-expression";
   };
@@ -185,6 +191,11 @@ public:
     return token_.lexeme() == "true" ? 1: 0;
   }
 
+  const char* location() const override {
+      return token_.location();
+  }
+
+
   std::string name() const override {
     return "boolean-literal-expression";
   };
@@ -216,6 +227,10 @@ public:
 
   bool isLeftValue() const override {
     return false;
+  }
+
+  const char* location() const override {
+      return token_.location();
   }
 
   std::string name() const override {
@@ -264,6 +279,10 @@ public:
     return "double-literal-expression";
   };
 
+  const char* location() const override {
+      return token_.location();
+  }
+
   double getDouble() const {
     return std::stod(token_.lexeme().str());
   }
@@ -280,7 +299,7 @@ public:
 class IdentifierExpr: public Expr {
 private:
   Token token_;
-
+  const Decl* decl_;
 public:
 
   StringRef lexeme() const {
@@ -289,9 +308,19 @@ public:
 
   Expr::Kind getKind() const override { return Kind::IdentifierExpr; }
 
-  bool isLeftValue() const override {
-    return true;
+  void setDecl(const Decl* decl) {
+    decl_ = decl;
   }
+
+  const char* location() const override {
+      return token_.location();
+  }
+
+  const Decl* getDecl() const {
+    return decl_;
+  }
+
+  bool isLeftValue() const override;
 
   IdentifierExpr(Token tok) : token_{tok} {}
 
@@ -321,6 +350,10 @@ public:
   Expr::Kind getKind() const override { return Kind::UnaryExpr; }
 
   bool isLeftValue() const override;
+
+  const char* location() const override {
+      return op_.location();
+  }
 
   UnaryExpr(Token o, std::unique_ptr<Expr> e) : op_{std::move(o)}, expr_{std::move(e)} {
     if (!expr_) {
@@ -369,6 +402,10 @@ public:
 
   bool isLeftValue() const override {
     return false;
+  }
+
+  const char* location() const override {
+      return op_.location();
   }
 
   std::string name() const override {
@@ -427,6 +464,10 @@ public:
 
   Expr::Kind getKind() const override { return Kind::FunctionCall; }
 
+  const char* location() const override {
+      return name_->location();
+  }
+
   std::string name() const override {
     return "function-call-expression";
   };
@@ -462,6 +503,10 @@ public:
 
   ListExpr(std::vector<std::unique_ptr<Expr>> d): elements_{std::move(d)} {}
 
+  const char* location() const override {
+      return elements_[0]->location();
+  }
+
   std::string name() const override {
     return "list-expression";
   };
@@ -492,6 +537,10 @@ public:
     return false;
   }
 
+  const char* location() const override {
+      return token_.location();
+  }
+
   std::string getString() const {
     std::string str = token_.lexeme().str();
     return str.substr(1, str.size()-2);
@@ -511,7 +560,7 @@ public:
 class AccessorExpr: public Expr {
 private:
   std::unique_ptr<Expr> aggregate_;
-  std::unique_ptr<IntegerExpr> index_;
+  std::unique_ptr<Expr> index_;
 
 public:
 
@@ -521,6 +570,10 @@ public:
 
   Expr::Kind getKind() const override {
     return Expr::Kind::AccessorExpr;
+  }
+
+  const char* location() const override {
+      return aggregate_->location();
   }
 
   bool isLeftValue() const override {
@@ -539,11 +592,11 @@ public:
     return *aggregate_;
   }
 
-  int index() const {
-    return index_->getInt();
+  Expr& index() const {
+    return *index_;
   }
 
-  AccessorExpr(std::unique_ptr<Expr> a, std::unique_ptr<IntegerExpr> b): aggregate_{std::move(a)}, index_{std::move(b)} {}
+  AccessorExpr(std::unique_ptr<Expr> a, std::unique_ptr<Expr> b): aggregate_{std::move(a)}, index_{std::move(b)} {}
 
 };
 
@@ -558,6 +611,10 @@ public:
 
   bool isLeftValue() const override{
     return false;
+  }
+
+  const char* location() const override {
+      return elements_[0]->location();
   }
 
   int size() const { return elements_.size(); }

@@ -12,6 +12,7 @@ const Type* Parser::parseType() {
   switch(token_.type()) {
     case Token::l_paren: return parseTupleOrFunctionType();
     case Token::identifier: return parseTypeIdentifier();
+    case Token::l_brace: return parseStructType();
     case Token::operator_id:
       if (token_.lexeme() == StringRef{"*"}) return parsePointerType();
       else if (token_.lexeme() == StringRef{"&"}) return parseReferenceOrSliceType();
@@ -110,6 +111,26 @@ const MapType* Parser::parseMapType() {
   auto valueType = parseType();
   expectToken(Token::r_square, "right square bracket");
   return MapType::getInstance(keyType, valueType);
+}
+
+
+const StructType* Parser::parseStructType() {
+  std::map<std::string, const Type*> fields;
+  expectToken(Token::l_brace, "left brace");
+  expectToken(Token::new_line, "newline");
+  while(!token_.is(Token::r_brace)) {
+    auto field_name = parseIdentifier();
+    expectToken(Token::colon, "colon");
+    auto field_type = parseType();
+    expectToken(Token::new_line, "newline");
+    if (fields.find(field_name->lexeme().str()) != fields.end()) {
+      throw CompilerException(field_name->lexeme().start, "error: duplicate field name");
+    } else {
+      fields[field_name->lexeme().str()] = field_type;
+    }
+  }
+  expectToken(Token::r_brace, "right brace");
+  return StructType::getInstance(std::move(fields));
 }
 
 const Type* Parser::parseListOrMapType() {

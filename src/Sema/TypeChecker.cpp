@@ -54,17 +54,18 @@ void TypeChecker::checkExpr(Expr &expr) {
       checkUnaryExpr(dynamic_cast<UnaryExpr&>(expr));
       break;
     default:
-      throw CompilerException(nullptr, "typecheck: unimplemented: " + expr.name());
+      throw CompilerException(expr.location(), "typecheck: unimplemented: " + expr.name());
   }
   if (!expr.getType()) {
     std::stringstream ss;
     ss <<  "typecheck: unexpected: " << expr.name() << " did not properly set type";
-    throw CompilerException(nullptr, ss.str());
+    throw CompilerException(expr.location(), ss.str());
   }
 }
 
 void TypeChecker::checkAccessorExpr(AccessorExpr &expr) {
   // must check the type of all sub-expressions first
+  checkExpr(expr.index());
   checkExpr(expr.identifier());
   // two possible cases: list or &list
   if (expr.identifier().isType<ListType>()) {
@@ -72,16 +73,18 @@ void TypeChecker::checkAccessorExpr(AccessorExpr &expr) {
   } else if (expr.identifier().isReferenceTo<ListType>()) {
     const ReferenceType* ref_type = expr.identifier().type()->as<ReferenceType>();
     expr.setType(ref_type->getReferencedType()->as<ListType>()->element_type());
-  } else if (expr.identifier().isType<TupleType>()) {
+  } /*else if (expr.identifier().isType<TupleType>()) {
     expr.setType(expr.identifier().type()->as<TupleType>()->elements()[expr.index()]);
   } else if (expr.identifier().isReferenceTo<TupleType>()) {
     const ReferenceType* ref_type = expr.identifier().type()->as<ReferenceType>();
     expr.setType(ref_type->getReferencedType()->as<TupleType>()->elements()[expr.index()]);
+  } */else if (expr.identifier().isType<SliceType>()) {
+    expr.setType(expr.identifier().type()->as<SliceType>()->element());
   } else {
     std::stringstream ss;
     ss << "illegal attempt to access element of " << expr.identifier().type()->toString() << ". ";
     ss << "element accessors may only be used on aggregate data types, such as an array";
-    throw CompilerException(nullptr, ss.str());
+    throw CompilerException(expr.location(), ss.str());
   }
 }
 
@@ -93,12 +96,12 @@ void TypeChecker::checkAssignmentExpr(BinaryExpr &expr) {
     if (ltype != rtype) {
       std::stringstream ss;
       ss <<  "mismatched type for assignment operands";
-      throw CompilerException(expr.getOperator().start, ss.str());
+      throw CompilerException(expr.location(), ss.str());
     }
   } else {
     std::stringstream ss;
     ss <<  "unable to assign to left hand side";
-    throw CompilerException(expr.getOperator().start, ss.str());
+    throw CompilerException(expr.location(), ss.str());
   }
 }
 
@@ -126,19 +129,19 @@ void TypeChecker::checkBinaryExpr(BinaryExpr &expr) {
         std::stringstream ss;
         ss <<  "wrong number parameters to operator '" << expr.getOperator();
         ss << "'. expected 2 but got " << func_type->getParamCount();
-        throw CompilerException(nullptr, ss.str());
+        throw CompilerException(expr.location(), ss.str());
       }
     } else {
       std::stringstream ss;
       ss <<  "'" << expr.getOperator() << "' is not an operator";
-      throw CompilerException(nullptr, ss.str());
+      throw CompilerException(expr.location(), ss.str());
     }
   } else {
     std::stringstream ss;
     ss <<  "the '" << expr.getOperator() << "' operator has not been declared for argument types ";
     ss << expr.getLeft().getType()->toString() << " and ";
     ss << expr.getRight().getType()->toString();
-    throw CompilerException(nullptr, ss.str());
+    throw CompilerException(expr.location(), ss.str());
   }
 }
 
@@ -188,12 +191,12 @@ void TypeChecker::checkFunctionCall(FunctionCall &expr) {
         ss << "wrong number of arguments passed to function '";
         ss << expr.getFunctionName() << "'. expected ";
         ss << func_type->getParamTypes().size() << " but found " << expr.getArguments().size();
-        throw CompilerException(nullptr, ss.str());
+        throw CompilerException(expr.location(), ss.str());
       }
     } else {
       std::stringstream ss;
       ss << "'" << expr.getFunctionName() << "' is not declared a function";
-      throw CompilerException(nullptr, ss.str());
+      throw CompilerException(expr.location(), ss.str());
     }
   } else {
     std::stringstream ss;
@@ -203,17 +206,18 @@ void TypeChecker::checkFunctionCall(FunctionCall &expr) {
     }
     ss.seekp((int)ss.tellp()-2);
     ss << ").";
-    throw CompilerException(nullptr, ss.str());
+    throw CompilerException(expr.location(), ss.str());
   }
 }
 
 void TypeChecker::checkIdentifierExpr(IdentifierExpr &expr) {
   if (Decl *decl = currentContext->getDecl(expr.lexeme())) {
+    expr.setDecl(decl);
     expr.setType(decl->getType());
   } else {
     std::stringstream ss;
-    ss << "identifier '" << expr.lexeme() << "' not declared";
-    throw CompilerException(nullptr, ss.str());
+    ss << "identifier '" << expr.lexeme() << "' has not been declared";
+    throw CompilerException(expr.location(), ss.str());
   }
 }
 
@@ -224,14 +228,14 @@ void TypeChecker::checkIntegerExpr(IntegerExpr &expr) {
 
 void TypeChecker::checkListExpr(ListExpr &expr) {
   if (expr.elements().size() == 0) {
-    throw CompilerException(nullptr, "array literal must have at least one element");
+    throw CompilerException(expr.location(), "array literal must have at least one element");
   }
   const Type *element_type = nullptr;
   for (auto &element: expr.elements()) {
     checkExpr(*element);
     if (element_type) {
       if (element->getType()->getCanonicalType() != element_type) {
-        throw CompilerException(nullptr, "array literal must be composed of elements of a single type");
+        throw CompilerException(expr.location(), "array literal must be composed of elements of a single type");
       }
     } else element_type = element->getType()->getCanonicalType();
   }
@@ -255,6 +259,7 @@ void TypeChecker::checkReferenceExpr(UnaryExpr &expr) {
 }
 
 void TypeChecker::checkStringExpr(StringExpr &expr) {
+
   expr.setType(ListType::getInstance(CharacterType::getInstance(), expr.getString().size() + 1));
 }
 
@@ -277,24 +282,17 @@ void TypeChecker::checkUnaryExpr(UnaryExpr &expr) {
     std::vector<const Type*> param_types{ expr.getExpr().getType()->getCanonicalType() };
     if (Decl *decl = currentContext->getDecl(FunctionSignature(expr.getOperator(), param_types))) {
       if (const FunctionType* func_type = decl->getType()->getCanonicalType()->as<FunctionType>()) {
-        if (func_type->getParamCount() == 1) {
-          expr.setType(func_type->getReturnType());
-        } else {
-          std::stringstream ss;
-          ss <<  "not enough parameters to unary operator '" << expr.getOperator();
-          ss << "'. expected 1 but got " << func_type->getParamCount();
-          throw CompilerException(nullptr, ss.str());
-        }
+        expr.setType(func_type->getReturnType());
       } else {
         std::stringstream ss;
         ss <<  "'" << expr.getOperator() << "' is not an operator";
-        throw CompilerException(nullptr, ss.str());
+        throw CompilerException(expr.location(), ss.str());
       }
     } else {
       std::stringstream ss;
       ss <<  "the unary '" << expr.getOperator() << "' operator has not been declared for argument type ";
       ss << expr.getExpr().getType()->toString() << " and ";
-      throw CompilerException(nullptr, ss.str());
+      throw CompilerException(expr.location(), ss.str());
     }
   }
 }

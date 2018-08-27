@@ -1,0 +1,8 @@
+struct Person {
+  name: &[char]
+  age: i64
+}
+
+func main() -> i64 {
+  return 0
+}

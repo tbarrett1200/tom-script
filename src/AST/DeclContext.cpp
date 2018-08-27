@@ -18,7 +18,17 @@ Decl* DeclContext::getDecl(const FunctionSignature &signature) {
         for (int i = 0; i < func_type->getParamCount(); i++) {
           const Type* t1 = func_type->getParam(i);
           const Type* t2 = signature.params()[i];
-          if (t1 != t2) return false;
+          if (t1 != t2) {
+            if (const SliceType *slice = dynamic_cast<const SliceType*>(t1)) {
+              if (const ReferenceType *ref = dynamic_cast<const ReferenceType*>(t2)) {
+                std::cout << "slice conversion possible" << std::endl;
+                if (const ListType *list = dynamic_cast<const ListType*>(ref->getReferencedType())) {
+                  std::cout << "slice conversion found" << std::endl;
+                  if (list->element_type() != slice->element()) return false;
+                }
+              } else return false;
+            } else return false;
+          }
         }
         return true;
       } else return false;

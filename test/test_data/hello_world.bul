@@ -1,0 +1,22 @@
+/*
+ * file: hello_world.bul
+ * author: Thomas Barrett
+ * info: This is an example hello world program which uses the c standard
+ *       library and character arrays to print a message to the termimal.
+ */
+
+/*
+ * Forward declaration of the external c standard library function puts, which
+ * prints a null terminated array of characters to the terminal.
+ */
+extern func puts(&[char]) -> i64
+
+/*
+ * Create a character array with the text "Hello World!" and print it to the
+ * terminal using c standard library
+ */
+func main() -> i64 {
+  var greeting: [char, 13] = "Hello World!"
+  puts(&greeting)
+  return 0
+}

@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <list>
+#include <map>
 
 #include "Basic/SourceCode.h"
 
@@ -477,6 +478,42 @@ public:
     if (params_.size() > 0) str = str.substr(0, str.length() - 1);
     str += ") -> " + (returns_ ? returns_->toString(): "()" );
     return str;
+  }
+};
+
+/*
+ * A type which represents a structured data with named fields and methods.
+ * A struct type with a given list of fields is considered different from an
+ * struct with the equivelant fields. A struct is meant to be referenced by
+ * name.
+ */
+class StructType: public Type {
+private:
+  std::map<std::string, const Type*> members_;
+
+  /// Singleton instances of active List types
+  static std::vector<std::unique_ptr<StructType>> instances;
+public:
+  StructType(std::map<std::string, const Type*> members)
+  : members_{std::move(members)} {}
+
+
+  Type::Kind getKind() const override { return Kind::StructType; }
+
+  static const StructType* getInstance(std::map<std::string, const Type*> members) {
+    instances.push_back(std::make_unique<StructType>(std::move(members)));
+    return instances.back().get();
+  }
+
+  /// Return a string representation of the list type as "[<element-type>]"
+  std::string toString() const override {
+    std::stringstream ss;
+    ss << "{" << std::endl;
+    for (auto field: members_) {
+      ss << "  " << field.first << ": " << field.second->toString() << std::endl;
+    }
+    ss << "}" << std::endl;
+    return ss.str();
   }
 };
 
