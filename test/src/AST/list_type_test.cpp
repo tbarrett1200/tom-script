@@ -25,5 +25,5 @@ TEST(ListType, getCanonicalType) {
 
 TEST(ListType, toString) {
   const Type* t1 = ListType::getInstance(BooleanType::getInstance(), 5);
-  ASSERT_EQ(t1->toString(), "[Boolean, 5]");
+  ASSERT_EQ(t1->toString(), "[bool, 5]");
 }

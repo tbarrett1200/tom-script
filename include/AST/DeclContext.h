@@ -12,16 +12,16 @@ class Decl;
 class FunctionSignature {
 private:
   StringRef name_;
-  std::vector<const class Type*> params_;
+  std::vector<class Type*> params_;
 public:
-  FunctionSignature(StringRef name, std::vector<const class Type*> params)
+  FunctionSignature(StringRef name, std::vector<class Type*> params)
   : name_{name}, params_{std::move(params)} {}
 
   StringRef name() const {
     return name_;
   }
 
-  const std::vector<const class Type*>& params() const {
+  const std::vector<class Type*>& params() const {
     return params_;
   }
 
@@ -56,6 +56,7 @@ public:
   }
 
   void addDecl(class Decl* d);
+
 
   Decl* getDecl(StringRef name) {
     auto candidate_iterator = decls_.equal_range(name);

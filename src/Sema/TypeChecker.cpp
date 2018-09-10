@@ -56,29 +56,51 @@ void TypeChecker::checkExpr(Expr &expr) {
     default:
       throw CompilerException(expr.location(), "typecheck: unimplemented: " + expr.name());
   }
+
   if (!expr.getType()) {
     std::stringstream ss;
     ss <<  "typecheck: unexpected: " << expr.name() << " did not properly set type";
     throw CompilerException(expr.location(), ss.str());
   }
+
 }
 
-void TypeChecker::checkAccessorExpr(AccessorExpr &expr) {
-  // must check the type of all sub-expressions first
-  checkExpr(expr.index());
+void TypeChecker::checkPropertyAccessor(AccessorExpr &expr) {
   checkExpr(expr.identifier());
+  if (IdentifierExpr* id_expr = dynamic_cast<IdentifierExpr*>(&expr.index())) {
+    Type* id_type = expr.identifier().getType()->getCanonicalType();
+    if (StructType *struct_type = dynamic_cast<StructType*>(id_type)) {
+      int member_index = struct_type->index_of(id_expr->lexeme().str());
+      if (member_index == -1) {
+        throw CompilerException(expr.location(), "property '" + id_expr->lexeme().str() + "' not found in struct ");
+      } else {
+        expr.setMemberIndex(member_index);
+        expr.setType(struct_type->type_of_member_at(member_index)->getCanonicalType());
+      }
+    } else if (expr.identifier().isReferenceTo<StructType>()) {
+      StructType *struct_type = dynamic_cast<StructType*>(dynamic_cast<ReferenceType*>(id_type)->getReferencedType()->getCanonicalType());
+      int member_index = struct_type->index_of(id_expr->lexeme().str());
+      if (member_index == -1) {
+        throw CompilerException(expr.location(), "property '" + id_expr->lexeme().str() + "' not found in struct ");
+      } else {
+        expr.setMemberIndex(member_index);
+        expr.setType(struct_type->type_of_member_at(member_index)->getCanonicalType());
+      }
+    } else throw CompilerException(expr.location(), "cannot access property of value of type " + expr.identifier().getType()->toString());
+  } else throw CompilerException(expr.location(), "bad thing happened");
+
+}
+
+void TypeChecker::checkElementAccessor(AccessorExpr &expr) {
+  checkExpr(expr.identifier());
+  checkExpr(expr.index());
   // two possible cases: list or &list
   if (expr.identifier().isType<ListType>()) {
     expr.setType(expr.identifier().type()->as<ListType>()->element_type());
   } else if (expr.identifier().isReferenceTo<ListType>()) {
-    const ReferenceType* ref_type = expr.identifier().type()->as<ReferenceType>();
+    ReferenceType* ref_type = expr.identifier().type()->as<ReferenceType>();
     expr.setType(ref_type->getReferencedType()->as<ListType>()->element_type());
-  } /*else if (expr.identifier().isType<TupleType>()) {
-    expr.setType(expr.identifier().type()->as<TupleType>()->elements()[expr.index()]);
-  } else if (expr.identifier().isReferenceTo<TupleType>()) {
-    const ReferenceType* ref_type = expr.identifier().type()->as<ReferenceType>();
-    expr.setType(ref_type->getReferencedType()->as<TupleType>()->elements()[expr.index()]);
-  } */else if (expr.identifier().isType<SliceType>()) {
+  } else if (expr.identifier().isType<SliceType>()) {
     expr.setType(expr.identifier().type()->as<SliceType>()->element());
   } else {
     std::stringstream ss;
@@ -88,14 +110,43 @@ void TypeChecker::checkAccessorExpr(AccessorExpr &expr) {
   }
 }
 
+// An accessor Expression comes in two main flavours: property access and
+// index access. A property access only works on types with named properties,
+// such as a struct. Each property corresponds to a struct element index.
+// A index access directly specifies the index to access. This method checks
+// which type of accessor is being passed, and delegates it to the appropriate
+// method
+void TypeChecker::checkAccessorExpr(AccessorExpr &expr) {
+  if (IdentifierExpr* id_expr = dynamic_cast<IdentifierExpr*>(&expr.index())) {
+    checkPropertyAccessor(expr);
+  } else if (AccessorExpr* accessor_expr = dynamic_cast<AccessorExpr*>(&expr.index())) {
+    throw CompilerException(expr.location(), "cannot handle nested property accessors");
+  } else {
+    checkElementAccessor(expr);
+  }
+}
+
+bool TypeChecker::is_implicitly_assignable_to(Type *l, Type *r) {
+  if (l->getCanonicalType() == r->getCanonicalType()) {
+    return true;
+  } else if (SliceType *slice_type = dynamic_cast<SliceType*>(l->getCanonicalType())) {
+    if (ReferenceType *ref_type = dynamic_cast<ReferenceType*>(r->getCanonicalType())) {
+      if (ref_type->getReferencedType() == slice_type->element()) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
 void TypeChecker::checkAssignmentExpr(BinaryExpr &expr) {
   if (expr.getLeft().isLeftValue()) {
-    const Type* ltype = expr.getLeft().getType()->getCanonicalType();
-    const Type* rtype = expr.getRight().getType()->getCanonicalType();
-    expr.setType(expr.getRight().getType());
+    Type* ltype = expr.getLeft().getType()->getCanonicalType();
+    Type* rtype = expr.getRight().getType()->getCanonicalType();
+    expr.setType(expr.getRight().getType()->getCanonicalType());
     if (ltype != rtype) {
       std::stringstream ss;
-      ss <<  "mismatched type for assignment operands";
+      ss <<  "mismatched type for assignment operands " << ltype->toString();
       throw CompilerException(expr.location(), ss.str());
     }
   } else {
@@ -116,13 +167,15 @@ void TypeChecker::checkBinaryExpr(BinaryExpr &expr) {
   }
 
   // asserts that the operator is defined
-  std::vector<const Type*> param_types{
+  std::vector<Type*> param_types{
     expr.getLeft().type()->getCanonicalType(),
     expr.getRight().type()->getCanonicalType()
   };
 
   if (Decl *decl = currentContext->getDecl({expr.getOperator(), param_types})) {
-    if (const FunctionType *func_type = decl->getType()->getCanonicalType()->as<FunctionType>()) {
+
+    if (FunctionType *func_type = decl->getType()->as_canonical<FunctionType>()) {
+      // a binary expression, by definiton, must have exactly two parameters.
       if (func_type->getParamCount() == 2) {
         expr.setType(func_type->getReturnType());
       } else {
@@ -155,9 +208,9 @@ void TypeChecker::checkCharacterExpr(CharacterExpr &expr) {
 
 void TypeChecker::checkDereferenceExpr(UnaryExpr &expr) {
   checkExpr(expr.getExpr());
-  if (const PointerType* ptr_type = expr.getExpr().getType()->getCanonicalType()->as<PointerType>()) {
+  if ( PointerType* ptr_type = expr.getExpr().getType()->getCanonicalType()->as<PointerType>()) {
     expr.setType(ptr_type->getReferencedType());
-  } else if (const ReferenceType* ref_type = expr.getExpr().getType()->getCanonicalType()->as<ReferenceType>()) {
+  } else if ( ReferenceType* ref_type = expr.getExpr().getType()->getCanonicalType()->as<ReferenceType>()) {
     expr.setType(ref_type->getReferencedType());
   } else {
     std::stringstream ss;
@@ -177,15 +230,15 @@ void TypeChecker::checkFunctionCall(FunctionCall &expr) {
     checkExpr(*arg);
   }
 
-  std::vector<const Type*> param_types;
+  std::vector<Type*> param_types;
   for(auto &arg: expr.getArguments()) {
     param_types.push_back(arg->getType()->getCanonicalType());
   }
 
   if (Decl *decl = currentContext->getDecl({expr.getFunctionName(), param_types})) {
-    if (const FunctionType *func_type = decl->getType()->getCanonicalType()->as<FunctionType>()) {
+    if ( FunctionType *func_type = decl->getType()->getCanonicalType()->as<FunctionType>()) {
       if (func_type->getParamTypes().size() == expr.getArguments().size()) {
-        expr.setType(func_type->getReturnType());
+        expr.setType(func_type->getReturnType()->getCanonicalType());
       } else {
         std::stringstream ss;
         ss << "wrong number of arguments passed to function '";
@@ -212,8 +265,10 @@ void TypeChecker::checkFunctionCall(FunctionCall &expr) {
 
 void TypeChecker::checkIdentifierExpr(IdentifierExpr &expr) {
   if (Decl *decl = currentContext->getDecl(expr.lexeme())) {
-    expr.setDecl(decl);
-    expr.setType(decl->getType());
+    if (Type *type = decl->getType()) {
+      expr.setDecl(decl);
+      expr.setType(type->getCanonicalType());
+    } else throw CompilerException(expr.location(), "fatal: declaration missing type");
   } else {
     std::stringstream ss;
     ss << "identifier '" << expr.lexeme() << "' has not been declared";
@@ -230,7 +285,7 @@ void TypeChecker::checkListExpr(ListExpr &expr) {
   if (expr.elements().size() == 0) {
     throw CompilerException(expr.location(), "array literal must have at least one element");
   }
-  const Type *element_type = nullptr;
+  Type *element_type = nullptr;
   for (auto &element: expr.elements()) {
     checkExpr(*element);
     if (element_type) {
@@ -244,16 +299,19 @@ void TypeChecker::checkListExpr(ListExpr &expr) {
 
 void TypeChecker::checkReferenceExpr(UnaryExpr &expr) {
   checkExpr(expr.getExpr());
+  // unable to get the address of an expression which has no inherent
+  // notion of location... e.g. a literal value
   if (expr.getExpr().isLeftValue()) {
-    if (expr.getExpr().type()->getKind() == Type::Kind::ListType) {
-      const ListType* list_type = dynamic_cast<const ListType*>(expr.getExpr().type());
-      expr.setType(SliceType::getInstance(list_type->element_type()));
-    } else {
+    //if (expr.getExpr().type()->getKind() == Type::Kind::ListType) {
+    //   ListType* list_type = dynamic_cast< ListType*>(expr.getExpr().type());
+    //  expr.setType(SliceType::getInstance(list_type->element_type()));
+    //} else {
       expr.setType(ReferenceType::getInstance(expr.getExpr().getType()->getCanonicalType()));
-    }
+  //  }
   } else {
     std::stringstream ss;
-    ss << "illegal attempt to reference a non-referenceable type.";
+    ss << "illegal attempt to reference a non-referenceable type: " << expr.getExpr().getType()->toString() << std::endl;
+    ss << "expression kind: " << expr.getExpr().name() << std::endl;
     throw CompilerException(expr.getOperator().start, ss.str());
   }
 }
@@ -264,7 +322,7 @@ void TypeChecker::checkStringExpr(StringExpr &expr) {
 }
 
 void TypeChecker::checkTupleExpr(TupleExpr &expr) {
-  std::vector<const Type*> element_types;
+  std::vector<Type*> element_types;
   for (auto &element: expr.elements()) {
     checkExpr(*element);
     element_types.push_back(element->type());
@@ -279,10 +337,10 @@ void TypeChecker::checkUnaryExpr(UnaryExpr &expr) {
     return checkDereferenceExpr(expr);
   } else {
     checkExpr(expr.getExpr());
-    std::vector<const Type*> param_types{ expr.getExpr().getType()->getCanonicalType() };
+    std::vector<Type*> param_types{ expr.getExpr().getType()->getCanonicalType() };
     if (Decl *decl = currentContext->getDecl(FunctionSignature(expr.getOperator(), param_types))) {
-      if (const FunctionType* func_type = decl->getType()->getCanonicalType()->as<FunctionType>()) {
-        expr.setType(func_type->getReturnType());
+      if ( FunctionType* func_type = decl->getType()->getCanonicalType()->as<FunctionType>()) {
+        expr.setType(func_type->getReturnType()->getCanonicalType());
       } else {
         std::stringstream ss;
         ss <<  "'" << expr.getOperator() << "' is not an operator";

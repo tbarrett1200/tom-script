@@ -16,8 +16,8 @@ Decl* DeclContext::getDecl(const FunctionSignature &signature) {
     if (const FunctionType *func_type = dynamic_cast<const FunctionType*>(pair.second->getType())) {
       if (func_type->getParamCount() == signature.params().size()) {
         for (int i = 0; i < func_type->getParamCount(); i++) {
-          const Type* t1 = func_type->getParam(i);
-          const Type* t2 = signature.params()[i];
+          const Type* t1 = func_type->getParam(i)->getCanonicalType();
+          const Type* t2 = signature.params()[i]->getCanonicalType();
           if (t1 != t2) {
             if (const SliceType *slice = dynamic_cast<const SliceType*>(t1)) {
               if (const ReferenceType *ref = dynamic_cast<const ReferenceType*>(t2)) {
@@ -42,7 +42,9 @@ Decl* DeclContext::getDecl(const FunctionSignature &signature) {
   } else if (candidates.size() == 1) {
     return candidates.front().second;
   } else if (parent_ == nullptr) {
-    return nullptr;
+    std::stringstream ss;
+    ss << "function not found '" << signature.name() << "'";
+    throw CompilerException(signature.name().start, ss.str());
   } else return parent_->getDecl(signature);
 }
 //

@@ -6,10 +6,6 @@
 //----------------------------------------------------------------------------//
 
 
-const Type* Type::getCanonicalType() const {
-  return this;
-}
-
 bool Type::isIntegerType() const {
   return getCanonicalType()->getKind() == Kind::IntegerType;
 }
@@ -28,14 +24,14 @@ bool Type::isBooleanType() const {
 
 IntegerType IntegerType::singleton;
 
-const IntegerType* IntegerType::getInstance() {
+ IntegerType* IntegerType::getInstance() {
   return &IntegerType::singleton;
 }
 
 
 CharacterType CharacterType::singleton;
 
-const CharacterType* CharacterType::getInstance() {
+ CharacterType* CharacterType::getInstance() {
   return &CharacterType::singleton;
 }
 
@@ -47,14 +43,14 @@ const CharacterType* CharacterType::getInstance() {
 DoubleType DoubleType::singleton;
 
 
-const DoubleType* DoubleType::getInstance() {
+ DoubleType* DoubleType::getInstance() {
   return &DoubleType::singleton;
 }
 
 BooleanType BooleanType::singleton;
 
 
-const BooleanType* BooleanType::getInstance() {
+ BooleanType* BooleanType::getInstance() {
   return &BooleanType::singleton;
 }
 

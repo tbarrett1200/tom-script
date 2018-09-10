@@ -12,7 +12,7 @@
 //   std::vector<std::unique_ptr<ParamDecl>>&& param = acceptToken(Token::r_paren) ? std::vector<std::unique_ptr<ParamDecl>>() : parseParamDeclList();
 //   expectToken(Token::r_paren, "right parenthesis");
 //   if (!consumeOperator("->")) throw CompilerException(token_.location(),  "error: expected ->");
-//   const Type* type = parseType();
+//   Type* type = parseType();
 //   return std::make_unique<FuncDecl>(name, param, type, nullptr);
 // }
 
@@ -45,7 +45,7 @@ std::unique_ptr<StructDecl> Parser::parseStructDecl() {
 std::unique_ptr<Decl> Parser::parseVarDecl() {
   expectToken(Token::kw_var, "var");
   auto name = expectToken(Token::identifier, "identifier");
-  const Type* type = consumeToken(Token::colon)? parseType(): nullptr;
+  Type* type = consumeToken(Token::colon)? parseType(): nullptr;
   if (consumeOperator("=")) {
     auto expr = parseExpr();
     return std::make_unique<VarDecl>(name, type, std::move(expr));
@@ -57,7 +57,7 @@ std::unique_ptr<Decl> Parser::parseVarDecl() {
 std::unique_ptr<LetDecl> Parser::parseLetDecl() {
   expectToken(Token::kw_let, "let");
   auto name = expectToken(Token::identifier, "identifier");
-  const Type* type = consumeToken(Token::colon)? parseType(): nullptr;
+  Type* type = consumeToken(Token::colon)? parseType(): nullptr;
   if (consumeOperator("=")) {
     auto expr = parseExpr();
     return std::make_unique<LetDecl>(name, type, std::move(expr));

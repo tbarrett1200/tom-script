@@ -8,7 +8,7 @@
 using namespace std;
 
 
-const Type* Parser::parseType() {
+Type* Parser::parseType() {
   switch(token_.type()) {
     case Token::l_paren: return parseTupleOrFunctionType();
     case Token::identifier: return parseTypeIdentifier();
@@ -21,21 +21,17 @@ const Type* Parser::parseType() {
   }
 }
 
-const Type* Parser::parseTypeIdentifier() {
+Type* Parser::parseTypeIdentifier() {
   auto token = expectToken(Token::identifier, "type identifier");
   if (token.lexeme() == StringRef{"i64"}) return IntegerType::getInstance();
   else if (token.lexeme()== StringRef{"bool"}) return BooleanType::getInstance();
   else if (token.lexeme()== StringRef{"f64"}) return DoubleType::getInstance();
   else if (token.lexeme()== StringRef{"char"}) return CharacterType::getInstance();
-  else {
-    std::stringstream ss;
-    ss << "error: unrecognized type identifier " << token.lexeme();
-    throw CompilerException(token.location(), ss.str());
-  }
+  else return TypeIdentifier::getInstance(token.lexeme().str());
 }
 
-std::vector<const Type*> Parser::parseTupleTypeElementList() {
-  std::vector<const Type*> elements;
+std::vector<Type*> Parser::parseTupleTypeElementList() {
+  std::vector<Type*> elements;
   elements.push_back(parseType());
   while (consumeToken(Token::comma)) {
     elements.push_back(parseType());
@@ -43,9 +39,9 @@ std::vector<const Type*> Parser::parseTupleTypeElementList() {
   return elements;
 }
 
-const TupleType* Parser::parseTupleType() {
+TupleType* Parser::parseTupleType() {
   expectToken(Token::l_paren, "left parenthesis");
-  std::vector<const Type*> list;
+  std::vector<Type*> list;
   if (token_.isNot(Token::r_paren)) {
     list = parseTupleTypeElementList();
   }
@@ -53,9 +49,9 @@ const TupleType* Parser::parseTupleType() {
   return TupleType::getInstance(std::move(list));
 }
 
-const FunctionType* Parser::parseFunctionType() {
+FunctionType* Parser::parseFunctionType() {
   expectToken(Token::l_paren, "left parenthesis");
-  std::vector<const Type*> list;
+  std::vector<Type*> list;
   if (token_.isNot(Token::r_paren)){
     list = parseTupleTypeElementList();
   }
@@ -65,9 +61,9 @@ const FunctionType* Parser::parseFunctionType() {
   return FunctionType::getInstance(std::move(list), type);
 }
 
-const Type* Parser::parseTupleOrFunctionType() {
+Type* Parser::parseTupleOrFunctionType() {
   expectToken(Token::l_paren, "left parenthesis");
-  std::vector<const Type*> list;
+  std::vector<Type*> list;
   if (token_.isNot(Token::r_paren)) {
     list = parseTupleTypeElementList();
   }
@@ -77,7 +73,7 @@ const Type* Parser::parseTupleOrFunctionType() {
   return FunctionType::getInstance(std::move(list), type);
 }
 
-const ListType* Parser::parseListType() {
+ListType* Parser::parseListType() {
   expectToken(Token::l_square, "left square bracket");
   auto type = parseType();
   expectToken(Token::comma, "comma");
@@ -86,25 +82,19 @@ const ListType* Parser::parseListType() {
   return ListType::getInstance(type, size->getInt());
 }
 
-const PointerType* Parser::parsePointerType() {
+PointerType* Parser::parsePointerType() {
   expectToken(Token::operator_id, "*");
   auto type = parseType();
   return PointerType::getInstance(type);
 }
 
-const Type* Parser::parseReferenceOrSliceType() {
+Type* Parser::parseReferenceOrSliceType() {
   expectToken(Token::operator_id, "&");
-  if (consumeToken(Token::l_square)) {
-    auto type = parseType();
-    expectToken(Token::r_square, "]");
-    return SliceType::getInstance(type);
-  } else {
-    auto type = parseType();
-    return ReferenceType::getInstance(type);
-  }
+  auto type = parseType();
+  return ReferenceType::getInstance(type);
 }
 
-const MapType* Parser::parseMapType() {
+MapType* Parser::parseMapType() {
   expectToken(Token::l_square, "left square bracket");
   auto keyType = parseType();
   expectToken(Token::colon, "colon");
@@ -114,8 +104,8 @@ const MapType* Parser::parseMapType() {
 }
 
 
-const StructType* Parser::parseStructType() {
-  std::map<std::string, const Type*> fields;
+StructType* Parser::parseStructType() {
+  std::vector<std::pair<std::string, Type*>> fields;
   expectToken(Token::l_brace, "left brace");
   expectToken(Token::new_line, "newline");
   while(!token_.is(Token::r_brace)) {
@@ -123,17 +113,13 @@ const StructType* Parser::parseStructType() {
     expectToken(Token::colon, "colon");
     auto field_type = parseType();
     expectToken(Token::new_line, "newline");
-    if (fields.find(field_name->lexeme().str()) != fields.end()) {
-      throw CompilerException(field_name->lexeme().start, "error: duplicate field name");
-    } else {
-      fields[field_name->lexeme().str()] = field_type;
-    }
+    fields.push_back({field_name->lexeme().str(), field_type});
   }
   expectToken(Token::r_brace, "right brace");
   return StructType::getInstance(std::move(fields));
 }
 
-const Type* Parser::parseListOrMapType() {
+Type* Parser::parseListOrMapType() {
   expectToken(Token::l_square, "left square bracket");
   auto keyType = parseType();
   if (consumeToken(Token::colon)) {

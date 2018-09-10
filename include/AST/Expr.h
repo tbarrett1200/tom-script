@@ -19,7 +19,7 @@ private:
    * in all cases. A public accessor is available to get the type, and a
    * protected setter is available to set the type at construction time.
    */
-   const class Type *type_;
+    class Type *type_ = nullptr;
 
   /*
    * The location in text where this expression was parsed from. This is useful
@@ -42,7 +42,7 @@ public:
    * Expr Subclasses should call this in their constructor. After construction,
    * all expressions should have a type.
    */
-  void setType(const class Type *aType) {
+  void setType( class Type *aType) {
     type_ = aType;
   };
 
@@ -71,7 +71,7 @@ public:
    * return false.
    */
    template<typename T> bool is() const {
-     return (dynamic_cast<T*>(this) != nullptr);
+     return (dynamic_cast<const T*>(this) != nullptr);
    }
 
    template<typename T> bool isType() const {
@@ -125,11 +125,11 @@ public:
    * expression derived classes are required to set their type in their
    * constructor.
    */
-  const class Type* getType() const {
+  class Type* getType() const {
     return type_;
   };
 
-  const class Type* type() const {
+   class Type* type() const {
     return type_;
   };
 };
@@ -561,6 +561,7 @@ class AccessorExpr: public Expr {
 private:
   std::unique_ptr<Expr> aggregate_;
   std::unique_ptr<Expr> index_;
+  int member_index_;
 
 public:
 
@@ -576,11 +577,25 @@ public:
       return aggregate_->location();
   }
 
+  void setMemberIndex(int i) {
+    member_index_ = i;
+  }
+
+  int getMemberIndex() const {
+    if (IntegerExpr* int_expr = dynamic_cast<IntegerExpr*>(index_.get())) {
+      return int_expr->getInt();
+    } else return member_index_;
+  }
+
+  bool hasStaticIndex() const {
+    return index_->is<IdentifierExpr>() || index_->is<IntegerExpr>();
+  }
+
   bool isLeftValue() const override {
     return true;
   }
 
-  std::string name() const override {
+  virtual std::string name() const override {
     return "accessor-expression";
   };
 
@@ -599,6 +614,7 @@ public:
   AccessorExpr(std::unique_ptr<Expr> a, std::unique_ptr<Expr> b): aggregate_{std::move(a)}, index_{std::move(b)} {}
 
 };
+
 
 class TupleExpr: public Expr {
 private:

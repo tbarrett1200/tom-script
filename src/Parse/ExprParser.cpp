@@ -117,9 +117,13 @@ unique_ptr<Expr> Parser::parseValueExpr() {
 
 std::unique_ptr<Expr> Parser::parseAccessorExpr() {
   std::unique_ptr<Expr> expr = parseValueExpr();
-  if (acceptToken(Token::l_square)) {
+  if (acceptToken(Token::dot)) {
+    consume();
+    auto index = parseAccessorExpr();
+    return std::make_unique<AccessorExpr>(std::move(expr), std::move(index));
+  } else if (acceptToken(Token::l_square)) {
     expectToken(Token::l_square, "[");
-    auto index = parseExpr();
+    auto index = parseValueExpr();
     expectToken(Token::r_square, "]");
     return std::make_unique<AccessorExpr>(std::move(expr), std::move(index));
   } else return expr;

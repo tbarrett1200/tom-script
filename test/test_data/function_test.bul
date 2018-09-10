@@ -4,7 +4,7 @@ func foo(a: i64, b: i64) -> i64 {
 
 func bar(a: i64, b: i64) -> i64 {
   let d: i64 = 5
-  return a + *d + b
+  return 5 + d
 }
 
 func main() -> i64 {

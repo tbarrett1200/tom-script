@@ -12,6 +12,9 @@
  *
  */
 class Type {
+private:
+  Type* canonical_type_ = nullptr;
+
 public:
 
   /** All possible derivative classes of Type */
@@ -27,12 +30,25 @@ public:
    * A convenience method for easy casting from a generic Type to
    * any of its possible derived types. Returns null if unable to cast.
    */
-  template<typename T> const T* as() const {
-    return dynamic_cast<const T*>(this);
+  template<typename T>  T* as() {
+    return dynamic_cast< T*>(this);
   }
 
   template<typename T> bool is() const {
     return (dynamic_cast<const T*>(this)!=nullptr);
+  }
+
+  void setCanonicalType(Type *type) {
+    canonical_type_ = type;
+  }
+  
+
+  virtual Type* getCanonicalType() {
+    return canonical_type_ ?  canonical_type_: this;
+  }
+
+  virtual const Type* getCanonicalType() const {
+    return canonical_type_ ?  canonical_type_: this;
   }
 
   /**
@@ -43,14 +59,21 @@ public:
    */
   virtual Type::Kind getKind() const = 0;
 
+  template<typename T> bool is_canonical() {
+    return getCanonicalType()->is<T>();
+  }
+
+  template<typename T> T* as_canonical() {
+    return getCanonicalType()->as<T>();
+  }
+
   /**
    * Returns the underlying type - stripped of possible type aliasing.
    * A fundamental type - one that does not alias another type or contain
    * any non-fundamental types - returns itself.
    *
    * TODO: Currently - all types returns this. This should be updated
-   */
-  virtual const Type* getCanonicalType() const;
+ */
 
   /**
    * Returns whether or not this type is a builtin 'Integer' type. This is done
@@ -82,7 +105,7 @@ public:
 
   /// Return the singleton instance of IntegerType. Type equality can be done
   /// by pointer comparison becase all IntegerType have the same pointer.
-  static const IntegerType* getInstance();
+  static IntegerType* getInstance();
 
   /// Return runtime type, which is Type::Kind::IntegerType
   Type::Kind getKind() const override { return Type::Kind::IntegerType; }
@@ -104,7 +127,7 @@ public:
 
   /// Return the singleton instance of IntegerType. Type equality can be done
   /// by pointer comparison becase all IntegerType have the same pointer.
-  static const CharacterType* getInstance();
+  static CharacterType* getInstance();
 
   /// Return runtime type, which is Type::Kind::IntegerType
   Type::Kind getKind() const override { return Type::Kind::CharacterType; }
@@ -127,7 +150,7 @@ public:
 
   /// Return the singleton instance of BooleanType. Type equality can be done
   /// by pointer comparison becase all BooleanType have the same pointer.
-  static const BooleanType* getInstance();
+  static BooleanType* getInstance();
 
   /// Return runtime type, which is Type::Kind::BooleanType
   Type::Kind getKind() const override { return Type::Kind::BooleanType; }
@@ -148,7 +171,7 @@ public:
 
   /// Return the singleton instance of DoubleType. Type equality can be done
   /// by pointer comparison becase all DoubleType have the same pointer.
-  static const DoubleType* getInstance();
+  static DoubleType* getInstance();
 
   /// Return runtime type, which is Type::Kind::DoubleType
   Type::Kind getKind() const override { return Kind::DoubleType; }
@@ -164,17 +187,17 @@ private:
   /// Singleton instance of PointerType
   static std::vector<std::unique_ptr<PointerType>> instances;
 
-  const Type *ref_type_;
+  Type *ref_type_;
 
 public:
   /// Construct Pointer type with given reference type
-  PointerType(const Type *ref_type): ref_type_{ref_type} {}
+  PointerType(Type *ref_type): ref_type_{ref_type} {}
 
   /// Return a pointer to a PointerType instance with the given key and value
   /// types. It is guarenteed that all PointerType with the same key and value
   /// types will have the same address, so that PointerType can be compared by
   /// pointer for equality.
-  static const PointerType* getInstance(const Type *ref_type) {
+  static PointerType* getInstance(Type *ref_type) {
     const PointerType pointer_type{ref_type};
     auto it = std::find_if(instances.begin(), instances.end()
     , [&pointer_type](auto &type){
@@ -198,7 +221,7 @@ public:
   /// Return runtime type, which is Type::Kind::PointerType
   Type::Kind getKind() const override { return Kind::PointerType; }
 
-  const Type* getReferencedType() const { return ref_type_; }
+  Type* getReferencedType() const { return ref_type_; }
   /// Return a string representation of the IntegerType as "*<ref_type>"
   std::string toString() const override { return "*" + ref_type_->toString(); }
 
@@ -211,17 +234,17 @@ private:
   /// Singleton instance of PointerType
   static std::vector<std::unique_ptr<ReferenceType>> instances;
 
-  const Type *ref_type_;
+  Type *ref_type_;
 
 public:
   /// Construct Pointer type with given reference type
-  ReferenceType(const Type *ref_type): ref_type_{ref_type} {}
+  ReferenceType(Type *ref_type): ref_type_{ref_type} {}
 
   /// Return a pointer to a PointerType instance with the given key and value
   /// types. It is guarenteed that all PointerType with the same key and value
   /// types will have the same address, so that PointerType can be compared by
   /// pointer for equality.
-  static const ReferenceType* getInstance(const Type *ref_type) {
+  static ReferenceType* getInstance(Type *ref_type) {
     const ReferenceType pointer_type{ref_type};
     auto it = std::find_if(instances.begin(), instances.end()
     , [&pointer_type](auto &type){
@@ -245,7 +268,7 @@ public:
   /// Return runtime type, which is Type::Kind::PointerType
   Type::Kind getKind() const override { return Kind::ReferenceType; }
 
-  const Type* getReferencedType() const { return ref_type_; }
+  Type* getReferencedType() const { return ref_type_; }
   /// Return a string representation of the IntegerType as "*<ref_type>"
   std::string toString() const override { return "&" + ref_type_->toString(); }
 
@@ -257,40 +280,35 @@ class TypeIdentifier : public Type {
 private:
   std::string name_;
 
-  const Type *aliased_type_;
-
   /// Singleton instances of active TypeIdentifier types
   static std::vector<std::unique_ptr<TypeIdentifier>> instances;
 
 public:
   /// Construct TypeIdentifier type with given reference name
-  TypeIdentifier(std::string n, const Type* type) : name_{n}, aliased_type_{type} {}
+  TypeIdentifier(std::string n) : name_{n} {}
 
   /// Return a pointer to a TypeIdentifier instance with the given key and value
   /// types. It is guarenteed that all TypeIdentifier with the same key and value
   /// types will have the same address, so that TypeIdentifier can be compared by
   /// pointer for equality.
-  static const TypeIdentifier* getInstance(std::string n, const Type *alias) {
-    const TypeIdentifier type_id{n, alias};
-    auto it = std::find_if(instances.begin(), instances.end(), [&type_id](auto &type){
-      return type_id == *type;
-    });
-    if (it != instances.end()) {
-      return it->get();
-    } else {
-      instances.push_back(std::make_unique<TypeIdentifier>(std::move(type_id)));
-      return instances.back().get();
-    }
+  static TypeIdentifier* getInstance(std::string n) {
+    TypeIdentifier type_id{n};
+    instances.push_back(std::make_unique<TypeIdentifier>(std::move(type_id)));
+    return instances.back().get();
   }
 
   // Type Overrides
   Type::Kind getKind() const override { return Kind::TypeIdentifier; }
 
   /// Return runtime type, which is Type::Kind::TypeIdentifier
-  bool operator==(const TypeIdentifier &type) const {
+  bool operator==(TypeIdentifier &type) const {
     return name_ == type.name_;
   };
 
+
+  std::string name() const {
+    return name_;
+  }
   /// Return a string representation of the TypeIdentifier as "<name>"
   std::string toString() const override {
     return name_ ;
@@ -301,16 +319,16 @@ public:
 /// A type which represents a tuple
 class SliceType : public Type {
 private:
-  const Type* element_;
+  Type* element_;
 
   /// Singleton instances of active TupleType types
   static std::vector<std::unique_ptr<SliceType>> instances;
 
 public:
   /// Construct TupleType with the given element vector
-  SliceType(const Type* e) : element_{e} {}
+  SliceType(Type* e) : element_{e} {}
 
-  const Type* element() const {
+  Type* element() const {
       return element_;
   }
 
@@ -318,7 +336,7 @@ public:
   /// types. It is guarenteed that all TupleType with the same key and value
   /// types will have the same address, so that TupleType can be compared by
   /// pointer for equality.
-  static const SliceType* getInstance(const Type *element) {
+  static SliceType* getInstance(Type *element) {
     const SliceType slice_type{element};
     auto it = std::find_if(instances.begin(), instances.end(), [&slice_type](auto &type){
       return slice_type == *type;
@@ -352,16 +370,16 @@ public:
 /// A type which represents a tuple
 class TupleType : public Type {
 private:
-  std::vector<const Type*> elements_;
+  std::vector<Type*> elements_;
 
   /// Singleton instances of active TupleType types
   static std::vector<std::unique_ptr<TupleType>> instances;
 
 public:
   /// Construct TupleType with the given element vector
-  TupleType(std::vector<const Type*> e) : elements_{std::move(e)} {}
+  TupleType(std::vector<Type*> e) : elements_{std::move(e)} {}
 
-  const std::vector<const Type*>& elements() const {
+  const std::vector<Type*>& elements() const {
       return elements_;
   }
 
@@ -369,7 +387,7 @@ public:
   /// types. It is guarenteed that all TupleType with the same key and value
   /// types will have the same address, so that TupleType can be compared by
   /// pointer for equality.
-  static const TupleType* getInstance(std::vector<const Type*> elements) {
+  static TupleType* getInstance(std::vector<Type*> elements) {
     const TupleType tuple_type{elements};
     auto it = std::find_if(instances.begin(), instances.end(), [&tuple_type](auto &type){
       return tuple_type == *type;
@@ -408,8 +426,8 @@ public:
 /// A type which represents a functional mapping type
 class FunctionType : public Type {
 private:
-  std::vector<const Type*> params_;
-  const Type* returns_;
+  std::vector<Type*> params_;
+  Type* returns_;
 
   /// Singleton instances of active FunctionType types
   static std::vector<std::unique_ptr<FunctionType>> instances;
@@ -417,7 +435,7 @@ private:
 public:
 
   /// Construct a FunctionType with the given param and return types
-  FunctionType(std::vector<const Type*> params, const Type *returns)
+  FunctionType(std::vector<Type*> params, Type *returns)
   : params_{std::move(params)}, returns_{returns} {}
 
 
@@ -425,8 +443,8 @@ public:
   /// types. It is guarenteed that all FunctionType with the same key and value
   /// types will have the same address, so that FunctionType can be compared by
   /// pointer for equality.
-  static const FunctionType* getInstance(std::vector<const Type*> params, const Type *returns) {
-    const FunctionType func_type{params, returns};
+  static FunctionType* getInstance(std::vector<Type*> params, Type *returns) {
+    FunctionType func_type{params, returns};
     auto it = std::find_if(instances.begin(), instances.end(), [&func_type](auto &type){
       return func_type == *type;
     });
@@ -441,7 +459,7 @@ public:
   /// Compares fields for equality. This should only be necessary when
   /// constructing a new instance. Otherwise, FunctionType should be compared
   /// for pointer equality.
-  bool operator==(const FunctionType &type) const {
+  bool operator==(FunctionType &type) const {
     return params_ == type.params_ && returns_ == type.returns_;
   };
 
@@ -454,17 +472,17 @@ public:
   }
 
   /// Return a const reference to the param type vector
-  const std::vector<const Type*>& getParamTypes() const {
+  const std::vector<Type*>& getParamTypes() const {
     return params_;
   }
 
   /// Return the param type at the given index
-  const Type* getParam(int index) const {
+  Type* getParam(int index) const {
     return params_[index];
   }
 
   /// Return a const pointer to the return type
-  const Type* getReturnType() const {
+  Type* getReturnType() const {
     return returns_;
   }
 
@@ -489,20 +507,57 @@ public:
  */
 class StructType: public Type {
 private:
-  std::map<std::string, const Type*> members_;
+  std::vector<std::pair<std::string, Type*>> members_;
 
   /// Singleton instances of active List types
   static std::vector<std::unique_ptr<StructType>> instances;
 public:
-  StructType(std::map<std::string, const Type*> members)
+  StructType(std::vector<std::pair<std::string, Type*>> members)
   : members_{std::move(members)} {}
 
 
   Type::Kind getKind() const override { return Kind::StructType; }
 
-  static const StructType* getInstance(std::map<std::string, const Type*> members) {
+  static StructType* getInstance(std::vector<std::pair<std::string, Type*>> members) {
     instances.push_back(std::make_unique<StructType>(std::move(members)));
     return instances.back().get();
+  }
+
+  std::vector<Type*> elements() const {
+    std::vector<Type*> elements;
+    for (auto it = members_.begin(); it != members_.end(); ++it ) {
+        elements.push_back( it->second );
+    }
+    return elements;
+  }
+
+  int index_of(std::string name) const {
+    for (auto it = members_.begin(); it != members_.end(); it++) {
+      if (it->first == name) {
+        return std::distance(members_.begin(), it);
+      }
+    }
+    return -1;
+  }
+
+  std::vector<std::pair<std::string, Type*>>::iterator members_begin() {
+    return members_.begin();
+  }
+
+  std::vector<std::pair<std::string, Type*>>::iterator members_end() {
+    return members_.end();
+  }
+
+  std::vector<std::pair<std::string, Type*>>::const_iterator members_begin() const {
+    return members_.begin();
+  }
+
+  std::vector<std::pair<std::string, Type*>>::const_iterator members_end() const {
+    return members_.end();
+  }
+
+  Type* type_of_member_at(int index) const {
+    return members_[index].second;
   }
 
   /// Return a string representation of the list type as "[<element-type>]"
@@ -521,7 +576,7 @@ public:
 /// not implemented.
 class ListType : public Type {
 private:
-  const Type* element_type_;
+  Type* element_type_;
   const int size_;
 
   /// Singleton instances of active List types
@@ -530,13 +585,13 @@ private:
 public:
 
   /// Constructs a ListType with the given element type
-  ListType(const Type* element_type, int size) : element_type_{element_type}, size_{size} {}
+  ListType(Type* element_type, int size) : element_type_{element_type}, size_{size} {}
 
   /// Return a pointer to a ListType instance with the given key and value types.
   /// It is guarenteed that all ListType with the same key and value types will
   /// have the same address, so that ListType can be compared by pointer for
   /// equality.
-  static const ListType* getInstance(const Type* type, int size) {
+  static ListType* getInstance(Type* type, int size) {
     const ListType list_type{type, size};
     auto it = std::find_if(instances.begin(), instances.end()
     , [&list_type](auto &type){
@@ -561,7 +616,7 @@ public:
   Type::Kind getKind() const override { return Kind::ListType; }
 
   /// Return a const pointer to the element type
-  const Type* element_type() const { return element_type_; }
+  Type* element_type() const { return element_type_; }
 
   /// Return a const pointer to the element type
   int size() const { return size_; }
@@ -580,8 +635,8 @@ public:
 /// place.
 class MapType : public Type {
 private:
-  const Type* key_;
-  const Type* val_;
+  Type* key_;
+  Type* val_;
 
   /// Singleton instances of active Map types
   static std::vector<std::unique_ptr<MapType>> instances;
@@ -589,13 +644,13 @@ private:
 public:
 
   /// Constructs a MapType with the given key and value types
-  MapType(const Type *key, const Type *val): key_{key}, val_{val} {}
+  MapType(Type *key, Type *val): key_{key}, val_{val} {}
 
   /// Return a pointer to a MapType instance with the given key and value types.
   /// It is guarenteed that all MapTypes with the same key and value types will
   /// have the same address, so that MapTypes can be compared by pointer for
   /// equality.
-  static const MapType* getInstance(const Type *key, const Type *val) {
+  static MapType* getInstance(Type *key, Type *val) {
     MapType map_type{key, val};
     auto it = std::find_if(instances.begin(), instances.end()
     , [&map_type](auto &type){
@@ -620,10 +675,10 @@ public:
   Type::Kind getKind() const override { return Kind::MapType; }
 
   /// Return a const pointer to the key type
-  const Type* getKeyType() const { return key_; }
+  Type* getKeyType() const { return key_; }
 
   /// Return a const pointer to the value type
-  const Type* getValueType() const { return val_; }
+  Type* getValueType() const { return val_; }
 
   /// Return a string representation of the MapType as "[<key>: <val>]"
   std::string toString() const override {

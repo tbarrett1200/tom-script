@@ -23,5 +23,5 @@ TEST(BooleanType, getCanonicalType) {
 
 TEST(BooleanType, toString) {
   const Type* t1 = BooleanType::getInstance();
-  ASSERT_EQ(t1->toString(), "Boolean");
+  ASSERT_EQ(t1->toString(), "bool");
 }

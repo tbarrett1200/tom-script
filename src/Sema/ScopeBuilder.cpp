@@ -1,6 +1,7 @@
 #include "Sema/ScopeBuilder.h"
 #include "Sema/TypeChecker.h"
 #include "Sema/BuiltinDecl.h"
+#include "Sema/TypeResolver.h"
 
 #include "Basic/CompilerException.h"
 
@@ -50,11 +51,13 @@ void ScopeBuilder::buildCompilationUnitScope(CompilationUnit &unit) {
   for (auto &stmt: unit.stmts()) {
     if (DeclStmt *decl_stmt = dynamic_cast<DeclStmt*>(stmt.get())) {
       Decl* decl = decl_stmt->getDecl();
-      decl->setParentContext(unitContext);
-      unitContext->addDecl(decl);
-
+      TypeResolver{*unitContext}.resolve(*decl->getType());
       if (FuncDecl *funcDecl = dynamic_cast<FuncDecl*>(decl)) {
+        decl->setParentContext(unitContext);
+        unitContext->addDecl(decl);
         buildFunctionScope(*funcDecl);
+      } else {
+        buildStmtScope(*stmt, unitContext);
       }
     }
   }
@@ -63,9 +66,11 @@ void ScopeBuilder::buildCompilationUnitScope(CompilationUnit &unit) {
 void ScopeBuilder::buildFunctionScope(FuncDecl &func) {
   function_ = &func;
   DeclContext *functionScope = func.getDeclContext();
+  TypeResolver{*functionScope}.resolve(*func.getType());
   for (auto &param: func.getParams()) {
     functionScope->addDecl(param.get());
   }
+
   func.getBlockStmt().getDeclContext()->setParentContext(functionScope);
   buildCompoundStmtScope(func.getBlockStmt());
   if (!func.getBlockStmt().returns()) {
@@ -76,6 +81,7 @@ void ScopeBuilder::buildFunctionScope(FuncDecl &func) {
 void ScopeBuilder::buildStmtScope(Stmt& stmt, DeclContext *parent) {
   if (DeclStmt *decl_stmt = dynamic_cast<DeclStmt*>(&stmt)) {
     Decl* decl = decl_stmt->getDecl();
+    TypeResolver{*parent}.resolve(*decl->getType());
     decl->setParentContext(parent);
     parent->addDecl(decl);
     if (LetDecl *let_decl = dynamic_cast<LetDecl*>(decl)) {
@@ -104,6 +110,17 @@ void ScopeBuilder::buildStmtScope(Stmt& stmt, DeclContext *parent) {
           throw CompilerException(nullptr, ss.str());
         }
       }
+    } else if (UninitializedVarDecl *var_decl = dynamic_cast<UninitializedVarDecl*>(decl)) {
+
+      if (var_decl->getType()->getKind() == Type::Kind::TypeIdentifier) {
+        TypeIdentifier *type_identifier = dynamic_cast<TypeIdentifier*>(var_decl->getType());
+        std::string name = type_identifier->name();
+        Decl *decl = parent->getDecl(StringRef{name.data(), static_cast<int>(name.length())});
+        if (decl->getKind() == Decl::Kind::StructDecl) {
+          type_identifier->setCanonicalType(decl->getType());
+        } else throw CompilerException(nullptr, "only struct declarations can have named types");
+      }
+
     } else if (VarDecl *var_decl = dynamic_cast<VarDecl*>(decl)) {
 
       if (Expr *expr = &var_decl->getExpr()) {
@@ -123,7 +140,7 @@ void ScopeBuilder::buildStmtScope(Stmt& stmt, DeclContext *parent) {
           }
         }
 
-        if (var_decl->getType() != expr->getType()) {
+        if (var_decl->getType()->getCanonicalType() != expr->getType()->getCanonicalType()) {
           std::stringstream ss;
           ss << var_decl->getName() << " is declared as `";
           ss << var_decl->getType()->toString() << "` but initialized as `";
@@ -131,6 +148,22 @@ void ScopeBuilder::buildStmtScope(Stmt& stmt, DeclContext *parent) {
           throw CompilerException(nullptr, ss.str());
         }
       }
+    } else if (StructDecl *struct_decl = dynamic_cast<StructDecl*>(decl)) {
+      // a struct-decl is guarenteed to have a struct-type
+      StructType *struct_type = static_cast<StructType*>(struct_decl->getType());
+      // types have not been resolved yet within the struct upon declaration...
+      // do this now
+      for (auto it = struct_type->members_begin(); it != struct_type->members_end(); it++) {
+        if (TypeIdentifier *type_id = dynamic_cast<TypeIdentifier*>(it->second)) {
+          std::string name = type_id->name();
+          Decl *decl = parent->getDecl(StringRef{name.data(), static_cast<int>(name.length())});
+          if (decl->getKind() == Decl::Kind::StructDecl) {
+            type_id->setCanonicalType(decl->getType());
+          } else throw CompilerException(nullptr, "only struct declarations can have named types");
+        }
+      }
+    } else {
+      std::cout << "warning: unhandled decl kind " << decl->name() << std::endl;
     }
   } else if (ExprStmt* expr_stmt = dynamic_cast<ExprStmt*>(&stmt)) {
     TypeChecker{parent}.checkExpr(*expr_stmt->getExpr());
@@ -140,7 +173,7 @@ void ScopeBuilder::buildStmtScope(Stmt& stmt, DeclContext *parent) {
   } else if (ReturnStmt *ret_stmt = dynamic_cast<ReturnStmt*>(&stmt)) {
     if (Expr *expr = ret_stmt->getExpr()) {
       TypeChecker{parent}.checkExpr(*expr);
-      const Type* ret_type = dynamic_cast<const FunctionType*>(function_->getType())->getReturnType();
+      Type* ret_type = dynamic_cast<const FunctionType*>(function_->getType())->getReturnType();
       if (expr->getType()->getCanonicalType() != ret_type->getCanonicalType()) {
         throw CompilerException(nullptr, "type of returned expression does not match declaration");
       }

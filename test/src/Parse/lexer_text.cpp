@@ -65,7 +65,7 @@ TEST(Lexer, lexOperator) {
   std::vector<std::string> possible_operators{
     "=", "+=", "++", "+", "-=", "--", "->", "-", "*=", "*", "/=", "/", "%="
   , "%", "<<=", "<<", "<", ">>=", ">>", ">", "&=", "&&", "&", "|=", "||", "|"
-  , "^=", "^", "~", ".", "?", "!"
+  , "^=", "^", "~", "?", "!"
   };
 
   std::stringstream no_space;
@@ -86,12 +86,14 @@ TEST(Lexer, lexOperator) {
   Token t;
 
   Lexer no_space_lexer = make_lexer(no_space.str());
+
   for (auto &str: possible_operators) {
     t = no_space_lexer.next();
-    ASSERT_TRUE(t.is(Token::operator_id));
+    ASSERT_EQ(t.type(), Token::operator_id);
     StringRef str_ref{str.data(), (int)(str.size())};
     ASSERT_EQ(t.lexeme(), str_ref);
   }
+
   ASSERT_TRUE(no_space_lexer.next().is(Token::eof));
 
   Lexer space_lexer = make_lexer(space.str());

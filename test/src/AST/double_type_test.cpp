@@ -23,5 +23,5 @@ TEST(DoubleType, getCanonicalType) {
 
 TEST(DoubleType, toString) {
   const Type* t1 = DoubleType::getInstance();
-  ASSERT_EQ(t1->toString(), "Double");
+  ASSERT_EQ(t1->toString(), "f64");
 }

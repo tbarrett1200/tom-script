@@ -43,6 +43,7 @@ public:
   llvm::FunctionType* transformFunctionType(const FunctionType &type);
 
   llvm::StructType* transformStructType(const TupleType &type);
+  llvm::StructType* transformStructType(const StructType &type);
 
   llvm::Type* transformType(const Type &type);
 
@@ -56,6 +57,8 @@ public:
   void transformUninitializedVarDecl(const UninitializedVarDecl& var_decl, llvm::BasicBlock* current_block);
 
   void transformDeclStmt(const DeclStmt& declStmt, llvm::BasicBlock* current_block);
+
+  std::vector<llvm::Value*> transformAccessorExprChain(const AccessorExpr &accessor_expr);
 
   void transformStructDecl(const StructDecl& struct_decl);
 

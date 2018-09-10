@@ -19,6 +19,8 @@ public:
    * If the tree is fully type annotated and declarations have been fully
    * linked, then this method returns true. Otherwise it returns false.
    */
+  bool is_implicitly_assignable_to(class Type *l, class Type *r);
+
   void checkExpr(class Expr &expr);
   void checkCharacterExpr(class CharacterExpr &expr);
   void checkStringExpr(class StringExpr &expr);
@@ -30,6 +32,8 @@ public:
   void checkReferenceExpr(class UnaryExpr &expr);
   void checkDereferenceExpr(class UnaryExpr &expr);
   void checkTupleExpr(class TupleExpr &expr);
+  void checkPropertyAccessor(class AccessorExpr &expr);
+  void checkElementAccessor(class AccessorExpr &expr);
   void checkAccessorExpr(class AccessorExpr &expr);
   void checkBoolExpr(class BoolExpr &expr);
   void checkUnaryExpr(class UnaryExpr &expr);

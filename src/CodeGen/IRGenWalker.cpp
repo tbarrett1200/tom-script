@@ -27,17 +27,28 @@
 
 llvm::FunctionType* LLVMTransformer::transformFunctionType(const FunctionType &type) {
   if (type.getParamTypes().size() == 0) {
+    // functions with no arguments can be created trivially
     return llvm::FunctionType::get(transformType(*type.getReturnType()), false);
   } else {
-    std::vector<llvm::Type*> paramTypes;
-    for (auto paramType: type.getParamTypes()) {
-      paramTypes.push_back(transformType(*paramType));
+    // functions with arguments must have their argument iteratively
+    // converted to llvm types
+    std::vector<llvm::Type*> param_types;
+    for (auto param_type: type.getParamTypes()) {
+      param_types.push_back(transformType(*param_type));
     }
-    return llvm::FunctionType::get(transformType(*type.getReturnType()), paramTypes, false);
+    return llvm::FunctionType::get(transformType(*type.getReturnType()), param_types, false);
   }
 }
 
 llvm::StructType* LLVMTransformer::transformStructType(const TupleType &type) {
+  std::vector<llvm::Type*> element_types;
+  for (auto element: type.elements()) {
+    element_types.push_back(transformType(*element));
+  }
+  return llvm::StructType::create(element_types);
+}
+
+llvm::StructType* LLVMTransformer::transformStructType(const StructType &type) {
   std::vector<llvm::Type*> element_types;
   for (auto element: type.elements()) {
     element_types.push_back(transformType(*element));
@@ -68,6 +79,18 @@ llvm::Type* LLVMTransformer::transformType(const Type &type) {
     return llvm::PointerType::getUnqual(transformType(*slice_type.element()));
   } else if (type.getKind() == Type::Kind::TupleType) {
     return transformStructType(dynamic_cast<const TupleType&>(type));
+  } else if (type.getKind() == Type::Kind::StructType) {
+    return transformStructType(dynamic_cast<const StructType&>(type));
+  } else if (type.getKind() == Type::Kind::TypeIdentifier) {
+    const TypeIdentifier *type_id = dynamic_cast<const TypeIdentifier*>(&type);
+    llvm::Type* lookup = module_->getTypeByName(type_id->name());
+    if (lookup) return lookup;
+    const Type* canonical = type.getCanonicalType();
+    llvm::Type* transformed = transformType(*canonical);
+    if (transformed->isStructTy()) {
+      static_cast<llvm::StructType*>(transformed)->setName(type_id->name());
+    } else throw CompilerException(nullptr, "invalid named type");
+    return transformed;
   } else {
     throw std::logic_error(type.toString() + " type not supported by codegen");
   }
@@ -81,8 +104,6 @@ void LLVMTransformer::transformReturnStmt(const ReturnStmt& stmt, llvm::BasicBlo
     builder.CreateRetVoid();
   }
 }
-
-
 
 void LLVMTransformer::transformLetDecl(const LetDecl& let_decl, llvm::BasicBlock* current_block) {
   llvm::IRBuilder<> builder{current_block};
@@ -138,27 +159,36 @@ llvm::Value* LLVMTransformer::transformIdentifierExprReference(const IdentifierE
 llvm::Value* LLVMTransformer::transformAccessorExprReference(const AccessorExpr &accessor, llvm::BasicBlock* current_block) {
   llvm::IRBuilder<> builder{current_block};
 
+  // in order to access a member of an aggregate structure, we must first
+  // aquire a pointer to the start of the structure.
   llvm::Value* aggregate_loc = transformExprReference(
     accessor.identifier()
   , current_block
   );
 
+  // GetElementPtr instructions ONLY take indices of the type i32. For this
+  // reason, all indices used MUST be zero-extended or truncated to fit an i32.
   llvm::Type* index_type = llvm::Type::getInt32Ty(context_);
 
-  if (accessor.identifier().isType<SliceType>()) {
-    llvm::Value* element_index_1 = builder.CreateSExtOrTrunc(
+  // The element index may either be known at compile time, or generated at
+  // runtime.
+  llvm::Value* element_index;
+
+  if (accessor.hasStaticIndex()) {
+    element_index = llvm::ConstantInt::get(index_type, accessor.getMemberIndex());
+  } else {
+    element_index = builder.CreateSExtOrTrunc(
       transformExpr(accessor.index(), current_block)
     , index_type
     );
-    std::array<llvm::Value*,1> indices{{element_index_1}};
+  }
+
+  if (accessor.identifier().isType<SliceType>()) {
+    std::array<llvm::Value*,1> indices{{element_index}};
     return builder.CreateGEP(aggregate_loc, indices);
   } else {
     llvm::Value* element_index_0 = llvm::ConstantInt::get(index_type, 0);
-    llvm::Value* element_index_1 = builder.CreateSExtOrTrunc(
-      transformExpr(accessor.index(), current_block)
-    , index_type
-    );
-    std::array<llvm::Value*,2> indices{{element_index_0, element_index_1}};
+    std::array<llvm::Value*,2> indices{{element_index_0, element_index}};
     return builder.CreateGEP(aggregate_loc, indices);
   }
 
@@ -558,7 +588,9 @@ llvm::Value* LLVMTransformer::transformBinaryExpr(const BinaryExpr& expr, llvm::
   }
 
   std::stringstream ss;
-  ss << "not implemented: binary operator '" << expr.getOperator() << "' of this type";
+  ss << "not implemented: binary operator " << expr.getOperator() << "(";
+  ss << expr.getLeft().getType()->toString() << ", ";
+  ss << expr.getRight().getType()->toString() << ")";
   throw CompilerException(nullptr, ss.str());
 }
 

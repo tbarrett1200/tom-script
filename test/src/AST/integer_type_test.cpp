@@ -23,5 +23,5 @@ TEST(IntegerType, getCanonicalType) {
 
 TEST(IntegerType, toString) {
   const Type* t1 = IntegerType::getInstance();
-  ASSERT_EQ(t1->toString(), "Int");
+  ASSERT_EQ(t1->toString(), "i64");
 }

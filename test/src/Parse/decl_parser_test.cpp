@@ -18,14 +18,13 @@ TEST(DeclParser, parseLetDecl) {
 
   std::unique_ptr<LetDecl> letDecl;
 
-  ASSERT_NO_THROW(letDecl = parse("let a: Int = 5"));
+  ASSERT_NO_THROW(letDecl = parse("let a: i64 = 5"));
   EXPECT_EQ(letDecl->getType(), IntegerType::getInstance());
   EXPECT_EQ(letDecl->getName(), StringRef{"a"});
   EXPECT_EQ(letDecl->getExpr().getKind(), Expr::Kind::IntegerExpr );
 
-  ASSERT_NO_THROW(letDecl = parse("let b: Double = 5.0"));
+  ASSERT_NO_THROW(letDecl = parse("let b: f64 = 5.0"));
   EXPECT_EQ(letDecl->getType(), DoubleType::getInstance());
   EXPECT_EQ(letDecl->getName(), StringRef{"b"});
   EXPECT_EQ(letDecl->getExpr().getKind(), Expr::Kind::DoubleExpr );
-
 }
