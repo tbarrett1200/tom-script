@@ -55,7 +55,7 @@ void ScopeBuilder::buildCompilationUnitScope(CompilationUnit &unit) {
       if (FuncDecl *funcDecl = dynamic_cast<FuncDecl*>(decl)) {
         decl->setParentContext(unitContext);
         unitContext->addDecl(decl);
-        buildFunctionScope(*funcDecl);
+        buildFuncDeclScope(*funcDecl);
       } else {
         buildStmtScope(*stmt, unitContext);
       }
@@ -63,108 +63,137 @@ void ScopeBuilder::buildCompilationUnitScope(CompilationUnit &unit) {
   }
 }
 
-void ScopeBuilder::buildFunctionScope(FuncDecl &func) {
-  function_ = &func;
-  DeclContext *functionScope = func.getDeclContext();
-  TypeResolver{*functionScope}.resolve(*func.getType());
-  for (auto &param: func.getParams()) {
+
+
+void ScopeBuilder::buildDeclScope(class Decl& decl) {
+
+  TypeResolver{*decl.getDeclContext()}.resolve(*decl.getType());
+
+  switch(decl.getKind()) {
+    case Decl::Kind::LetDecl:
+      buildLetDeclScope(static_cast<LetDecl&>(decl));
+      break;
+    case Decl::Kind::VarDecl:
+      buildVarDeclScope(static_cast<VarDecl&>(decl));
+      break;
+    case Decl::Kind::UninitializedVarDecl:
+      buildUninitializedVarDeclScope(static_cast<UninitializedVarDecl&>(decl));
+      break;
+    case Decl::Kind::BasicDecl:
+      buildBasicDeclScope(static_cast<BasicDecl&>(decl));
+      break;
+    case Decl::Kind::TypeAlias:
+      buildTypeAliasScope(static_cast<TypeAlias&>(decl));
+      break;
+    case Decl::Kind::ParamDecl:
+      buildParamDeclScope(static_cast<ParamDecl&>(decl));
+      break;
+    case Decl::Kind::FuncDecl:
+      buildFuncDeclScope(static_cast<FuncDecl&>(decl));
+      break;
+    case Decl::Kind::StructDecl:
+      buildStructDeclScope(static_cast<StructDecl&>(decl));
+      break;
+  }
+}
+
+void ScopeBuilder::buildLetDeclScope(LetDecl& decl) {
+  if (Expr *expr = &decl.getExpr()) {
+    TypeChecker{decl.getDeclContext()}.checkExpr(*expr);
+
+    if (decl.getType()->getKind() == Type::Kind::ReferenceType) {
+      const ReferenceType *ref_type = dynamic_cast<const ReferenceType*>(decl.getType());
+      if (ref_type->getReferencedType() == expr->getType()) {
+        if (expr->isLeftValue()) return;
+        else {
+          std::stringstream ss;
+          ss << decl.getName() << " is declared as a`";
+          ss << decl.getType()->toString() << "` but initialized as r-value`";
+          ss << expr->getType()->toString() << "`";
+          throw CompilerException(nullptr, ss.str());
+        }
+      }
+    }
+
+    if (decl.getType() != expr->getType()) {
+      std::stringstream ss;
+      ss << decl.getName() << " is declared as `";
+      ss << decl.getType()->toString() << "` but initialized as `";
+      ss << expr->getType()->toString() << "`";
+      throw CompilerException(nullptr, ss.str());
+    }
+  }
+}
+
+void ScopeBuilder::buildVarDeclScope(VarDecl& decl) {
+  if (Expr *expr = &decl.getExpr()) {
+    TypeChecker{decl.getDeclContext()}.checkExpr(*expr);
+
+    if (decl.getType()->getKind() == Type::Kind::ReferenceType) {
+      const ReferenceType *ref_type = dynamic_cast<const ReferenceType*>(decl.getType());
+      if (ref_type->getReferencedType() == expr->getType()) {
+        if (expr->isLeftValue()) return;
+        else {
+          std::stringstream ss;
+          ss << decl.getName() << " is declared as a`";
+          ss << decl.getType()->toString() << "` but initialized as r-value`";
+          ss << expr->getType()->toString() << "`";
+          throw CompilerException(nullptr, ss.str());
+        }
+      }
+    }
+
+    if (decl.getType()->getCanonicalType() != expr->getType()->getCanonicalType()) {
+      std::stringstream ss;
+      ss << decl.getName() << " is declared as `";
+      ss << decl.getType()->toString() << "` but initialized as `";
+      ss << expr->getType()->toString() << "`";
+      throw CompilerException(nullptr, ss.str());
+    }
+  }
+}
+
+void ScopeBuilder::buildUninitializedVarDeclScope(UninitializedVarDecl& decl) {
+  // no checks to be done
+}
+
+void ScopeBuilder::buildTypeAliasScope(TypeAlias& decl) {
+  // no checks to be done
+}
+
+void ScopeBuilder::buildParamDeclScope(ParamDecl& decl) {
+  // no checks to be done
+}
+
+void ScopeBuilder::buildFuncDeclScope(FuncDecl& decl) {
+  function_ = &decl;
+  DeclContext *functionScope = decl.getDeclContext();
+  TypeResolver{*functionScope}.resolve(*decl.getType());
+  for (auto &param: decl.getParams()) {
     functionScope->addDecl(param.get());
   }
 
-  func.getBlockStmt().getDeclContext()->setParentContext(functionScope);
-  buildCompoundStmtScope(func.getBlockStmt());
-  if (!func.getBlockStmt().returns()) {
-    throw CompilerException(func.getName().start, "function is not guarenteed to return");
+  decl.getBlockStmt().getDeclContext()->setParentContext(functionScope);
+  buildCompoundStmtScope(decl.getBlockStmt());
+  if (!decl.getBlockStmt().returns()) {
+    throw CompilerException(decl.getName().start, "function is not guarenteed to return");
   }
+}
+
+void ScopeBuilder::buildBasicDeclScope(BasicDecl& decl) {
+  // no checks to be done
+}
+
+void ScopeBuilder::buildStructDeclScope(StructDecl& decl) {
+  // no checks to be done
 }
 
 void ScopeBuilder::buildStmtScope(Stmt& stmt, DeclContext *parent) {
   if (DeclStmt *decl_stmt = dynamic_cast<DeclStmt*>(&stmt)) {
     Decl* decl = decl_stmt->getDecl();
-    TypeResolver{*parent}.resolve(*decl->getType());
     decl->setParentContext(parent);
     parent->addDecl(decl);
-    if (LetDecl *let_decl = dynamic_cast<LetDecl*>(decl)) {
-      if (Expr *expr = &let_decl->getExpr()) {
-        TypeChecker{parent}.checkExpr(*expr);
-
-        if (let_decl->getType()->getKind() == Type::Kind::ReferenceType) {
-          const ReferenceType *ref_type = dynamic_cast<const ReferenceType*>(let_decl->getType());
-          if (ref_type->getReferencedType() == expr->getType()) {
-            if (expr->isLeftValue()) return;
-            else {
-              std::stringstream ss;
-              ss << let_decl->getName() << " is declared as a`";
-              ss << let_decl->getType()->toString() << "` but initialized as r-value`";
-              ss << expr->getType()->toString() << "`";
-              throw CompilerException(nullptr, ss.str());
-            }
-          }
-        }
-
-        if (let_decl->getType() != expr->getType()) {
-          std::stringstream ss;
-          ss << let_decl->getName() << " is declared as `";
-          ss << let_decl->getType()->toString() << "` but initialized as `";
-          ss << expr->getType()->toString() << "`";
-          throw CompilerException(nullptr, ss.str());
-        }
-      }
-    } else if (UninitializedVarDecl *var_decl = dynamic_cast<UninitializedVarDecl*>(decl)) {
-
-      if (var_decl->getType()->getKind() == Type::Kind::TypeIdentifier) {
-        TypeIdentifier *type_identifier = dynamic_cast<TypeIdentifier*>(var_decl->getType());
-        std::string name = type_identifier->name();
-        Decl *decl = parent->getDecl(StringRef{name.data(), static_cast<int>(name.length())});
-        if (decl->getKind() == Decl::Kind::StructDecl) {
-          type_identifier->setCanonicalType(decl->getType());
-        } else throw CompilerException(nullptr, "only struct declarations can have named types");
-      }
-
-    } else if (VarDecl *var_decl = dynamic_cast<VarDecl*>(decl)) {
-
-      if (Expr *expr = &var_decl->getExpr()) {
-        TypeChecker{parent}.checkExpr(*expr);
-
-        if (var_decl->getType()->getKind() == Type::Kind::ReferenceType) {
-          const ReferenceType *ref_type = dynamic_cast<const ReferenceType*>(var_decl->getType());
-          if (ref_type->getReferencedType() == expr->getType()) {
-            if (expr->isLeftValue()) return;
-            else {
-              std::stringstream ss;
-              ss << var_decl->getName() << " is declared as a`";
-              ss << var_decl->getType()->toString() << "` but initialized as r-value`";
-              ss << expr->getType()->toString() << "`";
-              throw CompilerException(nullptr, ss.str());
-            }
-          }
-        }
-
-        if (var_decl->getType()->getCanonicalType() != expr->getType()->getCanonicalType()) {
-          std::stringstream ss;
-          ss << var_decl->getName() << " is declared as `";
-          ss << var_decl->getType()->toString() << "` but initialized as `";
-          ss << expr->getType()->toString() << "`";
-          throw CompilerException(nullptr, ss.str());
-        }
-      }
-    } else if (StructDecl *struct_decl = dynamic_cast<StructDecl*>(decl)) {
-      // a struct-decl is guarenteed to have a struct-type
-      StructType *struct_type = static_cast<StructType*>(struct_decl->getType());
-      // types have not been resolved yet within the struct upon declaration...
-      // do this now
-      for (auto it = struct_type->members_begin(); it != struct_type->members_end(); it++) {
-        if (TypeIdentifier *type_id = dynamic_cast<TypeIdentifier*>(it->second)) {
-          std::string name = type_id->name();
-          Decl *decl = parent->getDecl(StringRef{name.data(), static_cast<int>(name.length())});
-          if (decl->getKind() == Decl::Kind::StructDecl) {
-            type_id->setCanonicalType(decl->getType());
-          } else throw CompilerException(nullptr, "only struct declarations can have named types");
-        }
-      }
-    } else {
-      std::cout << "warning: unhandled decl kind " << decl->name() << std::endl;
-    }
+    buildDeclScope(*decl);
   } else if (ExprStmt* expr_stmt = dynamic_cast<ExprStmt*>(&stmt)) {
     TypeChecker{parent}.checkExpr(*expr_stmt->getExpr());
   } else if (WhileLoop *loop = dynamic_cast<WhileLoop*>(&stmt)) {

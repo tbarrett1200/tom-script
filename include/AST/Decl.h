@@ -53,6 +53,10 @@ public:
 
   virtual void setParentContext(DeclContext *parent) = 0;
 
+  Type* canonical_type() const {
+    return getType()->getCanonicalType();
+  }
+
   template <typename T> bool is() const {
     return dynamic_cast<T*>(this);
   }
@@ -373,7 +377,7 @@ public:
     for (auto &param: fParams) {
       paramTypes.push_back(param->getType());
     }
-    fType = FunctionType::getInstance(paramTypes, fReturnType);
+    fType = FunctionType::getInstance(paramTypes, fReturnType, false);
   }
 
   const char* location() const override {

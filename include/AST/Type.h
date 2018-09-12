@@ -41,7 +41,7 @@ public:
   void setCanonicalType(Type *type) {
     canonical_type_ = type;
   }
-  
+
 
   virtual Type* getCanonicalType() {
     return canonical_type_ ?  canonical_type_: this;
@@ -59,11 +59,11 @@ public:
    */
   virtual Type::Kind getKind() const = 0;
 
-  template<typename T> bool is_canonical() {
+  template<typename T> bool cononical_is() {
     return getCanonicalType()->is<T>();
   }
 
-  template<typename T> T* as_canonical() {
+  template<typename T> T* canonical_as() {
     return getCanonicalType()->as<T>();
   }
 
@@ -428,6 +428,7 @@ class FunctionType : public Type {
 private:
   std::vector<Type*> params_;
   Type* returns_;
+  bool vararg_;
 
   /// Singleton instances of active FunctionType types
   static std::vector<std::unique_ptr<FunctionType>> instances;
@@ -435,16 +436,16 @@ private:
 public:
 
   /// Construct a FunctionType with the given param and return types
-  FunctionType(std::vector<Type*> params, Type *returns)
-  : params_{std::move(params)}, returns_{returns} {}
+  FunctionType(std::vector<Type*> params, Type *returns, bool vararg=false)
+  : params_{std::move(params)}, returns_{returns}, vararg_{vararg} {}
 
 
   /// Return a pointer to a FunctionType instance with the given key and value
   /// types. It is guarenteed that all FunctionType with the same key and value
   /// types will have the same address, so that FunctionType can be compared by
   /// pointer for equality.
-  static FunctionType* getInstance(std::vector<Type*> params, Type *returns) {
-    FunctionType func_type{params, returns};
+  static FunctionType* getInstance(std::vector<Type*> params, Type *returns, bool vararg=false) {
+    FunctionType func_type{params, returns, vararg};
     auto it = std::find_if(instances.begin(), instances.end(), [&func_type](auto &type){
       return func_type == *type;
     });
@@ -460,8 +461,12 @@ public:
   /// constructing a new instance. Otherwise, FunctionType should be compared
   /// for pointer equality.
   bool operator==(FunctionType &type) const {
-    return params_ == type.params_ && returns_ == type.returns_;
+    return params_ == type.params_ && returns_ == type.returns_ && vararg_ == type.vararg_;
   };
+
+  bool isVarArg() const {
+    return vararg_;
+  }
 
   /// Return the runtime type, which is Type::Kind::FunctionType
   Type::Kind getKind() const override { return Kind::FunctionType; }

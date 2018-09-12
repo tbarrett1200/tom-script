@@ -28,7 +28,7 @@ std::unique_ptr<Decl> Parser::parseDecl() {
   }
 }
 std::unique_ptr<TypeAlias> Parser::parseTypeAlias() {
-  expectToken(Token::kw_typealias, "typedecl");
+  expectToken(Token::kw_typealias, "typealias");
   auto name = expectToken(Token::identifier, "identifier");
   if (!consumeOperator("=")) throw CompilerException(token_.location(),  "expected '='");
   auto type = parseType();

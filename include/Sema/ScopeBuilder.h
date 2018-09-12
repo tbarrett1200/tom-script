@@ -35,7 +35,6 @@ public:
    * 3. Store Block scope in CompoundStmt ast.
    * 3. Calls buildBlockScope
    */
-  void buildFunctionScope(class FuncDecl&);
 
   void buildGlobalScope();
 
@@ -94,5 +93,17 @@ public:
    * and the LetDecl will be added to the ConditionalStmt scope.
    */
   void buildConditionalStmtScope(class ConditionalStmt&);
+
+  void buildDeclScope(class Decl&);
+
+  void buildLetDeclScope(class LetDecl&);
+  void buildVarDeclScope(class VarDecl&);
+  void buildUninitializedVarDeclScope(class UninitializedVarDecl&);
+  void buildTypeAliasScope(class TypeAlias&);
+  void buildParamDeclScope(class ParamDecl&);
+  void buildStructDeclScope(class StructDecl&);
+  void buildBasicDeclScope(class BasicDecl&);
+
+  void buildFuncDeclScope(class FuncDecl&);
 };
 #endif

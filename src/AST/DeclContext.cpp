@@ -14,6 +14,9 @@ Decl* DeclContext::getDecl(const FunctionSignature &signature) {
   std::copy_if(candidate_iterator.first, candidate_iterator.second, std::back_inserter(candidates),
   [&signature](std::pair<const StringRef, Decl*> pair) {
     if (const FunctionType *func_type = dynamic_cast<const FunctionType*>(pair.second->getType())) {
+
+      if (func_type->isVarArg()) return true;
+
       if (func_type->getParamCount() == signature.params().size()) {
         for (int i = 0; i < func_type->getParamCount(); i++) {
           const Type* t1 = func_type->getParam(i)->getCanonicalType();

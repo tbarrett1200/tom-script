@@ -18,48 +18,46 @@
 void TypeChecker::checkExpr(Expr &expr) {
   switch(expr.getKind()) {
     case Expr::Kind::AccessorExpr:
-      checkAccessorExpr(dynamic_cast<AccessorExpr&>(expr));
+      checkAccessorExpr(static_cast<AccessorExpr&>(expr));
       break;
     case Expr::Kind::BinaryExpr:
-      checkBinaryExpr(dynamic_cast<BinaryExpr&>(expr));
+      checkBinaryExpr(static_cast<BinaryExpr&>(expr));
       break;
     case Expr::Kind::BoolExpr:
-      checkBoolExpr(dynamic_cast<BoolExpr&>(expr));
+      checkBoolExpr(static_cast<BoolExpr&>(expr));
       break;
     case Expr::Kind::CharacterExpr:
-      checkCharacterExpr(dynamic_cast<CharacterExpr&>(expr));
+      checkCharacterExpr(static_cast<CharacterExpr&>(expr));
       break;
     case Expr::Kind::DoubleExpr:
-      checkDoubleExpr(dynamic_cast<DoubleExpr&>(expr));
+      checkDoubleExpr(static_cast<DoubleExpr&>(expr));
       break;
     case Expr::Kind::FunctionCall:
-      checkFunctionCall(dynamic_cast<FunctionCall&>(expr));
+      checkFunctionCall(static_cast<FunctionCall&>(expr));
       break;
     case Expr::Kind::IdentifierExpr:
-      checkIdentifierExpr(dynamic_cast<IdentifierExpr&>(expr));
+      checkIdentifierExpr(static_cast<IdentifierExpr&>(expr));
       break;
     case Expr::Kind::IntegerExpr:
-      checkIntegerExpr(dynamic_cast<IntegerExpr&>(expr));
+      checkIntegerExpr(static_cast<IntegerExpr&>(expr));
       break;
     case Expr::Kind::ListExpr:
-      checkListExpr(dynamic_cast<ListExpr&>(expr));
+      checkListExpr(static_cast<ListExpr&>(expr));
       break;
     case Expr::Kind::StringExpr:
-      checkStringExpr(dynamic_cast<StringExpr&>(expr));
+      checkStringExpr(static_cast<StringExpr&>(expr));
       break;
     case Expr::Kind::TupleExpr:
-      checkTupleExpr(dynamic_cast<TupleExpr&>(expr));
+      checkTupleExpr(static_cast<TupleExpr&>(expr));
       break;
     case Expr::Kind::UnaryExpr:
-      checkUnaryExpr(dynamic_cast<UnaryExpr&>(expr));
+      checkUnaryExpr(static_cast<UnaryExpr&>(expr));
       break;
-    default:
-      throw CompilerException(expr.location(), "typecheck: unimplemented: " + expr.name());
   }
 
   if (!expr.getType()) {
     std::stringstream ss;
-    ss <<  "typecheck: unexpected: " << expr.name() << " did not properly set type";
+    ss <<  "unreachable: " << expr.name() << " did not properly set type";
     throw CompilerException(expr.location(), ss.str());
   }
 
@@ -69,6 +67,7 @@ void TypeChecker::checkPropertyAccessor(AccessorExpr &expr) {
   checkExpr(expr.identifier());
   if (IdentifierExpr* id_expr = dynamic_cast<IdentifierExpr*>(&expr.index())) {
     Type* id_type = expr.identifier().getType()->getCanonicalType();
+
     if (StructType *struct_type = dynamic_cast<StructType*>(id_type)) {
       int member_index = struct_type->index_of(id_expr->lexeme().str());
       if (member_index == -1) {
@@ -140,6 +139,7 @@ bool TypeChecker::is_implicitly_assignable_to(Type *l, Type *r) {
 }
 
 void TypeChecker::checkAssignmentExpr(BinaryExpr &expr) {
+
   if (expr.getLeft().isLeftValue()) {
     Type* ltype = expr.getLeft().getType()->getCanonicalType();
     Type* rtype = expr.getRight().getType()->getCanonicalType();
@@ -166,36 +166,16 @@ void TypeChecker::checkBinaryExpr(BinaryExpr &expr) {
     return checkAssignmentExpr(expr);
   }
 
-  // asserts that the operator is defined
-  std::vector<Type*> param_types{
-    expr.getLeft().type()->getCanonicalType(),
-    expr.getRight().type()->getCanonicalType()
+  FunctionSignature binary_op_signature {
+    expr.getOperator(), {
+      expr.getLeft().type()->getCanonicalType(),
+      expr.getRight().type()->getCanonicalType()
+    }
   };
 
-  if (Decl *decl = currentContext->getDecl({expr.getOperator(), param_types})) {
-
-    if (FunctionType *func_type = decl->getType()->as_canonical<FunctionType>()) {
-      // a binary expression, by definiton, must have exactly two parameters.
-      if (func_type->getParamCount() == 2) {
-        expr.setType(func_type->getReturnType());
-      } else {
-        std::stringstream ss;
-        ss <<  "wrong number parameters to operator '" << expr.getOperator();
-        ss << "'. expected 2 but got " << func_type->getParamCount();
-        throw CompilerException(expr.location(), ss.str());
-      }
-    } else {
-      std::stringstream ss;
-      ss <<  "'" << expr.getOperator() << "' is not an operator";
-      throw CompilerException(expr.location(), ss.str());
-    }
-  } else {
-    std::stringstream ss;
-    ss <<  "the '" << expr.getOperator() << "' operator has not been declared for argument types ";
-    ss << expr.getLeft().getType()->toString() << " and ";
-    ss << expr.getRight().getType()->toString();
-    throw CompilerException(expr.location(), ss.str());
-  }
+  Decl *decl = currentContext->getDecl(binary_op_signature);
+  FunctionType *func_type = static_cast<FunctionType*>(decl->canonical_type());
+  expr.setType(func_type->getReturnType()->getCanonicalType());
 }
 
 void TypeChecker::checkBoolExpr(BoolExpr &expr) {
@@ -231,36 +211,14 @@ void TypeChecker::checkFunctionCall(FunctionCall &expr) {
   }
 
   std::vector<Type*> param_types;
+
   for(auto &arg: expr.getArguments()) {
     param_types.push_back(arg->getType()->getCanonicalType());
   }
 
-  if (Decl *decl = currentContext->getDecl({expr.getFunctionName(), param_types})) {
-    if ( FunctionType *func_type = decl->getType()->getCanonicalType()->as<FunctionType>()) {
-      if (func_type->getParamTypes().size() == expr.getArguments().size()) {
-        expr.setType(func_type->getReturnType()->getCanonicalType());
-      } else {
-        std::stringstream ss;
-        ss << "wrong number of arguments passed to function '";
-        ss << expr.getFunctionName() << "'. expected ";
-        ss << func_type->getParamTypes().size() << " but found " << expr.getArguments().size();
-        throw CompilerException(expr.location(), ss.str());
-      }
-    } else {
-      std::stringstream ss;
-      ss << "'" << expr.getFunctionName() << "' is not declared a function";
-      throw CompilerException(expr.location(), ss.str());
-    }
-  } else {
-    std::stringstream ss;
-    ss << "function '" << expr.getFunctionName() << "' not declared with parameters (";
-    for (auto param: param_types) {
-      ss << param->toString() << ", ";
-    }
-    ss.seekp((int)ss.tellp()-2);
-    ss << ").";
-    throw CompilerException(expr.location(), ss.str());
-  }
+  Decl *decl = currentContext->getDecl({expr.getFunctionName(), param_types});
+  FunctionType *func_type = static_cast<FunctionType*>(decl->canonical_type());
+  expr.setType(func_type->getReturnType()->getCanonicalType());
 }
 
 void TypeChecker::checkIdentifierExpr(IdentifierExpr &expr) {
@@ -294,63 +252,81 @@ void TypeChecker::checkListExpr(ListExpr &expr) {
       }
     } else element_type = element->getType()->getCanonicalType();
   }
-  expr.setType(ListType::getInstance(element_type, expr.elements().size()));
+  expr.setType(
+    ListType::getInstance(element_type, expr.elements().size())
+  );
 }
 
 void TypeChecker::checkReferenceExpr(UnaryExpr &expr) {
   checkExpr(expr.getExpr());
-  // unable to get the address of an expression which has no inherent
-  // notion of location... e.g. a literal value
+
   if (expr.getExpr().isLeftValue()) {
-    //if (expr.getExpr().type()->getKind() == Type::Kind::ListType) {
-    //   ListType* list_type = dynamic_cast< ListType*>(expr.getExpr().type());
-    //  expr.setType(SliceType::getInstance(list_type->element_type()));
-    //} else {
-      expr.setType(ReferenceType::getInstance(expr.getExpr().getType()->getCanonicalType()));
-  //  }
+    auto referenced_type = expr.getExpr().getType()->getCanonicalType();
+    auto expr_type = ReferenceType::getInstance(referenced_type);
+    expr.setType(expr_type);
   } else {
+    // unable to get the address of an expression which has no inherent
+    // notion of location... e.g. a literal value
     std::stringstream ss;
-    ss << "illegal attempt to reference a non-referenceable type: " << expr.getExpr().getType()->toString() << std::endl;
+    ss << "illegal attempt to reference a non-referenceable type: ";
+    ss << expr.getExpr().getType()->toString() << std::endl;
     ss << "expression kind: " << expr.getExpr().name() << std::endl;
     throw CompilerException(expr.getOperator().start, ss.str());
   }
 }
 
 void TypeChecker::checkStringExpr(StringExpr &expr) {
-
-  expr.setType(ListType::getInstance(CharacterType::getInstance(), expr.getString().size() + 1));
+  expr.setType(
+    ListType::getInstance(CharacterType::getInstance(), expr.getString().size() + 1)
+  );
 }
 
 void TypeChecker::checkTupleExpr(TupleExpr &expr) {
-  std::vector<Type*> element_types;
+  std::vector<Type*> canonical_element_types;
+
   for (auto &element: expr.elements()) {
     checkExpr(*element);
-    element_types.push_back(element->type());
+    canonical_element_types.push_back(element->type()->getCanonicalType());
   }
-  expr.setType(TupleType::getInstance(std::move(element_types)));
+
+  expr.setType(
+    TupleType::getInstance(std::move(canonical_element_types))
+  );
 }
 
 void TypeChecker::checkUnaryExpr(UnaryExpr &expr) {
+
+  // reference expressions have a special set of rules, and
+  // thus should be handled seperately.
   if (expr.getOperator() == StringRef{"&"}) {
     return checkReferenceExpr(expr);
-  } else if (expr.getOperator() == StringRef{"*"}) {
-    return checkDereferenceExpr(expr);
-  } else {
-    checkExpr(expr.getExpr());
-    std::vector<Type*> param_types{ expr.getExpr().getType()->getCanonicalType() };
-    if (Decl *decl = currentContext->getDecl(FunctionSignature(expr.getOperator(), param_types))) {
-      if ( FunctionType* func_type = decl->getType()->getCanonicalType()->as<FunctionType>()) {
-        expr.setType(func_type->getReturnType()->getCanonicalType());
-      } else {
-        std::stringstream ss;
-        ss <<  "'" << expr.getOperator() << "' is not an operator";
-        throw CompilerException(expr.location(), ss.str());
-      }
-    } else {
-      std::stringstream ss;
-      ss <<  "the unary '" << expr.getOperator() << "' operator has not been declared for argument type ";
-      ss << expr.getExpr().getType()->toString() << " and ";
-      throw CompilerException(expr.location(), ss.str());
-    }
   }
+
+  // dereference expressions have a special set of rules, and
+  // thus should be handled seperately.
+  if (expr.getOperator() == StringRef{"*"}) {
+    return checkDereferenceExpr(expr);
+  }
+
+  // before attempting to locate the operator being called, the type of the
+  // single argument must be found
+  checkExpr(expr.getExpr());
+
+  // a function signature is constructed to search the identifier table for
+  // a matching function
+  FunctionSignature unary_op_signature{
+    expr.getOperator()
+  , {expr.getExpr().getType()->getCanonicalType()}
+  };
+
+  // this call will throw an exception if a unique, unambiguous function
+  // is not found that matches the given signature
+  Decl *decl = currentContext->getDecl(unary_op_signature);
+
+  // the declaration found will ALWAYS be of function type, because a
+  // function signature was passed in. Thus, it is safe to cast the
+  // declaration type to a function type
+  FunctionType* func_type = static_cast<FunctionType*>(decl->canonical_type());
+
+  expr.setType(func_type->getReturnType()->getCanonicalType());
 }

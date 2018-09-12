@@ -36,7 +36,7 @@ llvm::FunctionType* LLVMTransformer::transformFunctionType(const FunctionType &t
     for (auto param_type: type.getParamTypes()) {
       param_types.push_back(transformType(*param_type));
     }
-    return llvm::FunctionType::get(transformType(*type.getReturnType()), param_types, false);
+    return llvm::FunctionType::get(transformType(*type.getReturnType()), param_types, type.isVarArg());
   }
 }
 
@@ -129,13 +129,13 @@ void LLVMTransformer::transformDeclStmt(const DeclStmt& declStmt, llvm::BasicBlo
   const Decl* decl = dynamic_cast<const Decl*>(declStmt.getDecl());
   switch (decl->getKind()) {
     case Decl::Kind::LetDecl:
-      transformLetDecl(dynamic_cast<const LetDecl&>(*decl), current_block);
+      transformLetDecl(static_cast<const LetDecl&>(*decl), current_block);
       break;
     case Decl::Kind::VarDecl:
-      transformVarDecl(dynamic_cast<const VarDecl&>(*decl), current_block);
+      transformVarDecl(static_cast<const VarDecl&>(*decl), current_block);
       break;
     case Decl::Kind::UninitializedVarDecl:
-      transformUninitializedVarDecl(dynamic_cast<const UninitializedVarDecl&>(*decl), current_block);
+      transformUninitializedVarDecl(static_cast<const UninitializedVarDecl&>(*decl), current_block);
       break;
     case Decl::Kind::FuncDecl:
       throw CompilerException(nullptr, "nested function declarations not current supported");
@@ -151,7 +151,7 @@ llvm::Value* LLVMTransformer::transformIdentifierExprReference(const IdentifierE
     return map_it->second;
   } else {
     std::stringstream ss;
-    ss << "codegen: unexpected: llvm::Value* not found" << id_expr.name();
+    ss << "codegen: unexpected: llvm::Value* not found" << id_expr.lexeme();
     throw CompilerException(nullptr, ss.str());
   }
 }
@@ -183,6 +183,7 @@ llvm::Value* LLVMTransformer::transformAccessorExprReference(const AccessorExpr 
     );
   }
 
+
   if (accessor.identifier().isType<SliceType>()) {
     std::array<llvm::Value*,1> indices{{element_index}};
     return builder.CreateGEP(aggregate_loc, indices);
@@ -199,7 +200,9 @@ llvm::Value* LLVMTransformer::transformExprReference(const Expr& expr, llvm::Bas
   llvm::IRBuilder<> builder{current_block};
 
   // expressions of reference type are computed directly
-  if (expr.getType()->getKind() == Type::Kind::ReferenceType) {
+  if (expr.getKind() == Expr::Kind::UnaryExpr
+  && static_cast<const UnaryExpr&>(expr).getOperator() == StringRef{"&"}
+  && expr.getType()->getKind() == Type::Kind::ReferenceType) {
     return transformExpr(expr, current_block);
   } else if (expr.getType()->getKind() == Type::Kind::SliceType) {
     return transformExpr(expr, current_block);
@@ -294,9 +297,6 @@ llvm::Value* LLVMTransformer::transformFunctionCall(const FunctionCall& call, ll
     throw CompilerException(call.getFunctionName().start, "unknown function referenced");
   }
 
-  if (CalleeF->arg_size() != call.getArguments().size()) {
-    throw CompilerException(call.getFunctionName().start, "wrong number of parameters");
-  }
 
    std::vector<llvm::Value*> ArgsV;
    for (unsigned i = 0, e = call.getArguments().size(); i != e; ++i) {

@@ -58,7 +58,12 @@ public:
 
   void transformDeclStmt(const DeclStmt& declStmt, llvm::BasicBlock* current_block);
 
-  std::vector<llvm::Value*> transformAccessorExprChain(const AccessorExpr &accessor_expr);
+  void transformAccessorExprChain(
+    const AccessorExpr &accessor_expr
+  , llvm::BasicBlock* current_block
+  , IdentifierExpr &aggregate
+  , std::vector<llvm::Value*> &indices
+  );
 
   void transformStructDecl(const StructDecl& struct_decl);
 
@@ -81,6 +86,7 @@ public:
   llvm::Function* transformFunction(const FuncDecl &func);
 
   llvm::Value* transformFunctionCall(const FunctionCall& call, llvm::BasicBlock* current_block);
+
 
   llvm::Value* transformIdentifierExpr(const IdentifierExpr& expr, llvm::BasicBlock* current_block);
 

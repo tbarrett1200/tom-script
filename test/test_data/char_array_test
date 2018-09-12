@@ -22,6 +22,6 @@ func main() -> i64 {
   puts(&string2[0])
   puts(&string3[0])
   puts(&string4[0])
-  
+
   return 0
 }

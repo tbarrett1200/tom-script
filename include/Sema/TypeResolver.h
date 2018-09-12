@@ -1,6 +1,13 @@
 #ifndef SEMA_TYPE_RESOLVER_H
 #define SEMA_TYPE_RESOLVER_H
 
+/*
+ * This class perfoms contextual type resolution, which involves the creation
+ * of unique 'canonical' type, which can be compared on a pointer by pointer
+ * bases for type equality. This involves looking up type identifiers in
+ * symbol tables, and creating and setting a unique conanical type based on
+ * the retrieved information
+ */
 class TypeResolver {
 private:
   class DeclContext &context_;

@@ -52,13 +52,22 @@ TupleType* Parser::parseTupleType() {
 FunctionType* Parser::parseFunctionType() {
   expectToken(Token::l_paren, "left parenthesis");
   std::vector<Type*> list;
+  bool vararg = false;
   if (token_.isNot(Token::r_paren)){
-    list = parseTupleTypeElementList();
+    list.push_back(parseType());
+    while (consumeToken(Token::comma)) {
+      if (consumeToken(Token::elipses)) {
+        vararg = true;
+        break;
+      } else {
+        list.push_back(parseType());
+      }
+    }
   }
   expectToken(Token::r_paren, "right parenthesis");
   if (!consumeOperator("->")) throw CompilerException(token_.location(),  "error: expected ->");
   auto type = parseType();
-  return FunctionType::getInstance(std::move(list), type);
+  return FunctionType::getInstance(std::move(list), type, vararg);
 }
 
 Type* Parser::parseTupleOrFunctionType() {
@@ -70,7 +79,7 @@ Type* Parser::parseTupleOrFunctionType() {
   expectToken(Token::r_paren, "right parenthesis");
   if (!consumeOperator("->")) return TupleType::getInstance(std::move(list));
   auto type = parseType();
-  return FunctionType::getInstance(std::move(list), type);
+  return FunctionType::getInstance(std::move(list), type, false);
 }
 
 ListType* Parser::parseListType() {

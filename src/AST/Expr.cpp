@@ -7,6 +7,5 @@ bool UnaryExpr::isLeftValue() const {
 }
 
 bool IdentifierExpr::isLeftValue() const {
-  std::cout << decl_->name() << std::endl;
   return decl_->is<const VarDecl>() || decl_->is<const LetDecl>() || decl_->is<const UninitializedVarDecl>();
 }

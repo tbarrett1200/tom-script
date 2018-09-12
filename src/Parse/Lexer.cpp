@@ -257,9 +257,6 @@ Token Lexer::lexPunctuation() {
   case ',':
     tok = Token(Token::comma, current_loc(), 1);
     break;
-  case '.':
-    tok = Token(Token::dot, current_loc(), 1);
-    break;
   case ';':
     tok = Token(Token::semi, current_loc(), 1);
     break;
@@ -289,11 +286,22 @@ Token Lexer::next() {
       continue;
 
     // newline
+    case '.': {
+      const char* start = current_loc();
+      source_iterator++;
+      if (*source_iterator == '.') {
+        source_iterator++;
+        if (*source_iterator == '.') {
+          source_iterator++;
+          return Token(Token::elipses, start, current_loc() - start);
+        } else throw CompilerException(start, "invalid lexeme '..'");
+      } else return Token(Token::dot, start, current_loc() - start);
+    }
 
     // Punctuation Characters
     case '\n': case '{': case '[': case '(':
     case '}': case ']': case ')': case ',':
-    case ';': case ':': case '\\': case '.':
+    case ';': case ':': case '\\':
       return lexPunctuation();
 
     case '/':
