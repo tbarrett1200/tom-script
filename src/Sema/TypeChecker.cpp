@@ -64,10 +64,10 @@ void TypeChecker::checkExpr(Expr &expr) {
 }
 
 void TypeChecker::checkPropertyAccessor(AccessorExpr &expr) {
-  checkExpr(expr.identifier());
-  if (IdentifierExpr* id_expr = dynamic_cast<IdentifierExpr*>(&expr.index())) {
+  assert(expr.identifier().getType() != nullptr);
+  if (expr.index().is<IdentifierExpr>()) {
+    IdentifierExpr *id_expr = expr.index().as<IdentifierExpr>();
     Type* id_type = expr.identifier().getType()->getCanonicalType();
-
     if (StructType *struct_type = dynamic_cast<StructType*>(id_type)) {
       int member_index = struct_type->index_of(id_expr->lexeme().str());
       if (member_index == -1) {
@@ -77,6 +77,7 @@ void TypeChecker::checkPropertyAccessor(AccessorExpr &expr) {
         expr.setType(struct_type->type_of_member_at(member_index)->getCanonicalType());
       }
     } else if (expr.identifier().isReferenceTo<StructType>()) {
+
       StructType *struct_type = dynamic_cast<StructType*>(dynamic_cast<ReferenceType*>(id_type)->getReferencedType()->getCanonicalType());
       int member_index = struct_type->index_of(id_expr->lexeme().str());
       if (member_index == -1) {
@@ -115,7 +116,7 @@ void TypeChecker::checkElementAccessor(AccessorExpr &expr) {
 // method
 void TypeChecker::checkAccessorExpr(AccessorExpr &expr) {
   checkExpr(expr.identifier());
-  if (expr.identifier().getType()->getKind() == Type::Kind::StructType) {
+  if (expr.identifier().isType<StructType>() || expr.identifier().isReferenceTo<StructType>()) {
     if (IdentifierExpr* id_expr = dynamic_cast<IdentifierExpr*>(&expr.index())) {
       checkPropertyAccessor(expr);
     } else if (AccessorExpr* accessor_expr = dynamic_cast<AccessorExpr*>(&expr.index())) {

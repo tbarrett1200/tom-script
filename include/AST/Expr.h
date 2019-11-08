@@ -89,12 +89,8 @@ public:
     * Convenience method for casting Expr base type to any one of its derived
     * types. Throws a std::logic_error if conversion is not possible.
     */
-  template<typename T> T* as() const {
+  template<typename T> T* as() {
     return dynamic_cast<T*>(this);
-  }
-
-  template<typename T> const T* as() const {
-    return dynamic_cast<const T*>(this);
   }
 
   /**

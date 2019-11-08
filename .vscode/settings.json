@@ -67,6 +67,11 @@
         "unordered_map": "cpp",
         "utility": "cpp",
         "vector": "cpp",
-        "*.def": "cpp"
+        "*.def": "cpp",
+        "cinttypes": "cpp",
+        "clocale": "cpp",
+        "numeric": "cpp",
+        "random": "cpp",
+        "set": "cpp"
     }
 }
