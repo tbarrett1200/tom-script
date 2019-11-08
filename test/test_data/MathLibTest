@@ -1,4 +1,4 @@
-func abs (num: Double) -> Double {
+func abs (num: f64) -> f64 {
   if num > 0.0 {
     return num
   } else {
@@ -6,7 +6,7 @@ func abs (num: Double) -> Double {
   }
 }
 
-func factorial(num: Double) -> Double {
+func factorial(num: f64) -> f64 {
   if num < 2.0 {
     return 1.0
   } else {
@@ -14,51 +14,59 @@ func factorial(num: Double) -> Double {
   }
 }
 
-func pow(a: Double, b: Double) -> Double {
- if b == 0.0 {
-  return 1.0
- } else if b < 2.0 {
-  return a
- } else {
-  return a * pow(a, b-1.0)
- }
+func pow(a: f64, b: f64) -> f64 {
+  if b == 0.0 {
+    return 1.0
+  } else if b < 2.0 {
+    return a
+  } else {
+    return a * pow(a, b-1.0)
+  }
 }
 
-func sin(angle: Double) -> Double {
-  var result: Double = 0.0
-  var n: Double = 1.0
+func sin(angle: f64) -> f64 {
+  var result: f64 = 0.0
+  var n: f64 = 1.0
   while n < 10.0 {
-    let a: Double = pow(-1.0, n - 1.0)
-    let b: Double = pow(angle, 2.0 * n - 1.0)
-    let c: Double = factorial(2.0 * n - 1.0)
+    let a: f64 = pow(-1.0, n - 1.0)
+    let b: f64 = pow(angle, 2.0 * n - 1.0)
+    let c: f64 = factorial(2.0 * n - 1.0)
     result = result + a * b / c
     n = n + 1.0
   }
   return result
 }
 
-func cos(angle: Double) -> Double {
-  var result: Double = 0.0
-  var n: Int = 1
+func cos(angle: f64) -> f64 {
+  var result: f64 = 0.0
+  var n: i64 = 1
   while n < 10 {
-    let a: Double = pow(-1.0, Double(n))
-    let b: Double = pow(angle, 2.0 * Double(n))
-    let c: Double = factorial(2.0 * Double(n))
+    let a: f64 = pow(-1.0, Double(n))
+    let b: f64 = pow(angle, 2.0 * Double(n))
+    let c: f64 = factorial(2.0 * Double(n))
     result = result + a * b / c
     n = n + 1
   }
   return result
 }
 
-func tan(angle: Double) -> Double {
+func tan(angle: f64) -> f64 {
   return sin(angle)/cos(angle)
 }
 
-func one_to_ten() -> [Int, 10] {
+func one_to_ten() -> [i64, 10] {
   return [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
 }
 
-func main() -> Int {
-  var array: [Int, 10] = one_to_ten()
-  return array.7
+extern func puts(&[char]) -> i64
+
+func main() -> i64 {
+  var greeting: [char, 13] = "Hello World!"
+  puts(&greeting)
+  return 0
+}
+
+func main() -> i64 {
+  var array: [i64, 10] = one_to_ten()
+  return array[0]
 }

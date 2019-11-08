@@ -1,0 +1,19 @@
+/*
+ * file: functions.bul
+ * author: Thomas Barrett
+ * info: This is an example progam which tests function calls
+ */
+
+/* Returns the sum of a and b */
+func sum(a: i64, b: i64) -> i64 {
+  return a + b
+}
+
+/* Returns the product of a and b */
+func product(a: i64, b: i64) -> i64 {
+  return a * b
+}
+
+func main() -> i64 {
+  return sum(5, 6)
+}

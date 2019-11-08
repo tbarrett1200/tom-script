@@ -1,0 +1,53 @@
+* {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  padding: 10px;
+}
+
+.scope-viewer {
+  box-shadow: 0px 0px 2px 1px #ccc;
+  border-radius: 2px;
+  box-sizing: border-box;
+  padding: 10px;
+  font-family: 'Roboto Mono', monospace;
+  font-size: 10px;
+  position: relative;
+}
+
+.scope-kind {
+  margin-left: 10px;
+  color: blue;
+}
+
+.scope-name {
+  margin-left: 10px;
+  color: green;
+}
+
+.scope-type {
+  margin-left: 10px;
+  color: red;
+}
+
+.scope-header {
+  box-sizing: border-box;
+  padding-left: 5px;
+}
+
+.scope-header:hover{
+  background: rgb(235,242,251);
+  border-radius: 4px;
+}
+
+.scope-list {
+  padding-left: 4px;
+  margin-left: 8px;
+  border-left: 1px solid #ccc;
+}
+
+.hidden {
+  display: none;
+}

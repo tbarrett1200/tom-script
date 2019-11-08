@@ -1,6 +1,6 @@
-extern func putchar (Character) -> Int
+extern func putchar (char) -> i64
 
-func main() -> Int {
+func main() -> i64 {
   putchar('H')
   putchar('e')
   putchar('l')

@@ -1,0 +1,213 @@
+; ModuleID = 'test'
+source_filename = "test"
+target datalayout = "e-m:o-i64:64-f80:128-n8:16:32:64-S128"
+target triple = "x86_64-apple-darwin17.7.0"
+
+%robot = type { i8*, i64, i64, i64 }
+
+declare i64 @printf(i8*, ...)
+
+declare i64 @putchar(i8)
+
+define %robot @robot_create(i8* %name) {
+entry:
+  %self = alloca %robot
+  %0 = getelementptr %robot, %robot* %self, i32 0, i32 0
+  store i8* %name, i8** %0
+  %1 = getelementptr %robot, %robot* %self, i32 0, i32 1
+  store i64 0, i64* %1
+  %2 = getelementptr %robot, %robot* %self, i32 0, i32 2
+  store i64 0, i64* %2
+  %3 = getelementptr %robot, %robot* %self, i32 0, i32 3
+  store i64 0, i64* %3
+  %4 = load %robot, %robot* %self
+  ret %robot %4
+}
+
+define i64 @robot_turn_right(%robot* %self) {
+entry:
+  br label %if_cond
+
+if_exit:                                          ; preds = %else, %if_body_entry
+  ret i64 0
+
+if_cond:                                          ; preds = %entry
+  %0 = getelementptr %robot, %robot* %self, i32 0, i32 1
+  %1 = load i64, i64* %0
+  %2 = icmp eq i64 %1, 3
+  br i1 %2, label %if_body_entry, label %else
+
+else:                                             ; preds = %if_cond
+  %3 = getelementptr %robot, %robot* %self, i32 0, i32 1
+  %4 = getelementptr %robot, %robot* %self, i32 0, i32 1
+  %5 = load i64, i64* %4
+  %6 = add i64 %5, 1
+  store i64 %6, i64* %3
+  br label %if_exit
+
+if_body_entry:                                    ; preds = %if_cond
+  %7 = getelementptr %robot, %robot* %self, i32 0, i32 1
+  store i64 0, i64* %7
+  br label %if_exit
+}
+
+define i64 @robot_print(%robot* %self) {
+entry:
+  %format = alloca [56 x i8]
+  store [56 x i8] c"{ name: '%s', direction: '%s', street: %d, avenue: %d }\00", [56 x i8]* %format
+  %north = alloca [6 x i8]
+  store [6 x i8] c"North\00", [6 x i8]* %north
+  %south = alloca [6 x i8]
+  store [6 x i8] c"South\00", [6 x i8]* %south
+  %east = alloca [5 x i8]
+  store [5 x i8] c"East\00", [5 x i8]* %east
+  %west = alloca [5 x i8]
+  store [5 x i8] c"West\00", [5 x i8]* %west
+  %direction_string = alloca i8*
+  br label %if_cond
+
+if_exit:                                          ; preds = %if_body_entry5, %else_if_cond3, %if_body_entry4, %if_body_entry2, %if_body_entry
+  %0 = getelementptr [56 x i8], [56 x i8]* %format, i32 0, i32 0
+  %1 = getelementptr %robot, %robot* %self, i32 0, i32 0
+  %2 = load i8*, i8** %1
+  %3 = load i8*, i8** %direction_string
+  %4 = getelementptr %robot, %robot* %self, i32 0, i32 2
+  %5 = load i64, i64* %4
+  %6 = getelementptr %robot, %robot* %self, i32 0, i32 3
+  %7 = load i64, i64* %6
+  %calltmp = call i64 (i8*, ...) @printf(i8* %0, i8* %2, i8* %3, i64 %5, i64 %7)
+  %calltmp6 = call i64 @putchar(i8 10)
+  ret i64 0
+
+if_cond:                                          ; preds = %entry
+  %8 = getelementptr %robot, %robot* %self, i32 0, i32 1
+  %9 = load i64, i64* %8
+  %10 = icmp eq i64 %9, 0
+  br i1 %10, label %if_body_entry, label %else_if_cond
+
+else_if_cond:                                     ; preds = %if_cond
+  %11 = getelementptr %robot, %robot* %self, i32 0, i32 1
+  %12 = load i64, i64* %11
+  %13 = icmp eq i64 %12, 1
+  br i1 %13, label %if_body_entry2, label %else_if_cond1
+
+if_body_entry:                                    ; preds = %if_cond
+  %14 = getelementptr [6 x i8], [6 x i8]* %north, i32 0, i32 0
+  store i8* %14, i8** %direction_string
+  br label %if_exit
+
+else_if_cond1:                                    ; preds = %else_if_cond
+  %15 = getelementptr %robot, %robot* %self, i32 0, i32 1
+  %16 = load i64, i64* %15
+  %17 = icmp eq i64 %16, 2
+  br i1 %17, label %if_body_entry4, label %else_if_cond3
+
+if_body_entry2:                                   ; preds = %else_if_cond
+  %18 = getelementptr [5 x i8], [5 x i8]* %east, i32 0, i32 0
+  store i8* %18, i8** %direction_string
+  br label %if_exit
+
+else_if_cond3:                                    ; preds = %else_if_cond1
+  %19 = getelementptr %robot, %robot* %self, i32 0, i32 1
+  %20 = load i64, i64* %19
+  %21 = icmp eq i64 %20, 3
+  br i1 %21, label %if_body_entry5, label %if_exit
+
+if_body_entry4:                                   ; preds = %else_if_cond1
+  %22 = getelementptr [6 x i8], [6 x i8]* %south, i32 0, i32 0
+  store i8* %22, i8** %direction_string
+  br label %if_exit
+
+if_body_entry5:                                   ; preds = %else_if_cond3
+  %23 = getelementptr [5 x i8], [5 x i8]* %west, i32 0, i32 0
+  store i8* %23, i8** %direction_string
+  br label %if_exit
+}
+
+define i64 @robot_move(%robot* %self) {
+entry:
+  br label %if_cond
+
+if_exit:                                          ; preds = %if_body_entry5, %else_if_cond3, %if_body_entry4, %if_body_entry2, %if_body_entry
+  ret i64 0
+
+if_cond:                                          ; preds = %entry
+  %0 = getelementptr %robot, %robot* %self, i32 0, i32 1
+  %1 = load i64, i64* %0
+  %2 = icmp eq i64 %1, 0
+  br i1 %2, label %if_body_entry, label %else_if_cond
+
+else_if_cond:                                     ; preds = %if_cond
+  %3 = getelementptr %robot, %robot* %self, i32 0, i32 1
+  %4 = load i64, i64* %3
+  %5 = icmp eq i64 %4, 1
+  br i1 %5, label %if_body_entry2, label %else_if_cond1
+
+if_body_entry:                                    ; preds = %if_cond
+  %6 = getelementptr %robot, %robot* %self, i32 0, i32 3
+  %7 = getelementptr %robot, %robot* %self, i32 0, i32 3
+  %8 = load i64, i64* %7
+  %9 = add i64 %8, 1
+  store i64 %9, i64* %6
+  br label %if_exit
+
+else_if_cond1:                                    ; preds = %else_if_cond
+  %10 = getelementptr %robot, %robot* %self, i32 0, i32 1
+  %11 = load i64, i64* %10
+  %12 = icmp eq i64 %11, 2
+  br i1 %12, label %if_body_entry4, label %else_if_cond3
+
+if_body_entry2:                                   ; preds = %else_if_cond
+  %13 = getelementptr %robot, %robot* %self, i32 0, i32 2
+  %14 = getelementptr %robot, %robot* %self, i32 0, i32 2
+  %15 = load i64, i64* %14
+  %16 = add i64 %15, 1
+  store i64 %16, i64* %13
+  br label %if_exit
+
+else_if_cond3:                                    ; preds = %else_if_cond1
+  %17 = getelementptr %robot, %robot* %self, i32 0, i32 1
+  %18 = load i64, i64* %17
+  %19 = icmp eq i64 %18, 3
+  br i1 %19, label %if_body_entry5, label %if_exit
+
+if_body_entry4:                                   ; preds = %else_if_cond1
+  %20 = getelementptr %robot, %robot* %self, i32 0, i32 3
+  %21 = getelementptr %robot, %robot* %self, i32 0, i32 3
+  %22 = load i64, i64* %21
+  %23 = sub i64 %22, 1
+  store i64 %23, i64* %20
+  br label %if_exit
+
+if_body_entry5:                                   ; preds = %else_if_cond3
+  %24 = getelementptr %robot, %robot* %self, i32 0, i32 2
+  %25 = getelementptr %robot, %robot* %self, i32 0, i32 2
+  %26 = load i64, i64* %25
+  %27 = sub i64 %26, 1
+  store i64 %27, i64* %24
+  br label %if_exit
+}
+
+define i64 @main() {
+entry:
+  %name = alloca [6 x i8]
+  store [6 x i8] c"Karel\00", [6 x i8]* %name
+  %karel = alloca %robot
+  %0 = getelementptr [6 x i8], [6 x i8]* %name, i32 0, i32 0
+  %calltmp = call %robot @robot_create(i8* %0)
+  store %robot %calltmp, %robot* %karel
+  %calltmp1 = call i64 @robot_print(%robot* %karel)
+  %calltmp2 = call i64 @robot_turn_right(%robot* %karel)
+  %calltmp3 = call i64 @robot_print(%robot* %karel)
+  %calltmp4 = call i64 @robot_move(%robot* %karel)
+  %calltmp5 = call i64 @robot_print(%robot* %karel)
+  %calltmp6 = call i64 @robot_move(%robot* %karel)
+  %calltmp7 = call i64 @robot_print(%robot* %karel)
+  %calltmp8 = call i64 @robot_turn_right(%robot* %karel)
+  %calltmp9 = call i64 @robot_turn_right(%robot* %karel)
+  %calltmp10 = call i64 @robot_turn_right(%robot* %karel)
+  %calltmp11 = call i64 @robot_print(%robot* %karel)
+  %calltmp12 = call i64 @robot_move(%robot* %karel)
+  %calltmp13 = call i64 @robot_print(%robot* %karel)
+  ret i64 0
+}

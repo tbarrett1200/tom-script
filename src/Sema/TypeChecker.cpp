@@ -91,8 +91,6 @@ void TypeChecker::checkPropertyAccessor(AccessorExpr &expr) {
 }
 
 void TypeChecker::checkElementAccessor(AccessorExpr &expr) {
-  checkExpr(expr.identifier());
-  checkExpr(expr.index());
   // two possible cases: list or &list
   if (expr.identifier().isType<ListType>()) {
     expr.setType(expr.identifier().type()->as<ListType>()->element_type());
@@ -116,11 +114,15 @@ void TypeChecker::checkElementAccessor(AccessorExpr &expr) {
 // which type of accessor is being passed, and delegates it to the appropriate
 // method
 void TypeChecker::checkAccessorExpr(AccessorExpr &expr) {
-  if (IdentifierExpr* id_expr = dynamic_cast<IdentifierExpr*>(&expr.index())) {
-    checkPropertyAccessor(expr);
-  } else if (AccessorExpr* accessor_expr = dynamic_cast<AccessorExpr*>(&expr.index())) {
-    throw CompilerException(expr.location(), "cannot handle nested property accessors");
+  checkExpr(expr.identifier());
+  if (expr.identifier().getType()->getKind() == Type::Kind::StructType) {
+    if (IdentifierExpr* id_expr = dynamic_cast<IdentifierExpr*>(&expr.index())) {
+      checkPropertyAccessor(expr);
+    } else if (AccessorExpr* accessor_expr = dynamic_cast<AccessorExpr*>(&expr.index())) {
+      throw CompilerException(expr.location(), "cannot handle nested property accessors");
+    } 
   } else {
+    checkExpr(expr.index());
     checkElementAccessor(expr);
   }
 }

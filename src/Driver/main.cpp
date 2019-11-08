@@ -32,7 +32,7 @@
 #include "llvm/Transforms/Scalar.h"
 #include "llvm/Transforms/Scalar/GVN.h"
 
-#include "CodeGen/KaleidoscopeJIT.h"
+// #include "CodeGen/KaleidoscopeJIT.h"
 #include "CodeGen/IRGenWalker.h"
 
 #include "Basic/SourceCode.h"
@@ -52,9 +52,10 @@ bool printScope = false;
 bool printIR = false;
 bool Onone = false;
 bool JIT = false;
+std::string output_file_name = "./output.o";
 
 void compileAST(CompilationUnit& unit);
-int compile_to_object_code(CompilationUnit& unit);
+int compile_to_object_code(CompilationUnit& unit, std::string output_file_name);
 
 int main(int argc, char const *argv[]) {
   if (argc < 2) {
@@ -73,6 +74,11 @@ int main(int argc, char const *argv[]) {
       Onone = true;
     } else if (argv[i] == std::string("--JIT")) {
       JIT = true;
+    } else if (argv[i] == std::string("-o")) {
+      if (i + 1 < argc) {
+        output_file_name = argv[i + 1];
+        i++;
+      }
     }
   }
 
@@ -86,14 +92,14 @@ int main(int argc, char const *argv[]) {
     ScopeBuilder().buildCompilationUnitScope(*unit);
     if (printAST) {
       std::ofstream myfile;
-      myfile.open ("/Users/thomasbarrett/Desktop/app/tree.json");
+      myfile.open ("./visualizer/tree.json");
       ASTPrintWalker{myfile}.traverse(unit.get());
       myfile.seekp((int)myfile.tellp()-1);
       myfile << " ";
       myfile.close();
     }
     if (printScope) ASTScopePrinter(std::cout).traverse(unit.get());
-    if (JIT) compileAST(*unit); else return compile_to_object_code(*unit);
+    if (JIT) compileAST(*unit); else return compile_to_object_code(*unit, output_file_name);
   } catch (CompilerException e) {
       ErrorReporter{std::cout, *SourceManager::currentSource}.report(e);
   }
@@ -104,7 +110,7 @@ int main(int argc, char const *argv[]) {
 // 1 ./bin/tomscript test/test_data/MathLibTest
 // 2 ld output.o -e _main -macosx_version_min 10.13 -lSystem -lc
 // 3 ./a.out
-int compile_to_object_code(CompilationUnit& unit) {
+int compile_to_object_code(CompilationUnit& unit, std::string output_file_name) {
   // Initialize the target registry etc.
  llvm::InitializeAllTargetInfos();
  llvm::InitializeAllTargets();
@@ -156,7 +162,7 @@ int compile_to_object_code(CompilationUnit& unit) {
 
  TheModule->setDataLayout(TheTargetMachine->createDataLayout());
 
- auto Filename = "./output.o";
+ auto Filename = output_file_name;
  std::error_code EC;
  llvm::raw_fd_ostream dest(Filename, EC, llvm::sys::fs::F_None);
 
@@ -172,7 +178,7 @@ int compile_to_object_code(CompilationUnit& unit) {
  llvm::legacy::PassManager pass;
  auto FileType = llvm::TargetMachine::CGFT_ObjectFile;
 
- if (TheTargetMachine->addPassesToEmitFile(pass, dest, FileType)) {
+ if (TheTargetMachine->addPassesToEmitFile(pass, dest, nullptr, FileType)) {
    llvm::errs() << "TheTargetMachine can't emit a file of this type";
    return 1;
  }
@@ -186,6 +192,7 @@ int compile_to_object_code(CompilationUnit& unit) {
 }
 
 void compileAST(CompilationUnit& unit) {
+  /*
     llvm::InitializeNativeTarget();
     llvm::InitializeNativeTargetAsmPrinter();
     llvm::InitializeNativeTargetAsmParser();
@@ -231,5 +238,5 @@ void compileAST(CompilationUnit& unit) {
     } catch (const CompilerException& e2) {
       std::cout << e2.message << std::endl;
     }
-
+  */
 }

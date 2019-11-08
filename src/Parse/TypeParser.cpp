@@ -100,6 +100,9 @@ PointerType* Parser::parsePointerType() {
 Type* Parser::parseReferenceOrSliceType() {
   expectToken(Token::operator_id, "&");
   auto type = parseType();
+  if (type->getKind() == Type::Kind::SliceType) {
+    return type;
+  }
   return ReferenceType::getInstance(type);
 }
 
@@ -136,8 +139,12 @@ Type* Parser::parseListOrMapType() {
     expectToken(Token::r_square, "right square bracket");
     return MapType::getInstance(keyType, valueType);
   }
-  expectToken(Token::comma, "comma");
-  auto size = parseIntegerExpr();
-  expectToken(Token::r_square, "right square bracket");
-  return ListType::getInstance(keyType, size->getInt());
+  if (consumeToken(Token::comma)) {
+    auto size = parseIntegerExpr();
+    expectToken(Token::r_square, "right square bracket");
+    return ListType::getInstance(keyType, size->getInt());
+  } else {
+    expectToken(Token::r_square, "right square bracket");
+    return SliceType::getInstance(keyType);
+  }
 }
