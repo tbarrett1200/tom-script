@@ -1,0 +1,24 @@
+extern func puts(&char) -> i64
+
+func main() -> i64 {
+
+  // creates an array of characters on the stack
+  var string1: [char, 12] = "Hello World"
+
+  // creates a reference to the initial array
+  var string2: &[char, 12] = &string1
+
+  // creates a copy of the initial array by assignment
+  var string3: [char, 12] = string1
+
+  // creates a copy of the initial array by dereferencing
+  var string4: [char, 12] = *string2
+
+  string3[0] = 'B'
+
+  puts(&string1[0])
+  puts(&string3[0])
+  puts(&string4[0])
+  
+  return 0
+}
