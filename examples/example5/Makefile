@@ -1,13 +1,14 @@
 BLC = ../../bin/tomscript
 LD_FLAGS = -e _main -macosx_version_min 10.13 -lSystem -lc
+NAME = struct
 
-all: array
+all: ${NAME}
 
-array: array.o
+${NAME}: ${NAME}.o
 	ld $^ ${LD_FLAGS} -o $@
 
-array.o: array.bul
+${NAME}.o: ${NAME}.bul
 	${BLC} $^ -o $@
 
 clean:
-	rm array.o array
+	rm ${NAME}.o ${NAME}
